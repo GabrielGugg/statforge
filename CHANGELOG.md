@@ -2,6 +2,13 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.1.4 — 2026-10-30
+
+- **Character creation assistant.** A system package can describe its creation steps (`creation` in the format): choose race, class or background, buy attributes with points, pick skills, perks and traits, and write a backstory, with a live summary of the main values and a review at the end. Going back and changing a step is safe. You can still skip it and get a blank sheet.
+- **Nicer fields**: inputs, selects and number boxes restyled; attributes show the modifier as a badge; survival counters fit on one line on phones; resource rows no longer cut the name.
+- Fix: a stray "null" text above the "Create sheet" button (and in the sheet's package window).
+- The example systems now include creation steps.
+
 ## 0.1.3 — 2026-10-30
 
 - Game packages no longer live in the app repository: StatForge stays a pure engine, and every system (Fallout included) is installed like any other package.

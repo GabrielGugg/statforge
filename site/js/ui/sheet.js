@@ -343,7 +343,7 @@ function search(st, colId) {
   input.focus();
 }
 
-function entityDetails(st, colId, id, item) {
+export function entityDetails(st, colId, id, item) {
   const { rules } = st;
   const ent = rules.entities[colId]?.[id];
   if (!ent) { dialog(t('sheet.notFoundTitle'), h('p', t('sheet.notFoundText', { name: item?.name || id }))); return; }
@@ -410,7 +410,7 @@ async function packagesDialog(st) {
   const warnEl = h('div');
   const check = () => {
     const w = checkSet(sheet.system, exts.filter(id => checked.has(id)), inst);
-    warnEl.replaceChildren(w.length ? h('div.alert', h('ul', w.map(a => h('li', `${inst[a.package]?.name || a.package}: ${a.msg}`)))) : null);
+    warnEl.replaceChildren(...(w.length ? [h('div.alert', h('ul', w.map(a => h('li', `${inst[a.package]?.name || a.package}: ${a.msg}`))))] : []));
   };
   const entries = st.log.filter(l => l.level === 'conflict' || l.level === 'warning');
   dialog(t('sheet.packagesTitle'), [
