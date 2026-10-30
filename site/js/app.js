@@ -4,6 +4,7 @@
 //   #/new          new sheet
 //   #/sheet/<id>   sheet
 //   #/packages     installed packages
+//   #/hub          package collection (install with one tap)
 //   #/settings     settings
 //   ?table=<link>  installs a table package on open
 // ============================================================
@@ -16,6 +17,7 @@ import { newSheetScreen } from './ui/new-sheet.js';
 import { sheetScreen } from './ui/sheet.js';
 import { packagesScreen, installLinkWithFeedback } from './ui/packages.js';
 import { settingsScreen } from './ui/settings.js';
+import { hubScreen } from './ui/hub.js';
 
 const app = document.getElementById('app');
 
@@ -26,6 +28,7 @@ async function route() {
     if (name === 'new') await newSheetScreen(app);
     else if (name === 'sheet' && arg) await sheetScreen(app, decodeURIComponent(arg));
     else if (name === 'packages') await packagesScreen(app);
+    else if (name === 'hub') await hubScreen(app);
     else if (name === 'settings') await settingsScreen(app);
     else await homeScreen(app);
   } catch (e) {

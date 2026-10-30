@@ -1,9 +1,12 @@
 {
   "name": "statforge",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "type": "module",
   "description": "Character sheets for any tabletop RPG, built from .json packages.",
+  "author": "GabrielGugg",
+  "license": "MIT",
+  "repository": "github:GabrielGugg/statforge",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "validate": "node scripts/validate.mjs"

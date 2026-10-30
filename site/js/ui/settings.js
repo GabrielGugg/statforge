@@ -5,6 +5,7 @@ import * as db from '../storage.js';
 import { installed } from '../packages.js';
 import { applyTheme } from './theme.js';
 import { VERSION } from '../version.js';
+import { DEFAULT_HUB } from './hub.js';
 import { t, LANGUAGES, getLanguage, setLanguage } from '../i18n.js';
 import { h, toast, downloadJSON, pickFiles, confirm, byName, translateStatic } from './util.js';
 
@@ -29,6 +30,14 @@ export async function settingsScreen(app) {
     themes.length ? h('optgroup', { label: t('settings.installedThemes') }, themes.map(x => h('option', { value: x.id }, x.name))) : null);
   selTheme.value = current;
 
+  const hubInput = h('input', { type: 'url', value: (await db.getConfig('hubUrl', '')) || DEFAULT_HUB, placeholder: DEFAULT_HUB,
+    onchange: async e => {
+      const v = e.target.value.trim();
+      await db.setConfig('hubUrl', v === DEFAULT_HUB ? '' : v);
+      if (!v) e.target.value = DEFAULT_HUB;
+      toast(t('settings.saved'));
+    } });
+
   const changelog = h('div.markdown.small', h('p.muted', t('common.loading')));
   const file = getLanguage() === 'en' ? 'CHANGELOG.md' : `CHANGELOG.${getLanguage()}.md`;
   fetch(file).then(r => (r.ok ? r.text() : fetch('CHANGELOG.md').then(x => (x.ok ? x.text() : Promise.reject()))))
@@ -43,6 +52,10 @@ export async function settingsScreen(app) {
       h('p.muted.small', t('settings.languageHint')),
       h('label.field', h('span', t('settings.theme')), selTheme),
       h('p.muted.small', t('settings.themeHint'))),
+    h('section.card.section',
+      h('h2', t('hub.title')),
+      h('label.field', h('span', t('settings.hubUrl')), hubInput),
+      h('p.muted.small', t('settings.hubHint'))),
     h('section.card.section',
       h('h2', t('settings.backup')),
       h('p', t('settings.backupText')),

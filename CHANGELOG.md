@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.1.6 — 2026-10-30
+
+- **Hub**: Packages › Browse the Hub lists the packages shared in the official [StatForge Hub](https://github.com/GabrielGugg/statforge-hub). Search, filter by type and language, install with one tap, and see when a package you have has a new version ("Update all"). The Hub address can be changed in Settings, so groups can run their own.
+- Packages can declare a `license`.
+- Author and license: GabrielGugg.
+
 ## 0.1.5 — 2026-10-30
 
 - **Sheet as a dashboard.** Each tab is a grid; packages set each block's width. With **Arrange** you drag blocks (mouse or touch), change their width and hide what you do not use. The arrangement is saved for every sheet of that system and can be restored to the default.

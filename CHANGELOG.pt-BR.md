@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.1.6 — 30/10/2026
+
+- **Hub**: Pacotes › Explorar o Hub lista os pacotes compartilhados no [StatForge Hub](https://github.com/GabrielGugg/statforge-hub) oficial. Busque, filtre por tipo e idioma, instale com um toque e veja quando um pacote que você tem ganhou versão nova ("Atualizar todos"). O endereço do Hub pode ser trocado em Configurações, então grupos podem ter o próprio.
+- Pacotes podem declarar `license`.
+- Autor e licença: GabrielGugg.
+
 ## 0.1.5 — 30/10/2026
 
 - **Ficha em painel.** Cada aba é uma grade, e o pacote define a largura de cada bloco. Em **Organizar** você arrasta os blocos (mouse ou toque), muda a largura e oculta o que não usa. O arranjo vale para todas as fichas daquele sistema e pode voltar ao padrão.

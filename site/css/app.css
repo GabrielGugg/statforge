@@ -322,3 +322,10 @@ button.mini.link:hover { text-decoration: underline; }
 .res-name { display: grid; gap: 0; }
 .res-name .small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 details.rule { margin-top: .25rem; } details.rule summary { cursor: pointer; }
+.hub-filters { margin-bottom: .75rem; flex-wrap: wrap; }
+.hub-filters input { flex: 1 1 220px; width: auto; }
+.hub-filters select { flex: 1 1 160px; width: auto; max-width: 260px; }
+.hub-list { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); }
+.hub-item { display: grid; gap: .35rem; align-content: start; }
+.hub-head { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
+.hub-desc { margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: var(--text-muted); }

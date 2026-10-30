@@ -48,6 +48,10 @@ GitHub Pages publishes on every push to `main` (see `.github/workflows/deploy.ym
 
 On every release, update `CHANGELOG.md`, `CHANGELOG.pt-BR.md` and `site/js/version.js`.
 
+## Packages and the Hub
+
+Game packages do not live in this repository. Find and share them in the [StatForge Hub](https://github.com/GabrielGugg/statforge-hub), which the app opens under **Packages › Browse the Hub**.
+
 ## License
 
-MIT.
+MIT © GabrielGugg. See [LICENSE](LICENSE).
