@@ -48,6 +48,10 @@ O GitHub Pages publica a cada push na `main` (veja `.github/workflows/deploy.yml
 
 A cada versão nova, atualize o `CHANGELOG.md`, o `CHANGELOG.pt-BR.md` e o `site/js/version.js`.
 
+## Pacotes e o Hub
+
+Os pacotes de jogo não ficam neste repositório. Encontre e compartilhe no [StatForge Hub](https://github.com/GabrielGugg/statforge-hub), que o app abre em **Pacotes › Explorar o Hub**.
+
 ## Licença
 
-MIT.
+MIT © GabrielGugg. Veja [LICENSE](LICENSE).

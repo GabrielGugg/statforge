@@ -24,11 +24,14 @@ Todo pacote começa com:
   "name": "Meu Sistema",
   "version": "1.0.0",
   "author": "Seu nome",
+  "license": "CC-BY-4.0",
   "language": "pt-BR",
   "type": "system",
   "description": "Opcional."
 }
 ```
+
+`license` é opcional e diz como os outros podem reutilizar seu pacote (por exemplo `CC-BY-4.0`, `MIT` ou `Todos os direitos reservados`). O StatForge Hub pede esse campo.
 
 O `id` usa só letras, números, `-`, `_` e `.`. Não troque o `id` depois de publicar: as fichas guardam o pacote por ele. Para lançar uma versão nova, aumente `version`.
 

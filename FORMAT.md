@@ -24,11 +24,14 @@ Every package starts with:
   "name": "My System",
   "version": "1.0.0",
   "author": "Your name",
+  "license": "CC-BY-4.0",
   "language": "en",
   "type": "system",
   "description": "Optional."
 }
 ```
+
+`license` is optional and tells others how they may reuse your package (for example `CC-BY-4.0`, `MIT`, or `All rights reserved`). The StatForge Hub asks for it.
 
 The `id` uses only letters, numbers, `-`, `_` and `.`. Do not change the `id` after publishing: sheets refer to the package by it. To release a new version, raise `version`.
 

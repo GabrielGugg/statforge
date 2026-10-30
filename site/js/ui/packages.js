@@ -63,11 +63,12 @@ export async function packagesScreen(app) {
   app.append(
     h('div.row.spread.section', h('h1', t('pkgs.title')),
       h('div.row',
+        h('a.button.primary', { href: '#/hub' }, t('hub.open')),
         h('button', { onclick: async () => {
           const url = await ask(t('pkgs.byLink'), t('pkgs.linkLabel'), '', { placeholder: 'https://…' });
           if (url && await installLinkWithFeedback(url)) reload();
         } }, t('pkgs.byLink')),
-        h('button.primary', { onclick: async () => {
+        h('button', { onclick: async () => {
           const files = await pickFiles();
           if (!files.length) return;
           const r = await pk.installFiles(files);
@@ -78,6 +79,7 @@ export async function packagesScreen(app) {
 
   if (!Object.keys(inst).length) {
     app.append(h('div.card.empty', h('p', t('pkgs.none')),
+      h('a.button.primary', { href: '#/hub', style: { marginRight: '.5rem' } }, t('hub.open')),
       h('button', { onclick: async () => { if (await installLinkWithFeedback(exampleUrl())) reload(); } }, t('pkgs.installExamples'))));
     return;
   }
