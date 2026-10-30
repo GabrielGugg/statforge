@@ -1,0 +1,22 @@
+{
+  "format": 1,
+  "id": "example-homebrew",
+  "name": "Example Homebrew",
+  "version": "1.0.0",
+  "author": "StatForge",
+  "language": "en",
+  "type": "extension",
+  "system": "example-d20",
+  "requires": ["example-d20@>=1.0"],
+  "description": "Shows the five patch operations: add, replace, modify, remove and rename.",
+  "patches": [
+    { "op": "modify", "target": "armor/shield", "fields": { "cost": 15, "effects": [{ "type": "add", "target": "ac", "value": "3" }] } },
+    { "op": "rename", "target": "traits/tough", "name": "Sturdy" },
+    { "op": "remove", "target": "weapons/shortbow" },
+    { "op": "replace", "target": "conditions/prone", "entity": { "name": "Prone", "description": "House rule: −2 AC while on the ground.", "effects": [{ "type": "add", "target": "ac", "value": "-2" }] } },
+    {
+      "op": "add", "collection": "conditions",
+      "entity": { "id": "off-balance", "name": "Off-Balance", "description": "While climbing or swimming.", "effects": [{ "type": "disadvantage", "target": "attack", "text": "Attacks" }, { "type": "add", "target": "ac", "value": "-2" }] }
+    }
+  ]
+}

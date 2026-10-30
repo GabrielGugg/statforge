@@ -1,0 +1,75 @@
+{
+  "format": 1,
+  "id": "exemplo-homebrew",
+  "name": "Homebrew de Exemplo",
+  "version": "1.0.0",
+  "author": "StatForge",
+  "language": "pt-BR",
+  "type": "extension",
+  "description": "Mostra as cinco operações de patch: adicionar, substituir, ajustar, remover e renomear.",
+  "system": "exemplo-d20",
+  "requires": [
+    "exemplo-d20@>=1.0"
+  ],
+  "patches": [
+    {
+      "op": "modify",
+      "target": "armaduras/escudo",
+      "fields": {
+        "custo": 15,
+        "effects": [
+          {
+            "type": "add",
+            "target": "ca",
+            "value": "3"
+          }
+        ]
+      }
+    },
+    {
+      "op": "rename",
+      "target": "tracos/robusto",
+      "name": "Parrudo"
+    },
+    {
+      "op": "remove",
+      "target": "armas/arco-curto"
+    },
+    {
+      "op": "replace",
+      "target": "condicoes/caido",
+      "entity": {
+        "name": "Caído",
+        "description": "Regra da casa: −2 na CA enquanto estiver no chão.",
+        "effects": [
+          {
+            "type": "add",
+            "target": "ca",
+            "value": "-2"
+          }
+        ]
+      }
+    },
+    {
+      "op": "add",
+      "collection": "condicoes",
+      "entity": {
+        "id": "desequilibrado",
+        "name": "Desequilibrado",
+        "description": "Enquanto escala ou nada.",
+        "effects": [
+          {
+            "type": "disadvantage",
+            "target": "ataque",
+            "text": "Ataques"
+          },
+          {
+            "type": "add",
+            "target": "ca",
+            "value": "-2"
+          }
+        ]
+      }
+    }
+  ]
+}

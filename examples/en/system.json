@@ -1,0 +1,145 @@
+{
+  "format": 1,
+  "id": "example-d20",
+  "name": "Example System (simple d20)",
+  "version": "1.0.0",
+  "author": "StatForge",
+  "language": "en",
+  "type": "system",
+  "description": "A small d20-style system to try the app and to serve as a template for your own.",
+  "rolls": { "modifier": "floor((value - 10) / 2)", "default": "1d20" },
+  "progression": { "max_level": 20, "xp_per_level": "level * 1000" },
+  "attributes": [
+    { "id": "STR", "name": "Strength", "min": 1, "max": 20, "default": 10 },
+    { "id": "DEX", "name": "Dexterity", "min": 1, "max": 20, "default": 10 },
+    { "id": "CON", "name": "Constitution", "min": 1, "max": 20, "default": 10 },
+    { "id": "INT", "name": "Intelligence", "min": 1, "max": 20, "default": 10 },
+    { "id": "WIS", "name": "Wisdom", "min": 1, "max": 20, "default": 10 },
+    { "id": "CHA", "name": "Charisma", "min": 1, "max": 20, "default": 10 }
+  ],
+  "skills": [
+    { "id": "athletics", "name": "Athletics", "attribute": "STR", "description": "Climb, swim, jump." },
+    { "id": "stealth", "name": "Stealth", "attribute": "DEX", "description": "Move without being noticed." },
+    { "id": "perception", "name": "Perception", "attribute": "WIS", "description": "Notice what is hidden." },
+    { "id": "persuasion", "name": "Persuasion", "attribute": "CHA", "description": "Convince with words." }
+  ],
+  "derived": [
+    { "id": "proficiency", "name": "Proficiency Bonus", "formula": "floor((level - 1) / 4) + 2" },
+    { "id": "ac", "name": "Armor Class", "formula": "10 + mod(DEX)" },
+    { "id": "initiative", "name": "Initiative", "formula": "mod(DEX)" },
+    { "id": "load", "name": "Load", "formula": "sum('weapons', 'weight') + sum('armor', 'weight') + sum('gear', 'weight')", "unit": "lb" },
+    { "id": "load_max", "name": "Carrying Capacity", "formula": "STR * 15", "unit": "lb" }
+  ],
+  "resources": [
+    { "id": "hp", "name": "Hit Points", "max": "8 + mod(CON) + (level - 1) * (5 + mod(CON))", "recovery": "Long rest: all." },
+    { "id": "inspiration", "name": "Inspiration", "max": "1" }
+  ],
+  "counters": [
+    {
+      "id": "exhaustion", "name": "Exhaustion", "max": 6,
+      "description": "−2 per level on d20 tests. At level 6, you die.",
+      "effects": [
+        { "type": "add", "target": "initiative", "value": "-2 * n" },
+        { "type": "note", "text": "Exhaustion: −2 per level on d20 tests." }
+      ]
+    }
+  ],
+  "collections": {
+    "classes": { "name": "Class", "max": 1, "fields": { "hit_die": { "type": "text", "label": "Hit Die" } } },
+    "traits": { "name": "Traits", "fields": {} },
+    "weapons": {
+      "name": "Weapons", "equippable": true, "quantity": true,
+      "fields": {
+        "damage": { "type": "dice", "label": "Damage" },
+        "properties": { "type": "text", "label": "Properties" },
+        "cost": { "type": "number", "label": "Cost", "unit": "gp" },
+        "weight": { "type": "number", "label": "Weight", "unit": "lb" }
+      }
+    },
+    "armor": {
+      "name": "Armor", "equippable": true,
+      "fields": {
+        "cost": { "type": "number", "label": "Cost", "unit": "gp" },
+        "weight": { "type": "number", "label": "Weight", "unit": "lb" }
+      }
+    },
+    "potions": { "name": "Potions", "quantity": true, "fields": { "cost": { "type": "number", "label": "Cost", "unit": "gp" } } },
+    "gear": { "name": "Gear", "quantity": true, "fields": { "weight": { "type": "number", "label": "Weight", "unit": "lb" } } },
+    "conditions": { "name": "Conditions", "fields": {} }
+  },
+  "entities": {
+    "classes": [
+      { "id": "fighter", "name": "Fighter", "hit_die": "d10", "description": "Master of arms.", "effects": [{ "type": "add", "target": "hp", "value": "2 * level" }] },
+      { "id": "rogue", "name": "Rogue", "hit_die": "d8", "description": "Sneaky and precise.", "effects": [{ "type": "add", "target": "stealth", "value": "proficiency" }] }
+    ],
+    "traits": [
+      { "id": "tough", "name": "Tough", "description": "+1 HP per level.", "effects": [{ "type": "add", "target": "hp", "value": "level" }] },
+      {
+        "id": "construct", "name": "Construct", "description": "Your body is stone and gears. Potions have no effect on you, and you are immune to poison.",
+        "effects": [
+          { "type": "block", "collection": "potions" },
+          { "type": "immunity", "text": "poison" },
+          { "type": "grant", "ref": "traits/darkvision" }
+        ]
+      },
+      { "id": "darkvision", "name": "Darkvision", "description": "You see in the dark up to 60 ft.", "effects": [{ "type": "note", "text": "Darkvision (60 ft)." }] }
+    ],
+    "weapons": [
+      { "id": "dagger", "name": "Dagger", "damage": "1d4", "properties": "Finesse, Light, Thrown", "cost": 2, "weight": 1 },
+      { "id": "longsword", "name": "Longsword", "damage": "1d8", "properties": "Versatile (1d10)", "cost": 15, "weight": 3 },
+      { "id": "shortbow", "name": "Shortbow", "damage": "1d6", "properties": "Two-Handed, Ammunition", "cost": 25, "weight": 2 }
+    ],
+    "armor": [
+      { "id": "leather", "name": "Leather Armor", "cost": 10, "weight": 10, "effects": [{ "type": "set", "target": "ac", "value": "11 + mod(DEX)" }] },
+      { "id": "chain-mail", "name": "Chain Mail", "cost": 75, "weight": 55, "effects": [{ "type": "set", "target": "ac", "value": "16" }, { "type": "disadvantage", "target": "stealth", "text": "Stealth" }] },
+      { "id": "shield", "name": "Shield", "cost": 10, "weight": 6, "effects": [{ "type": "add", "target": "ac", "value": "2" }] }
+    ],
+    "potions": [
+      { "id": "giant-strength", "name": "Potion of Giant Strength", "cost": 200, "description": "While active, your Strength becomes 21.", "effects": [{ "type": "set", "target": "STR", "value": "21" }] }
+    ],
+    "gear": [
+      { "id": "backpack", "name": "Backpack", "weight": 5 },
+      { "id": "rope", "name": "Hempen Rope (50 ft)", "weight": 10 },
+      { "id": "rations", "name": "Rations (1 day)", "weight": 2 }
+    ],
+    "conditions": [
+      { "id": "poisoned", "name": "Poisoned", "description": "Disadvantage on attacks and ability checks.", "effects": [{ "type": "disadvantage", "target": "attack", "text": "Attacks and ability checks" }] },
+      { "id": "prone", "name": "Prone", "description": "Disadvantage on attacks; melee attacks against you have advantage.", "effects": [{ "type": "disadvantage", "target": "attack", "text": "Attacks" }] }
+    ]
+  },
+  "layout": {
+    "tabs": [
+      {
+        "id": "main", "name": "Main",
+        "blocks": [
+          { "block": "attributes" },
+          { "block": "resources" },
+          { "block": "derived", "items": ["ac", "initiative", "proficiency"] },
+          { "block": "skills" },
+          { "block": "counters" },
+          { "block": "effects" }
+        ]
+      },
+      {
+        "id": "character", "name": "Character",
+        "blocks": [
+          { "block": "list", "collection": "classes" },
+          { "block": "list", "collection": "traits" },
+          { "block": "list", "collection": "conditions" },
+          { "block": "notes", "id": "backstory", "title": "Backstory" }
+        ]
+      },
+      {
+        "id": "inventory", "name": "Inventory",
+        "blocks": [
+          { "block": "derived", "title": "Load", "items": ["load", "load_max"] },
+          { "block": "list", "collection": "weapons", "columns": ["damage", "properties"] },
+          { "block": "list", "collection": "armor" },
+          { "block": "list", "collection": "potions" },
+          { "block": "list", "collection": "gear", "columns": ["weight"] }
+        ]
+      },
+      { "id": "roll", "name": "Roll", "blocks": [{ "block": "roller", "shortcuts": ["1d20", "1d20 + mod(STR)", "1d20 + mod(DEX)", "1d20 + perception"] }] }
+    ]
+  }
+}
