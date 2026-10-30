@@ -1,0 +1,544 @@
+{
+  "format": 1,
+  "id": "exemplo-d20",
+  "name": "Sistema de Exemplo (d20 simples)",
+  "version": "1.0.0",
+  "author": "StatForge",
+  "language": "pt-BR",
+  "type": "system",
+  "description": "Um sistema pequeno, no estilo d20, para testar o app e servir de modelo para quem quiser criar o seu.",
+  "rolls": {
+    "modifier": "floor((value - 10) / 2)",
+    "default": "1d20"
+  },
+  "progression": {
+    "max_level": 20,
+    "xp_per_level": "level * 1000"
+  },
+  "attributes": [
+    {
+      "id": "FOR",
+      "name": "Força",
+      "min": 1,
+      "max": 20,
+      "default": 10
+    },
+    {
+      "id": "DES",
+      "name": "Destreza",
+      "min": 1,
+      "max": 20,
+      "default": 10
+    },
+    {
+      "id": "CON",
+      "name": "Constituição",
+      "min": 1,
+      "max": 20,
+      "default": 10
+    },
+    {
+      "id": "INT",
+      "name": "Inteligência",
+      "min": 1,
+      "max": 20,
+      "default": 10
+    },
+    {
+      "id": "SAB",
+      "name": "Sabedoria",
+      "min": 1,
+      "max": 20,
+      "default": 10
+    },
+    {
+      "id": "CAR",
+      "name": "Carisma",
+      "min": 1,
+      "max": 20,
+      "default": 10
+    }
+  ],
+  "skills": [
+    {
+      "id": "atletismo",
+      "name": "Atletismo",
+      "attribute": "FOR",
+      "description": "Escalar, nadar, saltar."
+    },
+    {
+      "id": "furtividade",
+      "name": "Furtividade",
+      "attribute": "DES",
+      "description": "Passar sem ser notado."
+    },
+    {
+      "id": "percepcao",
+      "name": "Percepção",
+      "attribute": "SAB",
+      "description": "Notar o que está escondido."
+    },
+    {
+      "id": "persuasao",
+      "name": "Persuasão",
+      "attribute": "CAR",
+      "description": "Convencer com palavras."
+    }
+  ],
+  "derived": [
+    {
+      "id": "proficiencia",
+      "name": "Bônus de Proficiência",
+      "formula": "floor((level - 1) / 4) + 2"
+    },
+    {
+      "id": "ca",
+      "name": "Classe de Armadura",
+      "formula": "10 + mod(DES)"
+    },
+    {
+      "id": "iniciativa",
+      "name": "Iniciativa",
+      "formula": "mod(DES)"
+    },
+    {
+      "id": "carga",
+      "name": "Carga",
+      "formula": "sum('armas', 'peso') + sum('armaduras', 'peso') + sum('equipamentos', 'peso')",
+      "unit": "kg"
+    },
+    {
+      "id": "carga_max",
+      "name": "Carga Máxima",
+      "formula": "FOR * 7",
+      "unit": "kg"
+    }
+  ],
+  "resources": [
+    {
+      "id": "pv",
+      "name": "Pontos de Vida",
+      "max": "8 + mod(CON) + (level - 1) * (5 + mod(CON))",
+      "recovery": "Descanso longo: todos."
+    },
+    {
+      "id": "inspiracao",
+      "name": "Inspiração",
+      "max": "1"
+    }
+  ],
+  "counters": [
+    {
+      "id": "exaustao",
+      "name": "Exaustão",
+      "max": 6,
+      "description": "−2 por nível em testes de d20. No 6º nível, você morre.",
+      "effects": [
+        {
+          "type": "add",
+          "target": "iniciativa",
+          "value": "-2 * n"
+        },
+        {
+          "type": "note",
+          "text": "Exaustão: −2 por nível em testes de d20."
+        }
+      ]
+    }
+  ],
+  "collections": {
+    "classes": {
+      "name": "Classe",
+      "max": 1,
+      "fields": {
+        "dado_vida": {
+          "type": "text",
+          "label": "Dado de Vida"
+        }
+      }
+    },
+    "tracos": {
+      "name": "Traços",
+      "fields": {}
+    },
+    "armas": {
+      "name": "Armas",
+      "equippable": true,
+      "quantity": true,
+      "fields": {
+        "dano": {
+          "type": "dice",
+          "label": "Dano"
+        },
+        "propriedades": {
+          "type": "text",
+          "label": "Propriedades"
+        },
+        "custo": {
+          "type": "number",
+          "label": "Custo",
+          "unit": "po"
+        },
+        "peso": {
+          "type": "number",
+          "label": "Peso",
+          "unit": "kg"
+        }
+      }
+    },
+    "armaduras": {
+      "name": "Armaduras",
+      "equippable": true,
+      "fields": {
+        "custo": {
+          "type": "number",
+          "label": "Custo",
+          "unit": "po"
+        },
+        "peso": {
+          "type": "number",
+          "label": "Peso",
+          "unit": "kg"
+        }
+      }
+    },
+    "pocoes": {
+      "name": "Poções",
+      "quantity": true,
+      "fields": {
+        "custo": {
+          "type": "number",
+          "label": "Custo",
+          "unit": "po"
+        }
+      }
+    },
+    "equipamentos": {
+      "name": "Equipamento",
+      "quantity": true,
+      "fields": {
+        "peso": {
+          "type": "number",
+          "label": "Peso",
+          "unit": "kg"
+        }
+      }
+    },
+    "condicoes": {
+      "name": "Condições",
+      "fields": {}
+    }
+  },
+  "entities": {
+    "classes": [
+      {
+        "id": "guerreiro",
+        "name": "Guerreiro",
+        "dado_vida": "d10",
+        "description": "Mestre das armas.",
+        "effects": [
+          {
+            "type": "add",
+            "target": "pv",
+            "value": "2 * level"
+          }
+        ]
+      },
+      {
+        "id": "ladino",
+        "name": "Ladino",
+        "dado_vida": "d8",
+        "description": "Furtivo e preciso.",
+        "effects": [
+          {
+            "type": "add",
+            "target": "furtividade",
+            "value": "proficiencia"
+          }
+        ]
+      }
+    ],
+    "tracos": [
+      {
+        "id": "robusto",
+        "name": "Robusto",
+        "description": "+1 PV por nível.",
+        "effects": [
+          {
+            "type": "add",
+            "target": "pv",
+            "value": "level"
+          }
+        ]
+      },
+      {
+        "id": "constructo",
+        "name": "Constructo",
+        "description": "Seu corpo é de pedra e engrenagens. Poções não fazem efeito, e você é imune a veneno.",
+        "effects": [
+          {
+            "type": "block",
+            "collection": "pocoes"
+          },
+          {
+            "type": "immunity",
+            "text": "veneno"
+          },
+          {
+            "type": "grant",
+            "ref": "tracos/visao-no-escuro"
+          }
+        ]
+      },
+      {
+        "id": "visao-no-escuro",
+        "name": "Visão no Escuro",
+        "description": "Enxerga no escuro a até 18 m.",
+        "effects": [
+          {
+            "type": "note",
+            "text": "Visão no escuro (18 m)."
+          }
+        ]
+      }
+    ],
+    "armas": [
+      {
+        "id": "adaga",
+        "name": "Adaga",
+        "dano": "1d4",
+        "propriedades": "Acuidade, Leve, Arremesso",
+        "custo": 2,
+        "peso": 0.5
+      },
+      {
+        "id": "espada-longa",
+        "name": "Espada Longa",
+        "dano": "1d8",
+        "propriedades": "Versátil (1d10)",
+        "custo": 15,
+        "peso": 1.5
+      },
+      {
+        "id": "arco-curto",
+        "name": "Arco Curto",
+        "dano": "1d6",
+        "propriedades": "Duas Mãos, Munição",
+        "custo": 25,
+        "peso": 1
+      }
+    ],
+    "armaduras": [
+      {
+        "id": "couro",
+        "name": "Armadura de Couro",
+        "custo": 10,
+        "peso": 5,
+        "effects": [
+          {
+            "type": "set",
+            "target": "ca",
+            "value": "11 + mod(DES)"
+          }
+        ]
+      },
+      {
+        "id": "cota-de-malha",
+        "name": "Cota de Malha",
+        "custo": 75,
+        "peso": 27,
+        "effects": [
+          {
+            "type": "set",
+            "target": "ca",
+            "value": "16"
+          },
+          {
+            "type": "disadvantage",
+            "target": "furtividade",
+            "text": "Furtividade"
+          }
+        ]
+      },
+      {
+        "id": "escudo",
+        "name": "Escudo",
+        "custo": 10,
+        "peso": 3,
+        "effects": [
+          {
+            "type": "add",
+            "target": "ca",
+            "value": "2"
+          }
+        ]
+      }
+    ],
+    "pocoes": [
+      {
+        "id": "pocao-forca",
+        "name": "Poção de Força de Gigante",
+        "custo": 200,
+        "description": "Enquanto ativa, sua Força vira 21.",
+        "effects": [
+          {
+            "type": "set",
+            "target": "FOR",
+            "value": "21"
+          }
+        ]
+      }
+    ],
+    "equipamentos": [
+      {
+        "id": "mochila",
+        "name": "Mochila",
+        "peso": 2.5
+      },
+      {
+        "id": "corda",
+        "name": "Corda de Cânhamo (15 m)",
+        "peso": 5
+      },
+      {
+        "id": "racao",
+        "name": "Ração (1 dia)",
+        "peso": 1
+      }
+    ],
+    "condicoes": [
+      {
+        "id": "envenenado",
+        "name": "Envenenado",
+        "description": "Desvantagem em ataques e testes de atributo.",
+        "effects": [
+          {
+            "type": "disadvantage",
+            "target": "ataque",
+            "text": "Ataques e testes de atributo"
+          }
+        ]
+      },
+      {
+        "id": "caido",
+        "name": "Caído",
+        "description": "Desvantagem em ataques; ataques corpo a corpo contra você têm vantagem.",
+        "effects": [
+          {
+            "type": "disadvantage",
+            "target": "ataque",
+            "text": "Ataques"
+          }
+        ]
+      }
+    ]
+  },
+  "layout": {
+    "tabs": [
+      {
+        "id": "principal",
+        "name": "Principal",
+        "blocks": [
+          {
+            "block": "attributes"
+          },
+          {
+            "block": "resources"
+          },
+          {
+            "block": "derived",
+            "items": [
+              "ca",
+              "iniciativa",
+              "proficiencia"
+            ]
+          },
+          {
+            "block": "skills"
+          },
+          {
+            "block": "counters"
+          },
+          {
+            "block": "effects"
+          }
+        ]
+      },
+      {
+        "id": "personagem",
+        "name": "Personagem",
+        "blocks": [
+          {
+            "block": "list",
+            "collection": "classes"
+          },
+          {
+            "block": "list",
+            "collection": "tracos"
+          },
+          {
+            "block": "list",
+            "collection": "condicoes"
+          },
+          {
+            "block": "notes",
+            "id": "historia",
+            "title": "História"
+          }
+        ]
+      },
+      {
+        "id": "inventario",
+        "name": "Inventário",
+        "blocks": [
+          {
+            "block": "derived",
+            "title": "Carga",
+            "items": [
+              "carga",
+              "carga_max"
+            ]
+          },
+          {
+            "block": "list",
+            "collection": "armas",
+            "columns": [
+              "dano",
+              "propriedades"
+            ]
+          },
+          {
+            "block": "list",
+            "collection": "armaduras"
+          },
+          {
+            "block": "list",
+            "collection": "pocoes"
+          },
+          {
+            "block": "list",
+            "collection": "equipamentos",
+            "columns": [
+              "peso"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "rolar",
+        "name": "Rolar",
+        "blocks": [
+          {
+            "block": "roller",
+            "shortcuts": [
+              "1d20",
+              "1d20 + mod(FOR)",
+              "1d20 + mod(DES)",
+              "1d20 + percepcao"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

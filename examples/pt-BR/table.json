@@ -1,0 +1,21 @@
+{
+  "format": 1,
+  "id": "mesa-exemplo",
+  "name": "Mesa de Exemplo",
+  "version": "1.0.0",
+  "author": "StatForge",
+  "language": "pt-BR",
+  "type": "table",
+  "description": "O Mestre manda este link para os jogadores. O app instala o sistema, o homebrew e o tema de uma vez.",
+  "system": {
+    "url": "system.json"
+  },
+  "packages": [
+    {
+      "url": "homebrew.json"
+    }
+  ],
+  "theme": {
+    "url": "theme-pipboy.json"
+  }
+}

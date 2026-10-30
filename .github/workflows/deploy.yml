@@ -1,0 +1,65 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+
+  deploy:
+    needs: test
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the site
+        run: |
+          # The root redirects to /site/; the example packages live in /examples/.
+          mkdir -p _dist
+          cp index.html _dist/index.html
+          cp -r site _dist/site
+          cp -r examples _dist/examples
+          cp CHANGELOG*.md FORMAT*.md _dist/site/
+          # List of app files for the Service Worker to keep offline.
+          python3 - <<'PY'
+          import os, json
+          urls = []
+          for root, _, files in os.walk('_dist/site'):
+              for f in files:
+                  if f in ('sw.js', 'precache.json') or f.startswith('.'):
+                      continue
+                  urls.append(os.path.join(root, f).replace('_dist/site', '.').replace(os.sep, '/'))
+          with open('_dist/site/precache.json', 'w', encoding='utf-8') as fh:
+              json.dump(sorted(urls), fh, ensure_ascii=False)
+          print(f'precache.json: {len(urls)} files')
+          PY
+          sed -i "s|const CACHE_VERSION = 0; // AUTO.*|const CACHE_VERSION = ${{ github.run_number }};|" _dist/site/sw.js
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _dist
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

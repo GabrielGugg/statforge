@@ -1,0 +1,13 @@
+{
+  "format": 1,
+  "id": "example-table",
+  "name": "Example Table",
+  "version": "1.0.0",
+  "author": "StatForge",
+  "language": "en",
+  "type": "table",
+  "description": "The GM sends this link to the players. The app installs the system, the homebrew and the theme at once.",
+  "system": { "url": "system.json" },
+  "packages": [{ "url": "homebrew.json" }],
+  "theme": { "url": "theme-pipboy.json" }
+}
