@@ -163,7 +163,13 @@ A formula that refers to itself (directly or indirectly) becomes a warning on th
 }
 ```
 
-Blocks: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `list`, `notes` and `roller`. `items` filters and orders; `title` changes the title; `"wide": true` takes the whole row; `points_label` renames the "Points" column of `skills`. Without `layout`, the app builds an automatic one.
+Blocks: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `list`, `notes` and `roller`. `items` filters and orders; `title` changes the title; `points_label` renames the "Points" column of `skills`. Without `layout`, the app builds an automatic one.
+
+Each tab is a 12-column grid. `"w"` is the block's width in columns (3, 4, 6, 8 or 12; default 6, and `"wide": true` is 12). On tablets and phones the widths shrink in proportion; blocks of width 3 sit two side by side on a phone. Give each block an `"id"`: the player can drag, resize and hide blocks with "Arrange", and the id keeps their arrangement when you update the package.
+
+- A `resources` block with a single item becomes a compact tile (big current/max, bar, −1 +1 and restore). Put a few of them at the top with `"w": 3`.
+- `"only_active": true` on a `counters` block shows only the counters above 0, with a menu to add the others.
+- `abbr` on a resource is shown big on its tile.
 
 ### Character creation
 
@@ -179,7 +185,8 @@ Blocks: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `
     { "type": "attributes", "points": 6 },
     { "type": "skills", "choose": 2, "bonus": 2, "from": { "collection": "backgrounds", "field": "skills" } },
     { "type": "skills", "points": "2 + mod(INT)", "max_per_skill": 2 },
-    { "type": "info", "text": "Add your starting gear on the Items tab.", "show": "backgrounds" },
+    { "type": "items", "from": "backgrounds", "note": "notes", "alternative": { "label": "Take 100 gold instead", "text": "100 gold" } },
+    { "type": "info", "text": "Remember your class features.", "show": "classes" },
     { "type": "notes", "items": [{ "id": "backstory", "title": "Backstory", "placeholder": "…" }] }
   ]
 }
@@ -190,10 +197,13 @@ Blocks: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `
 | `pick` | Choose entities from `collection`, between `min` and `max` (numbers or formulas). With `max: 1` it is a single choice. `match_field` hides entities whose field names something the character does not have (by name or id; e.g. a variant with `"race": "Elf"` only shows for elves); the player can still show them all. |
 | `attributes` | Point-buy from each attribute's `default`, inside `min` and `max`. `points` is the budget; lowering an attribute gives points back unless `"decrease": false`. |
 | `skills` | With `choose` and `bonus`: pick that many skills, each gets `bonus` points. `from` limits the list to the skills named in a field of the chosen entity (comma-separated names or ids). With `points`: spend that many points freely, up to `max_per_skill` each. |
+| `items` | Starting equipment. Reads `starting_items` (or the field named in `field`) from what was picked in collection `from` and adds it to the sheet. `alternative: { label, text }` offers another option instead (e.g. gold to buy gear), whose text goes to the notes block `note`. |
 | `info` | Shows `text`, plus the full description of what was picked in the `show` collection. |
 | `notes` | Text boxes that fill the sheet's `notes` blocks with the same `id`. |
 
 Every step accepts `title`, `description` and `if` (a formula: the step only appears when it is true, for example `"has('robot')"`). `summary` lists the values shown at the top of every step (default: all resources). Resources, attributes and derived values may have an `abbr`, used there.
+
+`starting_items` on an entity is a list of `{ "ref": "collection/id", "qty": 1, "wear": 0, "equipped": true, "name": "…", "if": "formula" }`, or `{ "text": "…", "if": "…" }` for something with no entity (it goes to the notes). `if` lets one background give different kits per race, for example.
 
 An extension can change the assistant with `{ "op": "modify", "target": "creation", "fields": { … } }`, replace it, or turn it off with `"op": "remove"`.
 

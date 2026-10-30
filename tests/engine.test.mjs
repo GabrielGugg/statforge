@@ -209,3 +209,10 @@ test('creation: validated, carried into the rules and patchable', () => {
   const off = { ...ext, patches: [{ op: 'remove', target: 'creation' }] };
   assert.equal(buildRules(system, [off]).rules.creation, null);
 });
+
+test('creation: items step needs "from"', () => {
+  const bad = { ...system, creation: { steps: [{ type: 'items' }] } };
+  assert.equal(validatePackage(bad).errors.length, 1);
+  const ok = { ...system, creation: { steps: [{ type: 'items', from: 'classes' }] } };
+  assert.deepEqual(validatePackage(ok).errors, []);
+});

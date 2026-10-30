@@ -20,7 +20,11 @@ export async function sheetScreen(app, id) {
     return;
   }
   const inst = await pk.installed();
-  const state = { sheet, ...built, inst, tab: sessionStorage.getItem(`tab:${id}`) || null };
+  const state = { sheet, ...built, inst, tab: sessionStorage.getItem(`tab:${id}`) || null, editing: false };
+  // The player's own arrangement of the blocks, shared by every sheet of the same system.
+  const layoutKey = `layout:${sheet.system}`;
+  state.custom = (await db.getConfig(layoutKey, {})) || {};
+  state.saveCustom = () => db.setConfig(layoutKey, state.custom).catch(e => toast(e.message, 'error'));
 
   let timer;
   const save = () => {
@@ -31,6 +35,7 @@ export async function sheetScreen(app, id) {
   const change = () => { save(); const y = window.scrollY; draw(); window.scrollTo(0, y); };
   state.save = save;
   state.change = change;
+  state.redraw = () => { const y = window.scrollY; draw(); window.scrollTo(0, y); };
 
   function draw() {
     state.calc = compute(state.rules, sheet);
@@ -60,6 +65,8 @@ function header(st) {
     h('div.row.spread', { style: { marginBottom: '1rem' } },
       next || h('span'),
       h('div.row',
+        h(`button.mini${st.editing ? '.primary' : ''}`, { 'aria-pressed': String(st.editing), onclick: () => { st.editing = !st.editing; st.redraw(); } },
+          st.editing ? t('sheet.doneArranging') : t('sheet.arrange')),
         h('button.mini', { onclick: () => packagesDialog(st) }, t('sheet.packages', { n: st.active.length + 1 })),
         h('button.mini', { onclick: () => downloadJSON(sheet, `${normalize(sheet.name).replace(/[^a-z0-9]+/g, '-') || 'sheet'}.json`) }, t('sheet.export')),
         h('button.mini.danger', { onclick: async () => {
@@ -113,7 +120,7 @@ function body(st) {
     drawTab(a);
   } }, a.name));
   function drawTab(a) {
-    content.replaceChildren(h('div.blocks', (a.blocks || []).map(b => block(st, b)).filter(Boolean)));
+    content.replaceChildren(dashboard(st, a));
   }
   drawTab(tabs.find(a => a.id === st.tab));
   // On phones the active tab may be off screen: scroll the bar to it.
@@ -129,10 +136,99 @@ const BLOCKS = { attributes: attributesBlock, skills: skillsBlock, derived: deri
 
 function block(st, def) {
   const fn = BLOCKS[def.block];
-  if (!fn) return h('div.card.block', h('p.muted', t('sheet.unknownBlock', { name: def.block })));
-  const content = fn(st, def);
-  if (!content) return null;
-  return h(`section.card.block${def.wide ? '.wide' : ''}`, content);
+  if (!fn) return [h('p.muted', t('sheet.unknownBlock', { name: def.block }))];
+  return fn(st, def);
+}
+
+// ---------- Dashboard: a 12-column grid the player can rearrange ----------
+const WIDTHS = [3, 4, 6, 8, 12];
+const blockKey = (def, i) => def.id || `${def.block}-${def.collection || (def.items || []).join('+') || i}`;
+const spans = w => ({ '--lg': w, '--md': Math.min(6, Math.max(2, Math.round(w / 2))), '--sm': w <= 3 ? 1 : 2 });
+
+function dashboard(st, tab) {
+  const saved = st.custom[tab.id] || [];
+  const pos = new Map(saved.map((c, i) => [c.key, i]));
+  const entries = (tab.blocks || []).map((def, i) => {
+    const key = blockKey(def, i);
+    const c = saved.find(x => x.key === key) || {};
+    return { def, key, w: c.w || def.w || (def.wide ? 12 : 6), hidden: !!c.hidden, order: pos.has(key) ? pos.get(key) : saved.length + i };
+  }).sort((a, b) => a.order - b.order);
+
+  const grid = h('div.dash', { class: st.editing ? 'editing' : '' });
+  const persist = () => {
+    st.custom[tab.id] = [...grid.children].map(el => {
+      const e = entries.find(x => x.key === el.dataset.key);
+      return { key: e.key, w: e.w, ...(e.hidden ? { hidden: true } : {}) };
+    });
+    st.saveCustom();
+  };
+
+  for (const e of entries) {
+    if (e.hidden && !st.editing) continue;
+    const content = block(st, e.def);
+    if (!content && !st.editing) continue;
+    const el = h('section.card.block', { 'data-key': e.key, class: e.hidden ? 'is-hidden' : '' },
+      st.editing ? tools(e) : null,
+      content || h('p.muted.small', t('sheet.emptyBlock', { name: e.def.title || e.def.block })));
+    for (const [k, v] of Object.entries(spans(e.w))) el.style.setProperty(k, v);
+    grid.append(el);
+  }
+
+  function tools(e) {
+    const setW = dir => {
+      const i = WIDTHS.indexOf(WIDTHS.reduce((a, b) => (Math.abs(b - e.w) < Math.abs(a - e.w) ? b : a)));
+      e.w = WIDTHS[Math.max(0, Math.min(WIDTHS.length - 1, i + dir))];
+      persist(); st.redraw();
+    };
+    const move = dir => {
+      const el = grid.querySelector(`[data-key="${CSS.escape(e.key)}"]`);
+      const other = dir < 0 ? el.previousElementSibling : el.nextElementSibling;
+      if (!other) return;
+      dir < 0 ? other.before(el) : other.after(el);
+      persist();
+    };
+    const handle = h('button.mini.drag-handle', { type: 'button', title: t('sheet.drag'), 'aria-label': t('sheet.drag') }, '⠿');
+    handle.addEventListener('pointerdown', ev => startDrag(ev, grid, persist));
+    return h('div.block-tools',
+      handle,
+      h('button.mini', { type: 'button', 'aria-label': t('sheet.moveEarlier'), onclick: () => move(-1) }, '↑'),
+      h('button.mini', { type: 'button', 'aria-label': t('sheet.moveLater'), onclick: () => move(1) }, '↓'),
+      h('span.spacer'),
+      h('button.mini', { type: 'button', 'aria-label': t('sheet.narrower'), disabled: e.w <= WIDTHS[0], onclick: () => setW(-1) }, '−'),
+      h('span.small.muted', `${e.w}/12`),
+      h('button.mini', { type: 'button', 'aria-label': t('sheet.wider'), disabled: e.w >= 12, onclick: () => setW(1) }, '+'),
+      h('button.mini', { type: 'button', onclick: () => { e.hidden = !e.hidden; persist(); st.redraw(); } }, e.hidden ? t('sheet.show') : t('sheet.hide')));
+  }
+
+  if (!st.editing) return grid;
+  return h('div',
+    h('div.alert.ok.row.spread', h('span', t('sheet.arrangeHelp')),
+      h('button.mini', { type: 'button', onclick: () => { delete st.custom[tab.id]; st.saveCustom(); st.redraw(); } }, t('sheet.resetLayout'))),
+    grid);
+}
+
+/** Drag a block by its handle (mouse or touch); the others make room as it moves. */
+function startDrag(ev, grid, done) {
+  const el = ev.target.closest('.block');
+  ev.preventDefault();
+  el.classList.add('dragging');
+  const onMove = e => {
+    const under = document.elementFromPoint(e.clientX, e.clientY)?.closest('.dash > .block');
+    if (!under || under === el || under.parentElement !== grid) return;
+    const r = under.getBoundingClientRect();
+    const after = r.width > grid.clientWidth * 0.75 ? e.clientY > r.top + r.height / 2 : e.clientX > r.left + r.width / 2;
+    after ? under.after(el) : under.before(el);
+  };
+  const onUp = () => {
+    el.classList.remove('dragging');
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onUp);
+    done();
+  };
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', onUp);
 }
 
 const pick = (map, ids) => (ids?.length ? ids.map(id => map[id]).filter(Boolean) : Object.values(map));
@@ -141,7 +237,7 @@ function attributesBlock(st, def) {
   const { rules, sheet, calc } = st;
   const list = pick(rules.attributes, def.items);
   if (!list.length) return null;
-  return [h('h3', def.title || t('sheet.attributes')), h('div.attributes', list.map(a => {
+  const cells = list.map(a => {
     const base = sheet.attributes?.[a.id] ?? a.default ?? a.min ?? 0;
     const effective = calc.value(a.id);
     return h('div.attribute', { title: a.description || '' },
@@ -157,7 +253,12 @@ function attributesBlock(st, def) {
         } }),
       effective !== base ? h('div.effective', t('sheet.effective', { n: fmt(effective) })) : null,
       rules.rolls?.modifier ? h('div.mod', signed(calc.mod(effective))) : null);
-  }))];
+  });
+  // Columns: all in one row when the block is wide enough, otherwise two even rows.
+  const grid = h('div.attributes', cells);
+  grid.style.setProperty('--n', Math.min(list.length, 8));
+  grid.style.setProperty('--half', Math.ceil(Math.min(list.length, 8) / 2));
+  return [h('h3', def.title || t('sheet.attributes')), h('div.attributes-wrap', grid)];
 }
 
 function skillsBlock(st, def) {
@@ -186,6 +287,7 @@ function resourcesBlock(st, def) {
   const { rules, sheet, calc } = st;
   const list = pick(rules.resources, def.items);
   if (!list.length) return null;
+  if (list.length === 1) return resourceTile(st, list[0], def);
   return [h('h3', def.title || t('sheet.resources')), list.map(r => {
     const max = calc.value(r.id);
     const current = sheet.resources?.[r.id] ?? max;
@@ -205,11 +307,38 @@ function resourcesBlock(st, def) {
   })];
 }
 
+/** One resource as a compact tile: big current / max, bar, − + and restore. */
+function resourceTile(st, r, def) {
+  const { sheet, calc } = st;
+  const max = calc.value(r.id);
+  const current = sheet.resources?.[r.id] ?? max;
+  const set = v => { (sheet.resources ||= {})[r.id] = v; st.change(); };
+  const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
+  return [h('div.res-tile', { title: r.recovery || '' },
+    h('div.res-name', h('strong', def.title || r.abbr || r.name), r.abbr && !def.title ? h('span.muted.small', r.name) : null),
+    h('div.res-value',
+      h('input', { type: 'number', value: current, inputmode: 'numeric', 'aria-label': t('sheet.current', { name: r.name }), onchange: e => set(Number(e.target.value) || 0) }),
+      h('span.muted', `/ ${fmt(max)}`)),
+    h('div.bar', { class: pct <= 25 ? 'low' : '' }, h('div', { style: { width: `${pct}%` } })),
+    h('div.res-buttons',
+      h('button.mini', { 'aria-label': `${r.name} −1`, onclick: () => set(current - 1) }, '−1'),
+      h('button.mini', { 'aria-label': `${r.name} +1`, onclick: () => set(current + 1) }, '+1'),
+      h('button.mini', { title: t('sheet.restoreMax'), 'aria-label': t('sheet.restoreMax'), onclick: () => set(max) }, '↺')))];
+}
+
 function countersBlock(st, def) {
   const { rules, sheet } = st;
-  const list = pick(rules.counters, def.items);
-  if (!list.length) return null;
-  return [h('h3', def.title || t('sheet.counters')), list.map(c => {
+  const all = pick(rules.counters, def.items);
+  if (!all.length) return null;
+  const level = c => Number(sheet.counters?.[c.id] || 0);
+  const list = def.only_active ? all.filter(c => level(c) > 0) : all;
+  const idle = def.only_active ? all.filter(c => level(c) === 0) : [];
+  const adder = idle.length ? h('select.mini-select', { 'aria-label': t('sheet.addCounter'), onchange: e => {
+    if (!e.target.value) return;
+    (sheet.counters ||= {})[e.target.value] = 1; st.change();
+  } }, h('option', { value: '' }, t('sheet.addCounter')), idle.map(c => h('option', { value: c.id }, c.name))) : null;
+  return [h('h3', h('span', def.title || t('sheet.counters')), adder),
+    def.only_active && !list.length ? h('p.muted.small', t('sheet.noneActive')) : null, list.map(c => {
     const n = Number(sheet.counters?.[c.id] || 0);
     const max = Number(c.max || 10);
     const set = v => { (sheet.counters ||= {})[c.id] = Math.max(0, Math.min(max, v)); st.change(); };
@@ -219,7 +348,7 @@ function countersBlock(st, def) {
         class: i < n ? 'full' : '', 'aria-label': t('sheet.counterLevel', { name: c.name, n: i + 1 }),
         onclick: () => set(n === i + 1 ? i : i + 1),
       }, String(i + 1)))),
-      c.description && n > 0 ? h('div.muted.small', c.description) : null);
+      c.description && n > 0 ? h('details.muted.small.rule', h('summary', t('sheet.rule')), c.description) : null);
   })];
 }
 
