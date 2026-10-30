@@ -35,11 +35,12 @@ jobs:
 
       - name: Build the site
         run: |
-          # The root redirects to /site/; the example packages live in /examples/.
+          # The root redirects to /site/; example packages live in /examples/ and published ones in /packages/.
           mkdir -p _dist
           cp index.html _dist/index.html
           cp -r site _dist/site
           cp -r examples _dist/examples
+          cp -r packages _dist/packages
           cp CHANGELOG*.md FORMAT*.md _dist/site/
           # List of app files for the Service Worker to keep offline.
           python3 - <<'PY'

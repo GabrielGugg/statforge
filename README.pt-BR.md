@@ -40,7 +40,16 @@ python3 -m http.server 8000    # e abra http://localhost:8000/site/
 | `site/js/locales/` | Textos da interface, um arquivo por idioma. `en.js` é a base; os outros idiomas caem nele quando falta algo. |
 | `site/js/packages.js`, `storage.js` | Instalação de pacotes e armazenamento (IndexedDB). |
 | `examples/en/`, `examples/pt-BR/` | Sistema, homebrew, tema e mesa de exemplo. |
-| `tests/` | Testes do motor. |
+| `packages/` | Pacotes publicados (Fallout TTRPG 2.2), servidos pelo GitHub Pages em `/packages/`. |
+| `tools/fallout/` | Remonta o pacote do Fallout a partir das notas do Obsidian (veja abaixo). |
+| `tests/` | Testes do motor e dos pacotes. |
+
+Para remontar o pacote do Fallout depois de mexer nas notas:
+
+```
+python3 tools/fallout/extrair_regras.py "<pasta Regras>"
+python3 tools/fallout/montar_pacote.py dados/fallout packages/fallout-2.2
+```
 
 Para adicionar um idioma à interface, copie `site/js/locales/en.js`, traduza e registre em `site/js/i18n.js`.
 

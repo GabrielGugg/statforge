@@ -2,6 +2,16 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.1.2 — 30/10/2026
+
+- **Primeiro pacote publicado: Fallout TTRPG 2.2** em português (`packages/fallout-2.2/`), com os temas Pip-Boy e Vault-Tec e a mesa Vault Texas. O GitHub Pages agora publica a pasta `packages/`, então o Mestre pode mandar o link da mesa.
+- Correção: blocos largos com tabela (como Armas) não empurram mais a página para o lado no celular.
+- Os testes agora conferem todos os pacotes de `packages/` e um personagem de exemplo do Fallout.
+
+## 0.1.1 — 30/10/2026
+
+- **Novo ícone do app** (bigorna, chamas e d20) no cabeçalho, na aba do navegador e ao instalar o app no celular ou no computador.
+
 ## 0.1.0 — 30/10/2026
 
 Primeira versão do StatForge, uma ficha universal escrita do zero.
