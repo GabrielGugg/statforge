@@ -195,3 +195,17 @@ test('i18n: every key translated, plurals and language matching', () => {
   assert.equal(matchLanguage('en-US'), 'en');
   assert.equal(matchLanguage('ja'), 'en');
 });
+
+test('creation: validated, carried into the rules and patchable', () => {
+  assert.deepEqual(validatePackage(system).errors, []);
+  const { rules } = buildRules(system, []);
+  assert.equal(rules.creation.steps[0].type, 'pick');
+  const bad = { ...system, creation: { steps: [{ type: 'dance' }, { type: 'pick' }, { type: 'attributes', points: '2 +' }] } };
+  assert.equal(validatePackage(bad).errors.length, 3);
+  const ext = { format: 1, id: 'x', name: 'X', version: '1', language: 'en', type: 'extension', system: system.id,
+    patches: [{ op: 'modify', target: 'creation', fields: { summary: ['hp'] } }] };
+  assert.deepEqual(validatePackage(ext).errors, []);
+  assert.deepEqual(buildRules(system, [ext]).rules.creation.summary, ['hp']);
+  const off = { ...ext, patches: [{ op: 'remove', target: 'creation' }] };
+  assert.equal(buildRules(system, [off]).rules.creation, null);
+});

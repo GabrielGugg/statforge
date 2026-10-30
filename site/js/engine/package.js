@@ -92,6 +92,7 @@ export function validatePackage(p) {
     checkFormula(p.rolls?.modifier, 'rolls.modifier', errors);
     checkFormula(p.progression?.xp_per_level, 'progression.xp_per_level', errors);
     if (!p.layout?.tabs?.length) warnings.push(t('val.noLayout'));
+    checkCreation(p.creation, errors);
   }
 
   if (p.type === 'extension') {
@@ -104,7 +105,7 @@ export function validatePackage(p) {
         if (!pt.collection) errors.push(t('val.needs', { where, op: 'add', field: 'collection' }));
         if (!pt.entity?.id) errors.push(t('val.addEntity', { where }));
         checkEffects(pt.entity?.effects, where, errors);
-      } else if (!pt.target || (pt.target !== 'layout' && !pt.target.includes('/'))) {
+      } else if (!pt.target || (!['layout', 'creation'].includes(pt.target) && !pt.target.includes('/'))) {
         errors.push(t('val.target', { where }));
       }
       if (pt.op === 'replace' && !pt.entity) errors.push(t('val.needs', { where, op: 'replace', field: 'entity' }));
@@ -125,6 +126,19 @@ export function validatePackage(p) {
   return { errors, warnings };
 }
 
+export const STEP_TYPES = ['pick', 'attributes', 'skills', 'info', 'notes'];
+
+function checkCreation(c, errors) {
+  if (c === undefined) return;
+  if (!Array.isArray(c?.steps)) { errors.push(t('val.notList', { what: 'creation.steps' })); return; }
+  c.steps.forEach((st, i) => {
+    const where = `creation.steps[${i}]`;
+    if (!STEP_TYPES.includes(st?.type)) { errors.push(t('val.stepType', { where, types: STEP_TYPES.join(', ') })); return; }
+    if (st.type === 'pick' && !st.collection) errors.push(t('val.needs', { where, op: 'pick', field: 'collection' }));
+    for (const k of ['if', 'min', 'max', 'points', 'choose', 'bonus', 'max_per_skill']) checkFormula(st[k], `${where}.${k}`, errors);
+  });
+}
+
 const clone = o => (o === undefined ? o : JSON.parse(JSON.stringify(o)));
 
 /**
@@ -140,6 +154,7 @@ export function buildRules(system, extensions = []) {
     entities: {},
     progression: clone(system.progression) || {},
     layout: clone(system.layout) || null,
+    creation: clone(system.creation) || null,
     rolls: clone(system.rolls) || {},
     origin: {}, // "section/id" → id of the last package that touched it
   };
@@ -170,10 +185,12 @@ export function buildRules(system, extensions = []) {
         rules.origin[target] = ext.id;
         continue;
       }
-      if (pt.target === 'layout') {
-        if (pt.op === 'replace') rules.layout = clone(pt.entity);
-        else if (pt.op === 'modify') rules.layout = { ...(rules.layout || {}), ...clone(pt.fields) };
-        (touched.layout ||= []).push(ext.id);
+      if (pt.target === 'layout' || pt.target === 'creation') {
+        const k = pt.target;
+        if (pt.op === 'replace') rules[k] = clone(pt.entity);
+        else if (pt.op === 'modify') rules[k] = { ...(rules[k] || {}), ...clone(pt.fields) };
+        else if (pt.op === 'remove') rules[k] = null;
+        (touched[k] ||= []).push(ext.id);
         continue;
       }
       const cut = pt.target.indexOf('/');

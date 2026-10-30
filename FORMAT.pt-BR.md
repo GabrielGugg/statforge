@@ -165,6 +165,38 @@ Uma fórmula que se refere a si mesma (direta ou indiretamente) vira aviso na fi
 
 Blocos: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `list`, `notes` e `roller`. `items` filtra e ordena; `title` troca o título; `"wide": true` ocupa a linha toda; `points_label` troca o nome da coluna "Pontos" do bloco `skills`. Sem `layout`, o app monta um automático.
 
+### Criação de personagem
+
+`creation` transforma "Nova ficha" num assistente passo a passo. Cada passo guarda as escolhas do jogador, e a ficha é refeita a partir delas, então voltar e mudar um passo anterior é seguro. A última tela é sempre uma revisão. O jogador pode pular o assistente e ganhar uma ficha em branco.
+
+```json
+"creation": {
+  "summary": ["pv", "ca", "iniciativa"],
+  "steps": [
+    { "type": "pick", "collection": "classes", "title": "Classe", "min": 1, "max": 1, "description": "…" },
+    { "type": "pick", "collection": "subclasses", "min": 0, "max": 1, "match_field": "classe" },
+    { "type": "pick", "collection": "talentos", "min": "pontos_talento", "max": "pontos_talento", "if": "level >= 1" },
+    { "type": "attributes", "points": 6 },
+    { "type": "skills", "choose": 2, "bonus": 2, "from": { "collection": "antecedentes", "field": "pericias" } },
+    { "type": "skills", "points": "2 + mod(INT)", "max_per_skill": 2 },
+    { "type": "info", "text": "Adicione o equipamento inicial na aba Itens.", "show": "antecedentes" },
+    { "type": "notes", "items": [{ "id": "historia", "title": "História", "placeholder": "…" }] }
+  ]
+}
+```
+
+| Passo | O que faz |
+| --- | --- |
+| `pick` | Escolher entidades de `collection`, entre `min` e `max` (números ou fórmulas). Com `max: 1` é escolha única. `match_field` esconde entidades cujo campo cita algo que o personagem não tem (por nome ou id; por exemplo, uma variante com `"raca": "Humano"` só aparece para humanos); o jogador ainda pode mostrar todas. |
+| `attributes` | Compra de pontos a partir do `default` de cada atributo, dentro de `min` e `max`. `points` é o orçamento; diminuir um atributo devolve pontos, a menos que `"decrease": false`. |
+| `skills` | Com `choose` e `bonus`: escolher essa quantidade de perícias, cada uma ganha `bonus` pontos. `from` limita a lista às perícias citadas num campo da entidade escolhida (nomes ou ids separados por vírgula). Com `points`: gastar essa quantidade de pontos livremente, até `max_per_skill` em cada. |
+| `info` | Mostra `text` e a descrição completa do que foi escolhido na coleção `show`. |
+| `notes` | Caixas de texto que preenchem os blocos `notes` da ficha com o mesmo `id`. |
+
+Todo passo aceita `title`, `description` e `if` (uma fórmula: o passo só aparece quando ela é verdadeira, por exemplo `"has('robo')"`). `summary` lista os valores mostrados no topo de cada passo (padrão: todos os recursos). Recursos, atributos e valores derivados podem ter `abbr`, usado ali.
+
+Uma extensão pode mudar o assistente com `{ "op": "modify", "target": "creation", "fields": { … } }`, substituí-lo ou desligá-lo com `"op": "remove"`.
+
 ## Extensão (homebrew)
 
 ```json
@@ -184,7 +216,7 @@ Blocos: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `
 }
 ```
 
-- **`target`** é `colecao/id`. Também vale para `attributes/FOR`, `derived/ca`, `skills/…`, `resources/…`, `counters/…`, `collections/armas` e `layout`.
+- **`target`** é `colecao/id`. Também vale para `attributes/FOR`, `derived/ca`, `skills/…`, `resources/…`, `counters/…`, `collections/armas`, `layout` e `creation`.
 - **`modify`** (ajustar) troca só os campos informados. Se mexer em `effects`, mande a lista inteira.
 - **`rename`** (renomear) mantém o id, e as fichas antigas continuam achando o item.
 - **`replace`** (substituir), **`remove`** (remover) e **`add`** (adicionar) fazem o que o nome diz.

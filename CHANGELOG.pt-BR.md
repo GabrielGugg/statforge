@@ -2,6 +2,13 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.1.4 — 30/10/2026
+
+- **Assistente de criação de personagem.** Um pacote de sistema pode descrever seus passos de criação (`creation` no formato): escolher raça, classe ou antecedente, comprar atributos com pontos, escolher perícias, talentos e traços e escrever a história, com um resumo ao vivo dos valores principais e uma revisão no final. Voltar e mudar um passo é seguro. Ainda dá para pular e criar a ficha em branco.
+- **Campos mais bonitos**: caixas de texto, seletores e números com visual novo; os atributos mostram o modificador num selo; os contadores de sobrevivência cabem numa linha no celular; os recursos não cortam mais o nome.
+- Correção: um texto "null" perdido acima do botão "Criar ficha" (e na janela de pacotes da ficha).
+- Os sistemas de exemplo agora têm passos de criação.
+
 ## 0.1.3 — 30/10/2026
 
 - Os pacotes de jogo saem do repositório do app: o StatForge fica só com o motor, e todo sistema (inclusive o Fallout) é instalado como qualquer outro pacote.

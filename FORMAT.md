@@ -165,6 +165,38 @@ A formula that refers to itself (directly or indirectly) becomes a warning on th
 
 Blocks: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `list`, `notes` and `roller`. `items` filters and orders; `title` changes the title; `"wide": true` takes the whole row; `points_label` renames the "Points" column of `skills`. Without `layout`, the app builds an automatic one.
 
+### Character creation
+
+`creation` turns "New sheet" into a step-by-step assistant. Each step records the player's choices, and the sheet is rebuilt from them, so going back and changing an earlier step is safe. The last screen is always a review. The player can skip the assistant and get a blank sheet.
+
+```json
+"creation": {
+  "summary": ["hp", "ac", "initiative"],
+  "steps": [
+    { "type": "pick", "collection": "classes", "title": "Class", "min": 1, "max": 1, "description": "…" },
+    { "type": "pick", "collection": "subclasses", "min": 0, "max": 1, "match_field": "class" },
+    { "type": "pick", "collection": "feats", "min": "feat_points", "max": "feat_points", "if": "level >= 1" },
+    { "type": "attributes", "points": 6 },
+    { "type": "skills", "choose": 2, "bonus": 2, "from": { "collection": "backgrounds", "field": "skills" } },
+    { "type": "skills", "points": "2 + mod(INT)", "max_per_skill": 2 },
+    { "type": "info", "text": "Add your starting gear on the Items tab.", "show": "backgrounds" },
+    { "type": "notes", "items": [{ "id": "backstory", "title": "Backstory", "placeholder": "…" }] }
+  ]
+}
+```
+
+| Step | What it does |
+| --- | --- |
+| `pick` | Choose entities from `collection`, between `min` and `max` (numbers or formulas). With `max: 1` it is a single choice. `match_field` hides entities whose field names something the character does not have (by name or id; e.g. a variant with `"race": "Elf"` only shows for elves); the player can still show them all. |
+| `attributes` | Point-buy from each attribute's `default`, inside `min` and `max`. `points` is the budget; lowering an attribute gives points back unless `"decrease": false`. |
+| `skills` | With `choose` and `bonus`: pick that many skills, each gets `bonus` points. `from` limits the list to the skills named in a field of the chosen entity (comma-separated names or ids). With `points`: spend that many points freely, up to `max_per_skill` each. |
+| `info` | Shows `text`, plus the full description of what was picked in the `show` collection. |
+| `notes` | Text boxes that fill the sheet's `notes` blocks with the same `id`. |
+
+Every step accepts `title`, `description` and `if` (a formula: the step only appears when it is true, for example `"has('robot')"`). `summary` lists the values shown at the top of every step (default: all resources). Resources, attributes and derived values may have an `abbr`, used there.
+
+An extension can change the assistant with `{ "op": "modify", "target": "creation", "fields": { … } }`, replace it, or turn it off with `"op": "remove"`.
+
 ## Extension (homebrew)
 
 ```json
@@ -184,7 +216,7 @@ Blocks: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `
 }
 ```
 
-- **`target`** is `collection/id`. It also works for `attributes/STR`, `derived/ac`, `skills/…`, `resources/…`, `counters/…`, `collections/weapons` and `layout`.
+- **`target`** is `collection/id`. It also works for `attributes/STR`, `derived/ac`, `skills/…`, `resources/…`, `counters/…`, `collections/weapons`, `layout` and `creation`.
 - **`modify`** changes only the given fields. If it touches `effects`, send the whole list.
 - **`rename`** keeps the id, so older sheets still find the item.
 - **Order**: extensions apply in the order of the Packages screen. When two touch the same target, the lower one wins, and the app warns.
