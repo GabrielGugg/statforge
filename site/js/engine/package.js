@@ -126,7 +126,7 @@ export function validatePackage(p) {
   return { errors, warnings };
 }
 
-export const STEP_TYPES = ['pick', 'attributes', 'skills', 'info', 'notes'];
+export const STEP_TYPES = ['pick', 'attributes', 'skills', 'items', 'info', 'notes'];
 
 function checkCreation(c, errors) {
   if (c === undefined) return;
@@ -135,6 +135,7 @@ function checkCreation(c, errors) {
     const where = `creation.steps[${i}]`;
     if (!STEP_TYPES.includes(st?.type)) { errors.push(t('val.stepType', { where, types: STEP_TYPES.join(', ') })); return; }
     if (st.type === 'pick' && !st.collection) errors.push(t('val.needs', { where, op: 'pick', field: 'collection' }));
+    if (st.type === 'items' && !st.from) errors.push(t('val.needs', { where, op: 'items', field: 'from' }));
     for (const k of ['if', 'min', 'max', 'points', 'choose', 'bonus', 'max_per_skill']) checkFormula(st[k], `${where}.${k}`, errors);
   });
 }

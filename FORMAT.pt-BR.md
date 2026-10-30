@@ -163,7 +163,13 @@ Uma fórmula que se refere a si mesma (direta ou indiretamente) vira aviso na fi
 }
 ```
 
-Blocos: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `list`, `notes` e `roller`. `items` filtra e ordena; `title` troca o título; `"wide": true` ocupa a linha toda; `points_label` troca o nome da coluna "Pontos" do bloco `skills`. Sem `layout`, o app monta um automático.
+Blocos: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `list`, `notes` e `roller`. `items` filtra e ordena; `title` troca o título; `points_label` troca o nome da coluna "Pontos" do bloco `skills`. Sem `layout`, o app monta um automático.
+
+Cada aba é uma grade de 12 colunas. `"w"` é a largura do bloco em colunas (3, 4, 6, 8 ou 12; padrão 6, e `"wide": true` vale 12). Em tablets e celulares as larguras diminuem na mesma proporção; blocos de largura 3 ficam dois lado a lado no celular. Dê um `"id"` a cada bloco: o jogador pode arrastar, redimensionar e ocultar blocos em "Organizar", e o id mantém o arranjo dele quando você atualiza o pacote.
+
+- Um bloco `resources` com um item só vira um cartão compacto (atual/máximo grande, barra, −1 +1 e restaurar). Coloque alguns no topo com `"w": 3`.
+- `"only_active": true` num bloco `counters` mostra só os contadores acima de 0, com um menu para adicionar os outros.
+- `abbr` num recurso aparece grande no cartão.
 
 ### Criação de personagem
 
@@ -179,7 +185,8 @@ Blocos: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `
     { "type": "attributes", "points": 6 },
     { "type": "skills", "choose": 2, "bonus": 2, "from": { "collection": "antecedentes", "field": "pericias" } },
     { "type": "skills", "points": "2 + mod(INT)", "max_per_skill": 2 },
-    { "type": "info", "text": "Adicione o equipamento inicial na aba Itens.", "show": "antecedentes" },
+    { "type": "items", "from": "antecedentes", "note": "notas", "alternative": { "label": "Trocar por 100 moedas", "text": "100 moedas" } },
+    { "type": "info", "text": "Lembre das habilidades da classe.", "show": "classes" },
     { "type": "notes", "items": [{ "id": "historia", "title": "História", "placeholder": "…" }] }
   ]
 }
@@ -190,10 +197,13 @@ Blocos: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `
 | `pick` | Escolher entidades de `collection`, entre `min` e `max` (números ou fórmulas). Com `max: 1` é escolha única. `match_field` esconde entidades cujo campo cita algo que o personagem não tem (por nome ou id; por exemplo, uma variante com `"raca": "Humano"` só aparece para humanos); o jogador ainda pode mostrar todas. |
 | `attributes` | Compra de pontos a partir do `default` de cada atributo, dentro de `min` e `max`. `points` é o orçamento; diminuir um atributo devolve pontos, a menos que `"decrease": false`. |
 | `skills` | Com `choose` e `bonus`: escolher essa quantidade de perícias, cada uma ganha `bonus` pontos. `from` limita a lista às perícias citadas num campo da entidade escolhida (nomes ou ids separados por vírgula). Com `points`: gastar essa quantidade de pontos livremente, até `max_per_skill` em cada. |
+| `items` | Equipamento inicial. Lê `starting_items` (ou o campo indicado em `field`) do que foi escolhido na coleção `from` e põe na ficha. `alternative: { label, text }` oferece outra opção no lugar (por exemplo, dinheiro para comprar), cujo texto vai para o bloco de notas `note`. |
 | `info` | Mostra `text` e a descrição completa do que foi escolhido na coleção `show`. |
 | `notes` | Caixas de texto que preenchem os blocos `notes` da ficha com o mesmo `id`. |
 
 Todo passo aceita `title`, `description` e `if` (uma fórmula: o passo só aparece quando ela é verdadeira, por exemplo `"has('robo')"`). `summary` lista os valores mostrados no topo de cada passo (padrão: todos os recursos). Recursos, atributos e valores derivados podem ter `abbr`, usado ali.
+
+`starting_items` numa entidade é uma lista de `{ "ref": "colecao/id", "qty": 1, "wear": 0, "equipped": true, "name": "…", "if": "fórmula" }`, ou `{ "text": "…", "if": "…" }` para algo que não é entidade (vai para as notas). O `if` permite, por exemplo, que um antecedente dê kits diferentes por raça.
 
 Uma extensão pode mudar o assistente com `{ "op": "modify", "target": "creation", "fields": { … } }`, substituí-lo ou desligá-lo com `"op": "remove"`.
 

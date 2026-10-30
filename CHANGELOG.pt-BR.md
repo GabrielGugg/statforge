@@ -2,6 +2,14 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.1.5 — 30/10/2026
+
+- **Ficha em painel.** Cada aba é uma grade, e o pacote define a largura de cada bloco. Em **Organizar** você arrasta os blocos (mouse ou toque), muda a largura e oculta o que não usa. O arranjo vale para todas as fichas daquele sistema e pode voltar ao padrão.
+- **Cartões compactos de recursos** (vida, estamina, espaços de magia…), que o pacote pode pôr no topo.
+- **Contadores que só aparecem quando ativos**, com um menu para adicionar (por exemplo, níveis de sobrevivência). O texto da regra fica recolhido.
+- **Equipamento inicial no assistente de criação**: o novo passo `items` põe na ficha o kit do antecedente escolhido (com desgaste e armadura vestida), ou uma alternativa, como dinheiro inicial.
+- Os atributos preenchem o bloco por igual (todos numa linha quando cabe, senão duas linhas equilibradas), sem espaço vazio do lado.
+
 ## 0.1.4 — 30/10/2026
 
 - **Assistente de criação de personagem.** Um pacote de sistema pode descrever seus passos de criação (`creation` no formato): escolher raça, classe ou antecedente, comprar atributos com pontos, escolher perícias, talentos e traços e escrever a história, com um resumo ao vivo dos valores principais e uma revisão no final. Voltar e mudar um passo é seguro. Ainda dá para pular e criar a ficha em branco.

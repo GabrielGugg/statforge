@@ -66,7 +66,42 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
       }
     } else if (step.type === 'notes') {
       Object.assign(s.notes, choice.notes || {});
+    } else if (step.type === 'items') {
+      const note = step.note || 'notes';
+      const addNote = text => { s.notes[note] = [s.notes[note], text].filter(Boolean).join('\n'); };
+      if (choice.take === false && step.alternative) {
+        if (step.alternative.text) addNote(step.alternative.text);
+        return;
+      }
+      const kit = startingKit(step, s);
+      for (const it of kit.items) {
+        const col = rules.collections[it.collection] || {};
+        const same = col.quantity && !it.wear && !it.name && s.items.find(x => x.collection === it.collection && x.ref === it.ref && !x.wear && !x.name);
+        if (same) { same.qty = (same.qty ?? 1) + it.qty; continue; }
+        s.items.push({ uid: uid(), collection: it.collection, ref: it.ref,
+          ...(col.quantity || it.qty !== 1 ? { qty: it.qty } : {}),
+          ...(col.equippable ? { equipped: !!it.equipped } : {}),
+          ...(it.wear ? { wear: it.wear } : {}), ...(it.name ? { name: it.name } : {}) });
+      }
+      for (const text of kit.texts) addNote(text);
     }
+  }
+
+  /** Starting items of the entities picked in step.from, filtered by their "if". */
+  function startingKit(step, sheet) {
+    const calc = compute(rules, sheet);
+    const field = step.field || 'starting_items';
+    const items = [], texts = [];
+    for (const it of sheet.items.filter(i => i.collection === step.from)) {
+      for (const e of rules.entities[step.from]?.[it.ref]?.[field] || []) {
+        if (e.if && !calc.formula(e.if)) continue;
+        if (e.text) { texts.push(e.text); continue; }
+        const [collection, ref] = String(e.ref || '').split('/');
+        if (!rules.entities[collection]?.[ref]) { texts.push(`${e.qty || 1}× ${e.name || e.ref}`); continue; }
+        items.push({ collection, ref, qty: Number(e.qty) || 1, wear: Number(e.wear) || 0, equipped: !!e.equipped, name: e.name });
+      }
+    }
+    return { items, texts };
   }
 
   function firstFrom(i, dir = 1) {
@@ -166,7 +201,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
     const pos = vis.indexOf(index) + 1;
     const v = validate(index, calcBefore, before);
 
-    const content = ({ pick: pickStep, attributes: attributesStep, skills: skillsStep, info: infoStep, notes: notesStep }[step.type] || (() => null))(step, calcBefore, before, calcAfter);
+    const content = ({ pick: pickStep, attributes: attributesStep, skills: skillsStep, info: infoStep, notes: notesStep, items: itemsStep }[step.type] || (() => null))(step, calcBefore, before, calcAfter);
     app.replaceChildren(h('div.wizard',
       progress(pos, vis.length + 1, step.title || defaultTitle(step)),
       summary(calcAfter),
@@ -345,6 +380,26 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
       step.text ? h('p', { style: { whiteSpace: 'pre-line' } }, step.text) : null,
       shown.map(e => h('div.info-box', h('h3', e.name), h('p', { style: { whiteSpace: 'pre-line' } }, e.description || ''))),
     ];
+  }
+
+  // Starting equipment from what was picked (e.g. the background), or an alternative.
+  function itemsStep(step, _calc, sheet) {
+    const c = choices[index];
+    const kit = startingKit(step, sheet);
+    const take = c.take !== false || !step.alternative;
+    const list = h('ul.kit', kit.items.map(it => {
+      const ent = rules.entities[it.collection][it.ref];
+      return h('li', h('span', it.name || ent.name), h('span.muted.small', ` ${rules.collections[it.collection]?.name || it.collection}`),
+        h('span.kit-qty', `×${fmt(it.qty)}`), it.wear ? h('span.badge.warning', `${t('sheet.wear')} ${it.wear}`) : null);
+    }), kit.texts.map(x => h('li', h('span', x), h('span.muted.small', ` ${t('creation.asNote')}`))));
+    const empty = !kit.items.length && !kit.texts.length;
+    const option = (on, label, body, value) => h('div.choice', { class: on ? 'selected' : '' },
+      h('label.choice-main', h('input', { type: 'radio', name: `step${index}`, checked: on, onchange: () => { c.take = value; redraw(); } }),
+        h('span.choice-text', h('strong', label), body)));
+    if (!step.alternative) return empty ? h('p.muted', t('creation.noKit')) : list;
+    return h('div.choices',
+      option(take, step.take_label || t('creation.takeKit'), empty ? h('span.choice-desc', t('creation.noKit')) : list, true),
+      option(!take, step.alternative.label || t('creation.alternative'), step.alternative.text ? h('span.choice-desc', step.alternative.text) : null, false));
   }
 
   function notesStep(step) {

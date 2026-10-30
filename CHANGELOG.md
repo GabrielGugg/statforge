@@ -2,6 +2,14 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.1.5 — 2026-10-30
+
+- **Sheet as a dashboard.** Each tab is a grid; packages set each block's width. With **Arrange** you drag blocks (mouse or touch), change their width and hide what you do not use. The arrangement is saved for every sheet of that system and can be restored to the default.
+- **Compact resource tiles** (hit points, stamina, spell slots…) that a package can place at the top.
+- **Counters that only show when active**, with a menu to add one (e.g. survival levels). Their rule text folds away.
+- **Starting equipment in the creation assistant**: a new `items` step adds the chosen background's kit to the sheet (with wear and worn armor), or an alternative such as starting money.
+- Attributes fill the block evenly (all in one row when there is room, two balanced rows otherwise), with no empty space at the side.
+
 ## 0.1.4 — 2026-10-30
 
 - **Character creation assistant.** A system package can describe its creation steps (`creation` in the format): choose race, class or background, buy attributes with points, pick skills, perks and traits, and write a backstory, with a live summary of the main values and a review at the end. Going back and changing a step is safe. You can still skip it and get a blank sheet.
