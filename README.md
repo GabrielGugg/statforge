@@ -40,16 +40,7 @@ python3 -m http.server 8000    # then open http://localhost:8000/site/
 | `site/js/locales/` | Interface text, one file per language. `en.js` is the base; other languages fall back to it. |
 | `site/js/packages.js`, `storage.js` | Package installation and storage (IndexedDB). |
 | `examples/en/`, `examples/pt-BR/` | Example system, homebrew, theme and table. |
-| `packages/` | Published packages (Fallout TTRPG 2.2), served by GitHub Pages at `/packages/`. |
-| `tools/fallout/` | Rebuilds the Fallout package from the Obsidian notes (see below). |
-| `tests/` | Engine and package tests. |
-
-To rebuild the Fallout package after editing the notes:
-
-```
-python3 tools/fallout/extrair_regras.py "<Regras folder>"
-python3 tools/fallout/montar_pacote.py dados/fallout packages/fallout-2.2
-```
+| `tests/` | Engine tests. |
 
 To add an interface language, copy `site/js/locales/en.js`, translate it, and register it in `site/js/i18n.js`.
 
