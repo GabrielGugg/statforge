@@ -2,11 +2,13 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.1.3 — 2026-10-30
+
+- Game packages no longer live in the app repository: StatForge stays a pure engine, and every system (Fallout included) is installed like any other package.
+
 ## 0.1.2 — 2026-10-30
 
-- **First published package: Fallout TTRPG 2.2** in Portuguese (`packages/fallout-2.2/`), with the Pip-Boy and Vault-Tec themes and the Vault Texas table. GitHub Pages now publishes the `packages/` folder, so a GM can share a table link.
 - Fix: wide blocks with tables (like Weapons) no longer push the page sideways on phones.
-- Tests now check every package in `packages/` and a sample Fallout character.
 
 ## 0.1.1 — 2026-10-30
 
