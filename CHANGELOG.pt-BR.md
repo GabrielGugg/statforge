@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.2.0 — 31/10/2026
+
+- **A sincronização com o Google lembra a sua conta**: o Google não pergunta mais qual conta usar toda vez. O app guarda o e-mail da conta e o token de acesso só neste aparelho (nunca na nuvem nem em backups), então reabrir o app dentro de uma hora sincroniza sozinho e, depois disso, um toque reconecta a mesma conta. Configurações mostra a conta conectada. Desconectar apaga os dois. A Política de Privacidade foi atualizada.
+- **Procurar atualizações automaticamente** (Configurações › Hub, desligado de início): ao abrir o app, ele procura no Hub versões novas dos pacotes que você tem e oferece atualizar num pop-up, sem passar por Pacotes › Hub. **Procurar agora** faz o mesmo na hora.
+
 ## 1.1.1 — 31/10/2026
 
 - **Política de Privacidade e Termos de Serviço** (em português e inglês), exigidos pelo Google para publicar o login: `site/privacy.html` e `site/terms.html`, com links em Configurações, na seção de sincronização e em Sobre.

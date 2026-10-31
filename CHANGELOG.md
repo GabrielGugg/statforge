@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.2.0 — 2026-10-31
+
+- **Google sync remembers your account**: Google no longer asks which account to use every time. The app keeps the account's email and the access token on this device only (never in the cloud or in backups), so reopening the app within the hour syncs by itself, and after that one tap reconnects the same account. Settings shows the connected account. Disconnecting deletes both. The Privacy Policy says so.
+- **Check for updates automatically** (Settings › Hub, off by default): when you open the app, it looks in the Hub for new versions of the packages you have and offers to update them in a popup, without going to Packages › Hub. **Check now** does the same on demand.
+
 ## 1.1.1 — 2026-10-31
 
 - **Privacy Policy and Terms of Service** (Portuguese and English), required by Google to publish the sign-in: `site/privacy.html` and `site/terms.html`, linked from Settings, in the sync section and in About.

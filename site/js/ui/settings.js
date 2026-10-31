@@ -7,6 +7,7 @@ import { applyTheme } from './theme.js';
 import { VERSION } from '../version.js';
 import { DEFAULT_HUB } from './hub.js';
 import * as sync from '../sync.js';
+import { checkNow } from './updates.js';
 import { t, LANGUAGES, getLanguage, setLanguage } from '../i18n.js';
 import { h, toast, downloadJSON, pickFiles, confirm, byName, translateStatic } from './util.js';
 
@@ -42,6 +43,8 @@ export async function settingsScreen(app) {
   const selUnit = h('select', { onchange: async e => { await db.setConfig('unit', e.target.value); toast(t('settings.saved')); } },
     h('option', { value: 'm' }, t('settings.unitM')), h('option', { value: 'ft' }, t('settings.unitFt')), h('option', { value: 'sq' }, t('settings.unitSq')));
   selUnit.value = await db.getConfig('unit', 'm');
+  const autoBox = h('input', { type: 'checkbox', checked: !!(await db.getConfig('autoUpdate', false)),
+    onchange: async e => { await db.setConfig('autoUpdate', e.target.checked); toast(t('settings.saved')); } });
   const debugBox = h('input', { type: 'checkbox', checked: !!(await db.getConfig('debug', false)),
     onchange: async e => { await db.setConfig('debug', e.target.checked); toast(t('settings.saved')); } });
 
@@ -65,6 +68,7 @@ export async function settingsScreen(app) {
     const noId = !(await sync.clientId());
     syncBox.replaceChildren(...[
       h('p', s.enabled ? t('sync.on') : t('sync.text')),
+      s.enabled && s.email ? h('p.muted.small', t('sync.account', { email: s.email })) : null,
       s.enabled && s.last ? h('p.muted.small', t('sync.last', { when: new Date(s.last).toLocaleString(getLanguage()) })) : null,
       s.error ? h('p.small', { style: { color: 'var(--danger)' } }, t('sync.failed', { error: s.error })) : null,
       noId ? h('p.muted.small', t('sync.noClient')) : null,
@@ -96,6 +100,9 @@ export async function settingsScreen(app) {
       h('p.muted.small', t('settings.debugHint'))),
     h('section.card.section',
       h('h2', t('hub.title')),
+      h('label.check', autoBox, h('span', t('settings.autoUpdate'))),
+      h('p.muted.small', t('settings.autoUpdateHint')),
+      h('div.row', h('button', { onclick: () => checkNow() }, t('settings.checkUpdates'))),
       h('label.field', h('span', t('settings.hubUrl')), hubInput),
       h('p.muted.small', t('settings.hubHint'))),
     h('section.card.section',
