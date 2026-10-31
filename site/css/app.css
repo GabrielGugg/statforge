@@ -403,3 +403,9 @@ mark { background: color-mix(in srgb, var(--warning) 45%, transparent); color: i
 .search-bar input { flex: 1; min-width: 0; }
 .search-bar select { width: auto; max-width: 45%; }
 .wear-badge { margin-left: .35rem; }
+
+/* Terms with a tooltip (weapon properties…) */
+.term { all: unset; cursor: help; border-bottom: 1px dotted currentColor; }
+.term:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.equip-stats .stat.worn strong { color: var(--warning); }
+.equip-stats .stat:has(.term) { flex-basis: 100%; }

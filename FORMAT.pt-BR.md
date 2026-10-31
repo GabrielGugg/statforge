@@ -109,9 +109,10 @@ Uma coleção (`collections`) é um tipo de coisa (armas, traços, condições).
 | `quantity` | Mostra a coluna de quantidade. Adicionar um item repetido soma 1. |
 | `wear.max` | Mostra o desgaste (−/+) até esse máximo. |
 | `quick_remove` | Remover um item não pede confirmação (bom para condições). |
+| `wear` | `{ "max": 10 }` dá aos itens um contador de desgaste. `"breaks": true`: no máximo o item quebra e seus efeitos param. `"fields": { "df": "max(10, value - floor(wear / 2))" }` mostra um campo como fica depois do desgaste (`value` é a base, `wear` os níveis). `"stats": [{ "label": "Ataque", "value": "-wear" }]` acrescenta números que só existem com desgaste. `"text"` explica a regra. Dentro dos efeitos do próprio item, `wear` já é o desgaste que conta; uma entidade com `"wear_ignore": 2` ignora os 2 primeiros níveis. |
 | `mods` | Id de outra coleção cujos itens podem ser instalados dentro destes (modificações de arma). Só dá para instalar o que está no inventário; o `magazine_bonus` de uma entidade soma no pente do item em que está instalada. |
 | `max` | Quantos itens a ficha pode ter nessa coleção (ex.: 1 raça). |
-| `fields` | Dados mostrados nos detalhes e nas colunas. Tipos: `text`, `number`, `dice`, `boolean`, `list`. | `range` é uma distância mostrada na unidade que o jogador escolhe em Configurações (metros, pés ou quadrados de 1,5 m / 5 pés): `"unit": "ft"` diz a unidade do dado, e com `"per": "PER"` um valor como `"x10/x20"` vale 10× e 20× esse valor. |
+| `fields` | Dados mostrados nos detalhes e nas colunas. Tipos: `text`, `number`, `dice`, `boolean`, `list`. | `"links": "colecao"` num campo de texto transforma os termos que são entidades daquela coleção (propriedades de arma…) em links com dica. `range` é uma distância mostrada na unidade que o jogador escolhe em Configurações (metros, pés ou quadrados de 1,5 m / 5 pés): `"unit": "ft"` diz a unidade do dado, e com `"per": "PER"` um valor como `"x10/x20"` vale 10× e 20× esse valor. |
 
 Coleções sem `equippable` (traços, talentos, condições) valem sempre que estão na ficha.
 
