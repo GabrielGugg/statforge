@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.2.1 — 2026-10-31
+
+- **Notebook**: a new `notebook` block holds as many notes as you want, each with a title and text, folded or open. Search finds words inside titles and texts, ignoring accents (for example "bunk" finds Bunker and Bunkitidini), and highlights them; Open jumps to the note.
+- Packages can move the text of an old notes block into the notebook (`import_notes`), so nothing written before is lost.
+
 ## 0.2.0 — 2026-10-31
 
 - **Inventory in one place**: a new `inventory` block holds every item, shown as cards by category or as one searchable list (the choice is remembered). Items and quantities are edited there.

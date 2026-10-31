@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.2.1 — 31/10/2026
+
+- **Caderno de notas**: o novo bloco `notebook` guarda quantas notas você quiser, cada uma com título e texto, minimizada ou aberta. A busca acha palavras dentro de títulos e textos, sem ligar para acentos (por exemplo, "bunk" acha Bunker e Bunkitidini), e destaca o trecho; Abrir leva até a nota.
+- Pacotes podem passar o texto de um bloco de notas antigo para o caderno (`import_notes`), então nada escrito antes se perde.
+
 ## 0.2.0 — 31/10/2026
 
 - **Inventário num lugar só**: o novo bloco `inventory` reúne todos os itens, em cartões por categoria ou numa lista única com busca (a escolha fica salva). Itens e quantidades são editados ali.

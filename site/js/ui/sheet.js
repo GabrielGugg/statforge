@@ -134,7 +134,7 @@ function body(st) {
   return h('div', bar, content);
 }
 
-const BLOCKS = { inventory: inventoryBlock, attributes: attributesBlock, skills: skillsBlock, derived: derivedBlock, resources: resourcesBlock, counters: countersBlock, effects: effectsBlock, list: listBlock, notes: notesBlock, roller: rollerBlock };
+const BLOCKS = { notebook: notebookBlock, inventory: inventoryBlock, attributes: attributesBlock, skills: skillsBlock, derived: derivedBlock, resources: resourcesBlock, counters: countersBlock, effects: effectsBlock, list: listBlock, notes: notesBlock, roller: rollerBlock };
 
 function block(st, def) {
   const fn = BLOCKS[def.block];
@@ -787,6 +787,96 @@ export function entityDetails(st, colId, id, item) {
   }
   actions.push({ text: t('common.close'), primary: true });
   dialog(item?.name || ent.name, content, { actions });
+}
+
+// ---------- Notebook: many notes with a title, folded or open, with search ----------
+/** Text with every match of q (ignoring accents and case) wrapped in <mark>. */
+function highlight(text, q) {
+  const src = String(text || '');
+  if (!q) return [src];
+  // Normalized copy plus, for each of its characters, the position in the original.
+  let flat = ''; const at = [];
+  for (let i = 0; i < src.length; i++) { const n = normalize(src[i]); flat += n; for (let k = 0; k < n.length; k++) at.push(i); }
+  const out = []; let last = 0;
+  for (let i = flat.indexOf(q); i >= 0; i = flat.indexOf(q, i + q.length)) {
+    const a = at[i], b = at[i + q.length - 1] + 1;
+    if (a < last) continue;
+    out.push(src.slice(last, a), h('mark', src.slice(a, b)));
+    last = b;
+  }
+  out.push(src.slice(last));
+  return out;
+}
+
+/** The lines of a note that contain the search, for the results view. */
+function matchingLines(text, q, max = 3) {
+  return String(text || '').split('\n').filter(l => normalize(l).includes(q)).slice(0, max);
+}
+
+function notebookBlock(st, def) {
+  const { sheet } = st;
+  const key = def.id || 'notebook';
+  sheet.notebooks ||= {};
+  const notes = (sheet.notebooks[key] ||= []);
+  // Text from older single notes blocks becomes a note, once.
+  for (const id of def.import_notes || []) {
+    const mark = `${key}:${id}`;
+    if (sheet.notes?.[id]?.trim() && !(sheet.notebookImported ||= []).includes(mark)) {
+      notes.push({ id: uid(), title: def.import_titles?.[id] || id, text: sheet.notes[id], open: false });
+      sheet.notebookImported.push(mark);
+      st.save();
+    }
+  }
+  let q = normalize(st.noteQuery?.[key] || '').trim();
+  const search = h('input', { type: 'search', placeholder: t('notes.search'), 'aria-label': t('notes.search'), value: st.noteQuery?.[key] || '' });
+  const list = h('div.notebook');
+  const add = () => {
+    notes.unshift({ id: uid(), title: '', text: '', open: true });
+    (st.noteQuery ||= {})[key] = '';
+    st.focusNote = notes[0].id;
+    st.change();
+  };
+  const remove = async n => {
+    if ((n.title || n.text) && !(await confirm(t('notes.removeTitle'), t('notes.removeAsk', { name: n.title || t('notes.untitled') }), { yes: t('sheet.remove'), danger: true }))) return;
+    notes.splice(notes.indexOf(n), 1);
+    st.change();
+  };
+
+  const card = n => {
+    const toggle = () => { n.open = !n.open; st.change(); };
+    if (q) {
+      // Results: highlighted title and the lines that match; open goes to the note.
+      return h('div.note.result',
+        h('div.note-head', h('strong.note-title', highlight(n.title || t('notes.untitled'), q)),
+          h('button.mini', { onclick: () => { n.open = true; st.noteQuery[key] = ''; st.focusNote = n.id; st.change(); } }, t('notes.open'))),
+        matchingLines(n.text, q).map(l => h('p.note-line.small', highlight(l, q))));
+    }
+    const title = h('input.note-title-input', { type: 'text', value: n.title, placeholder: t('notes.untitled'), 'aria-label': t('notes.title'),
+      oninput: e => { n.title = e.target.value; st.save(); } });
+    const text = h('textarea.note-text', { value: n.text, placeholder: t('notes.placeholder'), 'aria-label': n.title || t('notes.untitled'),
+      oninput: e => { n.text = e.target.value; st.save(); } });
+    if (st.focusNote === n.id) requestAnimationFrame(() => { (n.title ? text : title).focus(); st.focusNote = null; });
+    return h('div.note', { class: n.open ? 'open' : '' },
+      h('div.note-head',
+        h('button.mini.note-fold', { 'aria-expanded': String(!!n.open), 'aria-label': n.open ? t('notes.fold') : t('notes.unfold'), onclick: toggle }, n.open ? '▾' : '▸'),
+        n.open ? title : h('button.link.note-title', { onclick: toggle }, n.title || t('notes.untitled'),
+          n.text ? h('span.muted.small.note-preview', ` — ${n.text.replace(/\s+/g, ' ').slice(0, 80)}`) : null),
+        h('button.mini.danger', { 'aria-label': t('notes.remove'), onclick: () => remove(n) }, '✕')),
+      n.open ? text : null);
+  };
+
+  const draw = () => {
+    const shown = q ? notes.filter(n => normalize(`${n.title}\n${n.text}`).includes(q)) : notes;
+    list.replaceChildren(...(shown.length ? shown.map(card) : [h('p.muted.small', q ? t('notes.noMatch') : t('notes.empty'))]));
+  };
+  search.addEventListener('input', () => {
+    (st.noteQuery ||= {})[key] = search.value;
+    q = normalize(search.value).trim();
+    draw();
+  });
+  draw();
+  return [h('h3', h('span', def.title || t('sheet.notes')), h('button.mini.primary', { onclick: add }, t('notes.new'))),
+    h('div.notebook-search', search), list];
 }
 
 function notesBlock(st, def) {

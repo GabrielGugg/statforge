@@ -177,6 +177,7 @@ Each tab is a 12-column grid. `"w"` is the block's width in columns (3, 4, 6, 8 
 - A `resources` block with a single item becomes a compact tile (big current/max, bar, −1 +1 and restore). Put a few of them at the top with `"w": 3`.
 - `"only_active": true` on a `counters` block shows only the counters above 0, with a menu to add the others.
 - `"view": "equipped"` on a `list` block shows only the equipped items, as cards with their `columns`, wear, magazine and mods; items are added and counted in the inventory. `"hide_empty": true` hides the block when nothing is equipped.
+- A `notebook` block is a set of notes the player creates ("New note"), each with a title and text, folded or open, with a search that finds words inside titles and texts (ignoring accents) and highlights them. `"import_notes": ["id"]` moves the text of older `notes` blocks into it once (`import_titles` names them).
 - An `inventory` block (`"collections": [...]`, optional `"columns": { collection: [fields] }`) holds every item: the player switches between cards by category and one searchable list.
 - **Magazine**: an entity with `"magazine": { "capacity": 12, "ammo": ["ammo/9mm"], "charge": false, "per_shot": 1 }` shows rounds loaded / capacity with a Reload button that takes rounds from those inventory items (with `charge`, one unit, like an energy cell, fills it). Works for bows, crossbows and guns alike.
 - A derived value with `"editable_bonus": true` gets a small field for an extra modifier the player types (e.g. carrying capacity from a house rule).
