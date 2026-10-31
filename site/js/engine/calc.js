@@ -118,6 +118,10 @@ export function compute(rules, sheet) {
       .filter(i => i.collection === col && (!onlyActive || itemActive(rules, i)))
       .reduce((s, i) => s + num(rules.entities[col]?.[i.ref]?.[field]) * num(i.qty ?? 1), 0),
     tag: x => active.some(f => (f.ent.tags || []).includes(x)),
+    current: id => num(sheet.resources?.[id] ?? value(id)),
+    maxof: (col, field, onlyActive) => items
+      .filter(i => i.collection === col && (!onlyActive || itemActive(rules, i)))
+      .reduce((m, i) => Math.max(m, num(rules.entities[col]?.[i.ref]?.[field])), 0),
   };
 
   function variable(name) {
