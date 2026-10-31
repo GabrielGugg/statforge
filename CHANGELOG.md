@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.0.0 — 2026-10-31
+
+First official release.
+
+- **Cloud sync with Google Drive**: in Settings, Connect Google Drive keeps sheets and packages in a hidden app folder of your own Drive. Changes upload a few seconds after you make them; opening the app on another device offers to sync with one tap. When both devices changed the same sheet, the most recent edit wins; deleted sheets stay deleted. Each device keeps its own settings.
+
 ## 0.2.9 — 2026-10-31
 
 - **Requirements**: entities can have `requires` (a formula). Searches and pick steps (creation and level up) show "requirement not met" and do not let them be chosen.

@@ -37,11 +37,40 @@ async function run(store, mode, fn) {
 
 export const list = store => run(store, 'readonly', s => s.getAll());
 export const get = (store, id) => run(store, 'readonly', s => s.get(id));
-export const put = (store, obj) => run(store, 'readwrite', s => s.put(obj));
-export const remove = (store, id) => run(store, 'readwrite', s => s.delete(id));
-
 export const getConfig = async (k, fallback) => (await run('config', 'readonly', s => s.get(k))) ?? fallback;
 export const setConfig = (k, v) => run('config', 'readwrite', s => s.put(v, k));
+
+// Sheets and packages tell cloud sync when they change, and deletions are remembered
+// ("deleted" in config) so another device does not bring them back.
+const SYNCED = ['sheets', 'packages'];
+const changed = store => { if (SYNCED.includes(store)) window.dispatchEvent(new CustomEvent('statforge:changed', { detail: store })); };
+async function markDeleted(store, id, on) {
+  const all = await getConfig('deleted', {});
+  if (on) all[`${store}/${id}`] = new Date().toISOString(); else if (all[`${store}/${id}`]) delete all[`${store}/${id}`]; else return;
+  await setConfig('deleted', all);
+}
+
+export async function put(store, obj) {
+  const r = await run(store, 'readwrite', s => s.put(obj));
+  if (SYNCED.includes(store)) { await markDeleted(store, obj.id, false); changed(store); }
+  return r;
+}
+export async function remove(store, id) {
+  const r = await run(store, 'readwrite', s => s.delete(id));
+  if (SYNCED.includes(store)) { await markDeleted(store, id, true); changed(store); }
+  return r;
+}
+
+/** Replaces every sheet and package with these (used by sync after merging), without raising change events. */
+export async function replaceSynced({ sheets, packages, config, deleted }) {
+  for (const [store, items] of [['sheets', sheets], ['packages', packages]]) {
+    const keep = new Set(items.map(x => x.id));
+    for (const old of await list(store)) if (!keep.has(old.id)) await run(store, 'readwrite', s => s.delete(old.id));
+    for (const x of items) await run(store, 'readwrite', s => s.put(x));
+  }
+  for (const [k, v] of Object.entries(config || {})) await setConfig(k, v);
+  await setConfig('deleted', deleted || {});
+}
 
 /** Full backup (packages + sheets + settings) as an object. */
 export async function exportAll() {

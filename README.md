@@ -6,7 +6,7 @@ Character sheets for **any tabletop RPG**. The app ships with no game: each syst
 
 - Runs in the browser, on phones and offline. Can be installed as an app (PWA).
 - Interface in English and Brazilian Portuguese. Each package declares its own language.
-- Your data stays only in your browser. Use the backup in Settings to switch devices.
+- Your data stays in your browser. To use it on several devices, turn on Google Drive sync in Settings (it saves to a hidden app folder in your own Drive), or move a backup by hand.
 
 ## How to use
 
@@ -36,6 +36,7 @@ python3 -m http.server 8000    # then open http://localhost:8000/site/
 | Folder | Contents |
 | --- | --- |
 | `site/js/engine/` | Formulas, package validation and assembly, sheet calculation. Does not depend on the browser. |
+| `site/js/sync.js` | Google Drive sync (one file in the app's hidden folder; merging lives in `engine/merge.js`). If you host StatForge yourself, set your own OAuth client ID in Settings › Cloud sync › Advanced, or in `DEFAULT_CLIENT_ID`. |
 | `site/js/ui/` | Screens. |
 | `site/js/locales/` | Interface text, one file per language. `en.js` is the base; other languages fall back to it. |
 | `site/js/packages.js`, `storage.js` | Package installation and storage (IndexedDB). |

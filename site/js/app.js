@@ -18,6 +18,8 @@ import { sheetScreen } from './ui/sheet.js';
 import { packagesScreen, installLinkWithFeedback } from './ui/packages.js';
 import { settingsScreen } from './ui/settings.js';
 import { hubScreen } from './ui/hub.js';
+import * as sync from './sync.js';
+import { h } from './ui/util.js';
 
 const app = document.getElementById('app');
 const backButton = document.getElementById('back');
@@ -71,9 +73,27 @@ async function start() {
   }
   window.addEventListener('hashchange', route);
   await route();
+  startSync();
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
+}
+
+// Cloud sync: changes upload by themselves while Google access lasts (about an hour).
+// Opening the app needs one tap, because Google only asks for access after a click.
+async function startSync() {
+  // Redraw only screens that show data, never in the middle of typing in a form.
+  const refresh = () => { if (!document.activeElement?.matches('input, textarea, select')) route(); };
+  sync.startAutoSync(refresh);
+  if (!(await sync.status()).enabled) return;
+  const bar = h('div.sync-banner', { role: 'status' },
+    h('span', t('sync.banner')),
+    h('button.mini.primary', { onclick: async () => {
+      bar.remove();
+      try { if (await sync.syncNow()) refresh(); toast(t('sync.done')); } catch (e) { toast(t('sync.failed', { error: e.message }), 'error'); }
+    } }, t('sync.now')),
+    h('button.mini', { 'aria-label': t('common.close'), onclick: () => bar.remove() }, '✕'));
+  document.body.append(bar);
 }
 
 start().catch(e => toast(e.message, 'error'));

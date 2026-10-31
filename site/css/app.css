@@ -430,3 +430,8 @@ mark { background: color-mix(in srgb, var(--warning) 45%, transparent); color: i
 .money-rows { display: grid; gap: .4rem; }
 .money-row { display: grid; grid-template-columns: 1fr 7rem 4.5rem; gap: .4rem; align-items: center; }
 .money-row input { text-align: right; }
+
+/* Cloud sync prompt */
+.sync-banner { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 50; display: flex; gap: .5rem; align-items: center;
+  width: min(480px, calc(100vw - 32px)); padding: .6rem .8rem; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 6px 24px rgb(0 0 0 / .18); }
+.sync-banner span { flex: 1; font-size: .9rem; }

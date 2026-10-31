@@ -1,6 +1,6 @@
 {
   "name": "statforge",
-  "version": "0.2.9",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Character sheets for any tabletop RPG, built from .json packages.",
