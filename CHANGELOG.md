@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.1.9 — 2026-10-31
+
+- **Skills editor**: skills are read-only until you tap **Edit**. Then each skill has − / +, the total updates as you go, and **Apply** saves (or **Cancel** drops the changes).
+- A skills block can set a `budget`: the editor shows the points spent against it and warns when you spend more or fewer; Apply asks before saving an uneven total.
+
 ## 0.1.8 — 2026-10-31
 
 - **Resources as toggles**: a resource with `"display": "toggles"` shows one checkbox per point (karma caps, spell slots, uses per day) instead of a number and a bar.
