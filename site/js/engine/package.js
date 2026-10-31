@@ -78,6 +78,10 @@ export function validatePackage(p) {
       });
     }
     if (p.collections && typeof p.collections !== 'object') errors.push(t('val.collectionsObject'));
+    for (const [col, c] of Object.entries(p.collections || {})) {
+      const want = Array.isArray(c?.custom) ? c.custom : c?.custom?.fields;
+      for (const f of want || []) if (!c.fields?.[f]) warnings.push(t('val.customField', { col, field: f }));
+    }
     for (const [col, list] of Object.entries(p.entities || {})) {
       if (!p.collections?.[col]) warnings.push(t('val.undeclaredCollection', { col }));
       if (!Array.isArray(list)) { errors.push(t('val.notList', { what: `entities.${col}` })); continue; }

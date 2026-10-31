@@ -151,5 +151,11 @@ export async function rulesForSheet(sheet) {
   for (const id of missing) warnings.push({ level: 'error', package: id, msg: t('pkg.extMissing', { id }) });
   const usable = active.filter(id => inst[id] && inst[id].system === system.id);
   const { rules, log } = buildRules(system, usable.map(id => inst[id]));
+  // The player's own items live in the sheet and join the collections (same objects, so edits show at once).
+  for (const [col, ents] of Object.entries(sheet.custom || {})) {
+    if (!rules.collections[col]) continue;
+    rules.entities[col] ||= {};
+    for (const [id, ent] of Object.entries(ents)) rules.entities[col][id] = ent;
+  }
   return { rules, log, warnings, system, active: usable };
 }

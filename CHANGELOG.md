@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.2.5 — 2026-10-31
+
+- **Custom items**: the Add item dialog has "Create custom item". Pick the category and fill in the fields the package allows for it (`custom` in the collection); weapons can also get a magazine with the ammo they take, and property-like fields have a picker. Custom items are saved in the sheet, work like any other item (weight, wear, equipping, mods) and can be edited or deleted from their details.
+- Item search shows items whose name matches before those found only in descriptions.
+
 ## 0.2.4 — 2026-10-31
 
 - **Automatic condition warnings**: packages can list conditions the app notices by itself (`auto_conditions`). A subtle popup at the top of the sheet offers to apply the condition, or to remove it when it no longer holds, and disappears after 10 seconds. Dismissed warnings stay quiet until the situation changes, and immunities (such as a perk) stop them.
