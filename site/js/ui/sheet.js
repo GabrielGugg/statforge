@@ -615,8 +615,12 @@ function inventoryBlock(st, def) {
   const cols = (def.collections || Object.keys(rules.collections)).filter(c => rules.collections[c]);
   const items = (sheet.items || []).filter(i => cols.includes(i.collection));
   const setMode = m => { st.invMode = m; db.setConfig('inventoryView', m).catch(() => {}); st.redraw(); };
-  const adder = h('select.mini-select', { 'aria-label': t('sheet.addItem'), onchange: e => { if (e.target.value) search(st, e.target.value); e.target.value = ''; } },
-    h('option', { value: '' }, t('sheet.addItem')), cols.map(c => h('option', { value: c }, rules.collections[c].name || c)));
+  const adder = h('button.mini.primary', { onclick: () => search(st, cols) }, t('sheet.addItem'));
+  // Which item fields each view shows: "card_fields" / "list_fields", a list or { collection: [...], "*": [...] }.
+  const fieldsFor = (spec, c) => {
+    const list = Array.isArray(spec) ? spec : (spec?.[c] ?? spec?.['*'] ?? []);
+    return list.filter(f => rules.collections[c]?.fields?.[f]);
+  };
   const head = h('h3', h('span', def.title || t('sheet.inventory')),
     h('span.row.inv-tools',
       h('span.segmented', { role: 'group', 'aria-label': t('sheet.inventoryView') },
@@ -627,10 +631,12 @@ function inventoryBlock(st, def) {
 
   if (st.invMode !== 'list') {
     return [head, h('div.inv-cards', cols.filter(c => items.some(i => i.collection === c)).map(c =>
-      h('div.inv-card', listBlock(st, { block: 'list', collection: c, columns: (def.columns || {})[c], no_wear: true }))))];
+      h('div.inv-card', listBlock(st, { block: 'list', collection: c, columns: fieldsFor(def.card_fields ?? def.columns, c), no_wear: true, wear_badge: true }))))];
   }
 
   const q = h('input', { type: 'search', placeholder: t('sheet.search'), 'aria-label': t('sheet.search'), value: st.invQuery || '' });
+  const listCols = [...new Set(cols.flatMap(c => fieldsFor(def.list_fields, c)))];
+  const listLabel = f => cols.map(c => rules.collections[c]?.fields?.[f]?.label).find(Boolean) || f;
   const tbody = h('tbody');
   const rows = () => {
     const f = normalize(st.invQuery || '');
@@ -640,7 +646,8 @@ function inventoryBlock(st, def) {
       .sort((a, b) => byName(a.name, b.name));
     tbody.replaceChildren(...list.map(({ i, col, name }) => h('tr',
       h('td', col.equippable ? h('input', { type: 'checkbox', checked: !!i.equipped, 'aria-label': t('sheet.equipName', { name }), onchange: e => { i.equipped = e.target.checked; st.change(); } }) : null),
-      h('td', h('button.mini.link', { onclick: () => entityDetails(st, i.collection, i.ref, i) }, name), h('div.small.muted', col.name)),
+      h('td', h('button.mini.link', { onclick: () => entityDetails(st, i.collection, i.ref, i) }, name), wearBadge(col, i), h('div.small.muted', col.name)),
+      listCols.map(f => h('td.small.num', fieldsFor(def.list_fields, i.collection).includes(f) ? fmtField(rules.entities[i.collection]?.[i.ref]?.[f], col.fields?.[f], st) : '—')),
       h('td.num', col.quantity ? h('input', { type: 'number', value: i.qty ?? 1, min: 0, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name }),
         onchange: e => { i.qty = Math.max(0, Number(e.target.value) || 0); st.change(); } }) : null),
       h('td.num', h('button.mini.danger', { 'aria-label': t('sheet.removeName', { name }), onclick: async () => {
@@ -653,7 +660,8 @@ function inventoryBlock(st, def) {
   q.addEventListener('input', () => { st.invQuery = q.value; rows(); });
   rows();
   return [head, q, h('div.scroll-table', h('table.table',
-    h('thead', h('tr', h('th', { title: t('sheet.equipped') }, t('sheet.equippedShort')), h('th', t('sheet.name')), h('th.num', t('sheet.qty')), h('th'))),
+    h('thead', h('tr', h('th', { title: t('sheet.equipped') }, t('sheet.equippedShort')), h('th', t('sheet.name')),
+      listCols.map(f => h('th.num', listLabel(f))), h('th.num', t('sheet.qty')), h('th'))),
     tbody))];
 }
 
@@ -684,6 +692,7 @@ function listBlock(st, def) {
     return h('tr', { class: ent ? '' : 'muted' },
       col?.equippable ? h('td', h('input', { type: 'checkbox', checked: !!item.equipped, 'aria-label': t('sheet.equipName', { name }), onchange: e => { item.equipped = e.target.checked; st.change(); } })) : null,
       h('td', h('button.mini.link', { onclick: () => entityDetails(st, colId, item.ref, item) }, name),
+        def.wear_badge ? wearBadge(col, item) : null,
         ent ? null : h('span.badge.error', t('sheet.notFoundBadge'))),
       columns.map(c => h('td.small', fmtField(ent?.[c], fields[c], st))),
       usesQty ? h('td.num', h('input', { type: 'number', value: item.qty ?? 1, min: 0, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name }),
@@ -722,6 +731,11 @@ function listBlock(st, def) {
   ];
 }
 
+/** "Wear 2" badge, only when the item has wear. */
+function wearBadge(col, item) {
+  return col?.wear?.max && item.wear > 0 ? h('span.badge.warning.wear-badge', { title: t('sheet.wear') }, t('sheet.wearShort', { n: item.wear })) : null;
+}
+
 function fmtField(v, field, st) {
   if (v === undefined || v === null || v === '') return '—';
   if (field?.type === 'range') return fmtRange(v, field, st);
@@ -731,34 +745,43 @@ function fmtField(v, field, st) {
   return typeof v === 'number' ? `${fmt(v)}${u}` : `${v}${u}`;
 }
 
-function search(st, colId) {
+/** Search entities to add. colIds: one collection, or several (then results show their category and a filter). */
+function search(st, colIds) {
   const { rules, sheet } = st;
-  const col = rules.collections[colId] || {};
+  const ids = [].concat(colIds).filter(c => rules.entities[c] || rules.collections[c]);
+  const many = ids.length > 1;
+  const nameOf = c => rules.collections[c]?.name || c;
   // What the character is immune to (e.g. a robot and "Bleeding") is not offered.
-  const all = Object.values(rules.entities[colId] || {}).filter(e => !st.calc.immune(colId, e.id)).sort((a, b) => byName(a.name, b.name));
-  const input = h('input', { type: 'search', placeholder: t('sheet.searchIn', { name: col.name || colId }), 'aria-label': t('sheet.search') });
+  const all = ids.flatMap(c => Object.values(rules.entities[c] || {}).filter(e => !st.calc.immune(c, e.id)).map(e => ({ c, e })))
+    .sort((a, b) => byName(a.e.name, b.e.name));
+  const input = h('input', { type: 'search', placeholder: many ? t('sheet.searchAll') : t('sheet.searchIn', { name: nameOf(ids[0]) }), 'aria-label': t('sheet.search') });
+  const filter = many ? h('select', { 'aria-label': t('sheet.category') }, h('option', { value: '' }, t('sheet.allCategories')), ids.map(c => h('option', { value: c }, nameOf(c)))) : null;
   const list = h('div.search-list');
   let dlg;
-  const add = ent => {
-    const existing = col.quantity && (sheet.items || []).find(i => i.collection === colId && i.ref === ent.id);
+  const add = ({ c, e: ent }) => {
+    const col = rules.collections[c] || {};
+    const existing = col.quantity && (sheet.items || []).find(i => i.collection === c && i.ref === ent.id);
     if (existing) existing.qty = (existing.qty ?? 1) + 1;
-    else (sheet.items ||= []).push({ uid: uid(), collection: colId, ref: ent.id, ...(col.quantity ? { qty: 1 } : {}), ...(col.equippable ? { equipped: false } : {}) });
+    else (sheet.items ||= []).push({ uid: uid(), collection: c, ref: ent.id, ...(col.quantity ? { qty: 1 } : {}), ...(col.equippable ? { equipped: false } : {}) });
     toast(t('sheet.added', { name: ent.name }));
-    if (col.max !== undefined && sheet.items.filter(i => i.collection === colId).length >= col.max) dlg.close();
+    if (!many && col.max !== undefined && sheet.items.filter(i => i.collection === c).length >= col.max) dlg.close();
     st.change();
   };
   const draw = () => {
     const q = normalize(input.value);
-    const found = all.filter(e => !q || normalize(`${e.name} ${e.description || ''} ${(e.tags || []).join(' ')}`).includes(q)).slice(0, 200);
-    list.replaceChildren(...(found.length ? found.map(e => h('div.search-item',
-      h('div', h('div', h('strong', e.name)), e.description ? h('div.desc', String(e.description).slice(0, 140) + (String(e.description).length > 140 ? '…' : '')) : null),
+    const found = all.filter(({ c, e }) => (!filter?.value || c === filter.value) &&
+      (!q || normalize(`${e.name} ${e.description || ''} ${(e.tags || []).join(' ')} ${many ? nameOf(c) : ''}`).includes(q))).slice(0, 200);
+    list.replaceChildren(...(found.length ? found.map(x => h('div.search-item',
+      h('div', h('div', h('strong', x.e.name), many ? h('span.badge', { style: { marginLeft: '.4rem' } }, nameOf(x.c)) : null),
+        x.e.description ? h('div.desc', String(x.e.description).slice(0, 140) + (String(x.e.description).length > 140 ? '…' : '')) : null),
       h('div.row', { style: { flexWrap: 'nowrap' } },
-        h('button.mini', { onclick: () => entityDetails(st, colId, e.id) }, t('sheet.view')),
-        h('button.mini.primary', { onclick: () => add(e) }, t('sheet.addShort'))))) : [h('p.muted', t('sheet.nothingFound'))]));
+        h('button.mini', { onclick: () => entityDetails(st, x.c, x.e.id) }, t('sheet.view')),
+        h('button.mini.primary', { onclick: () => add(x) }, t('sheet.addShort'))))) : [h('p.muted', t('sheet.nothingFound'))]));
   };
   input.addEventListener('input', draw);
+  filter?.addEventListener('change', draw);
   draw();
-  dlg = dialog(t('sheet.addTo', { name: col.name || colId }), [input, list], { width: '640px' });
+  dlg = dialog(many ? t('sheet.addItemTitle') : t('sheet.addTo', { name: nameOf(ids[0]) }), [filter ? h('div.row.search-bar', input, filter) : input, list], { width: '640px' });
   input.focus();
 }
 

@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.2.2 — 2026-10-31
+
+- **Add item by searching**: in the inventory, Add item searches every category at once (each result shows its category, and a filter narrows it down).
+- **Item details in the inventory**: packages choose which item fields show in cards (`card_fields`) and in the list (`list_fields`), such as weight; wear shows as a badge when above 0.
+
 ## 0.2.1 — 2026-10-31
 
 - **Notebook**: a new `notebook` block holds as many notes as you want, each with a title and text, folded or open. Search finds words inside titles and texts, ignoring accents (for example "bunk" finds Bunker and Bunkitidini), and highlights them; Open jumps to the note.

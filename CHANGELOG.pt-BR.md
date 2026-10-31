@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.2.2 — 31/10/2026
+
+- **Adicionar item pesquisando**: no inventário, Adicionar item pesquisa em todas as categorias de uma vez (cada resultado mostra a categoria, e um filtro estreita a busca).
+- **Detalhes dos itens no inventário**: o pacote escolhe quais campos aparecem nos cartões (`card_fields`) e na lista (`list_fields`), como a carga; o desgaste aparece como selo quando é maior que 0.
+
 ## 0.2.1 — 31/10/2026
 
 - **Caderno de notas**: o novo bloco `notebook` guarda quantas notas você quiser, cada uma com título e texto, minimizada ou aberta. A busca acha palavras dentro de títulos e textos, sem ligar para acentos (por exemplo, "bunk" acha Bunker e Bunkitidini), e destaca o trecho; Abrir leva até a nota.
