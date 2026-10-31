@@ -206,6 +206,42 @@ export function compute(rules, sheet) {
     return immuneRefs.has(key(col, id)) || (ent?.tags || []).some(x => immuneTags.has(x));
   }
 
+  /**
+   * How a value was reached, for the debug mode: the base formula, the same formula with
+   * the values it read, and each effect on top. { formula, filled, base, parts, bonus, total }
+   */
+  function explain(id) {
+    const sec = sectionOf(id);
+    const def = rules[sec]?.[id];
+    if (!def) return null;
+    let formula = null, vars = {}, base;
+    if (sec === 'attributes') base = num(sheet.attributes?.[id] ?? def.default ?? def.min ?? 0);
+    else if (sec === 'skills') {
+      vars = { points: num(sheet.skills?.[id]) };
+      formula = def.total || (def.attribute && rules.attributes[def.attribute] ? `points + mod(${def.attribute})` : 'points');
+    } else if (sec === 'derived') formula = def.formula;
+    else if (sec === 'resources') formula = def.max;
+    else return null;
+    if (formula !== null) base = num(safe(formula, vars));
+    const parts = (byTarget[id] || []).map(({ ef, f }) => {
+      let on = true, v = 0;
+      try { on = !ef.if || !!run(ef.if, f.vars); v = num(run(ef.value, f.vars)); } catch { on = false; }
+      return { source: f.ent.name || f.k, type: ef.type, formula: String(ef.value), filled: fill(ef.value, f.vars), if: ef.if, on, value: v };
+    });
+    return { formula: formula === null ? null : String(formula ?? 0), filled: formula === null ? null : fill(formula, vars), base, parts,
+      bonus: sec === 'derived' && def.editable_bonus ? num(sheet.bonus?.[id]) : 0, total: value(id) };
+  }
+  function safe(f, vars) { try { return run(f, vars); } catch { return 0; } }
+  // The formula with each value it names replaced by its number (quoted text is left alone).
+  function fill(f, vars = {}) {
+    if (typeof f !== 'string') return String(f ?? 0);
+    return f.replace(/('[^']*'|"[^"]*")|(?<![\p{L}\p{N}_])([\p{L}_][\p{L}\p{N}_]*)(?![\p{L}\p{N}_]|\s*\()/gu, (all, quoted, name) => {
+      if (quoted) return all;
+      if (name in vars) return fmtNum(vars[name]);
+      try { return fmtNum(variable(name)); } catch { return all; }
+    });
+  }
+
   /** Is a derived value visible? ("if" field) */
   function visible(def) {
     if (!def.if) return true;
@@ -213,11 +249,13 @@ export function compute(rules, sheet) {
   }
 
   return {
-    value, formula, visible, immune, errors, lists, sources, active,
+    value, formula, visible, immune, explain, errors, lists, sources, active,
     mod: v => functions.mod(v),
     blocked: sources.filter(blocked),
   };
 }
+
+const fmtNum = v => (typeof v === 'number' ? String(Math.round(v * 100) / 100) : String(v));
 
 function num(v) {
   if (typeof v === 'boolean') return v ? 1 : 0;

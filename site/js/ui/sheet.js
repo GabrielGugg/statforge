@@ -26,6 +26,7 @@ export async function sheetScreen(app, id) {
   const layoutKey = `layout:${sheet.system}`;
   state.custom = (await db.getConfig(layoutKey, {})) || {};
   state.unit = await db.getConfig('unit', 'm');
+  state.debug = !!(await db.getConfig('debug', false));
   state.invMode = await db.getConfig('inventoryView', 'cards');
   state.saveCustom = () => db.setConfig(layoutKey, state.custom).catch(e => toast(e.message, 'error'));
 
@@ -319,8 +320,8 @@ function attributesBlock(st, def) {
   const cells = list.map(a => {
     const base = sheet.attributes?.[a.id] ?? a.default ?? a.min ?? 0;
     const effective = calc.value(a.id);
-    return h('div.attribute', { title: a.description || '' },
-      h('div.label', a.abbr || a.id),
+    return h('div.attribute', { title: tip(st, a.id, a.description) },
+      h('div.label', a.abbr || a.id, debugButton(st, a.id)),
       h('div.small', a.name),
       h('input', { type: 'number', value: base, min: a.min, max: a.max, inputmode: 'numeric', 'aria-label': a.name,
         onchange: e => {
@@ -359,7 +360,7 @@ function skillsBlock(st, def) {
       budget !== null && spent !== budget ? h('div.small.skill-budget.warn', t(spent > budget ? 'sheet.skillsOver' : 'sheet.skillsLeft', { n: Math.abs(budget - spent), spent, budget })) : null,
       h('div.scroll-table', h('table.table', head, h('tbody', list.map(p => h('tr', name(p),
         h('td.num', fmt(saved(p.id))),
-        h('td.num', h('strong', signed(calc.value(p.id)))))))))];
+        h('td.num', { title: tip(st, p.id) }, debugButton(st, p.id), h('strong', signed(calc.value(p.id)))))))))];
   }
 
   // Editing: − / + change a draft; Apply saves it, Cancel drops it.
@@ -402,8 +403,8 @@ function derivedBlock(st, def) {
     title: t('sheet.extraBonus'), 'aria-label': t('sheet.extraBonusOf', { name: d.name }),
     onchange: e => { const n = Number(e.target.value) || 0; st.sheet.bonus ||= {}; if (n) st.sheet.bonus[d.id] = n; else delete st.sheet.bonus[d.id]; st.change(); } });
   return [h('h3', def.title || t('sheet.values')), h('table.table', h('tbody', list.map(d => h('tr',
-    h('td', { title: d.description || d.formula }, d.name, d.editable_bonus ? h('span.muted.small', ` (${t('sheet.extraBonus')})`) : null),
-    h('td.num', d.editable_bonus ? h('span.bonus-cell', bonusInput(d), h('strong', fmt(calc.value(d.id)))) : h('strong', fmt(calc.value(d.id))), d.unit ? ` ${d.unit}` : '')))))];
+    h('td', { title: tip(st, d.id, d.description || (st.debug ? '' : d.formula)) }, d.name, d.editable_bonus ? h('span.muted.small', ` (${t('sheet.extraBonus')})`) : null),
+    h('td.num', debugButton(st, d.id), d.editable_bonus ? h('span.bonus-cell', bonusInput(d), h('strong', fmt(calc.value(d.id)))) : h('strong', fmt(calc.value(d.id))), d.unit ? ` ${d.unit}` : '')))))];
 }
 
 function resourcesBlock(st, def) {
@@ -416,15 +417,15 @@ function resourcesBlock(st, def) {
     const current = sheet.resources?.[r.id] ?? max;
     const set = v => { (sheet.resources ||= {})[r.id] = v; st.change(); };
     const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
-    if (r.display === 'card') return h('div.resource', { title: r.recovery || '' }, h('div.row.spread', h('strong', r.name), h('strong', fmt(max))));
+    if (r.display === 'card') return h('div.resource', { title: tip(st, r.id, r.recovery) }, h('div.row.spread', h('strong', r.name, debugButton(st, r.id)), h('strong', fmt(max))));
     if (r.display === 'toggles') {
-      return h('div.resource', { title: r.recovery || '' },
-        h('div.row', h('strong', r.name), resourceToggles(st, r, max, current)),
+      return h('div.resource', { title: tip(st, r.id, r.recovery) },
+        h('div.row', h('strong', r.name, debugButton(st, r.id)), resourceToggles(st, r, max, current)),
         r.recovery ? h('div.muted.small', r.recovery) : null);
     }
-    return h('div.resource', { title: r.recovery || '' },
+    return h('div.resource', { title: tip(st, r.id, r.recovery) },
       h('div.row',
-        h('strong', r.name),
+        h('strong', r.name, debugButton(st, r.id)),
         h('div.row',
           h('button.mini', { 'aria-label': `${r.name} −1`, onclick: () => set(current - 1) }, '−'),
           h('input', { type: 'number', value: current, inputmode: 'numeric', 'aria-label': t('sheet.current', { name: r.name }), onchange: e => set(Number(e.target.value) || 0) }),
@@ -445,20 +446,20 @@ function resourceTile(st, r, def) {
   const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
   // "card": only the total, for points spent and refilled every turn (counted in your head).
   if (r.display === 'card') {
-    return [h('div.res-tile', { title: r.recovery || '' },
-      h('div.res-name', h('strong', def.title || r.abbr || r.name), r.abbr && !def.title ? h('span.muted.small', r.name) : null),
+    return [h('div.res-tile', { title: tip(st, r.id, r.recovery) },
+      h('div.res-name', h('strong', def.title || r.abbr || r.name, debugButton(st, r.id)), r.abbr && !def.title ? h('span.muted.small', r.name) : null),
       h('div.res-value.res-total', h('strong', fmt(max))),
       r.recovery ? h('div.muted.small', r.recovery) : null)];
   }
   if (r.display === 'toggles') {
-    return [h('div.res-tile', { title: r.recovery || '' },
-      h('div.res-name', h('strong', def.title || r.abbr || r.name), r.abbr && !def.title ? h('span.muted.small', r.name) : null),
+    return [h('div.res-tile', { title: tip(st, r.id, r.recovery) },
+      h('div.res-name', h('strong', def.title || r.abbr || r.name, debugButton(st, r.id)), r.abbr && !def.title ? h('span.muted.small', r.name) : null),
       resourceToggles(st, r, max, current),
       h('div.res-buttons', h('span.muted.small', `${fmt(Math.min(current, max))} / ${fmt(max)}`),
         h('button.mini', { title: t('sheet.restoreMax'), 'aria-label': t('sheet.restoreMax'), onclick: () => set(max) }, '↺')))];
   }
-  return [h('div.res-tile', { title: r.recovery || '' },
-    h('div.res-name', h('strong', def.title || r.abbr || r.name), r.abbr && !def.title ? h('span.muted.small', r.name) : null),
+  return [h('div.res-tile', { title: tip(st, r.id, r.recovery) },
+    h('div.res-name', h('strong', def.title || r.abbr || r.name, debugButton(st, r.id)), r.abbr && !def.title ? h('span.muted.small', r.name) : null),
     h('div.res-value',
       h('input', { type: 'number', value: current, inputmode: 'numeric', 'aria-label': t('sheet.current', { name: r.name }), onchange: e => set(Number(e.target.value) || 0) }),
       h('span.muted', `/ ${fmt(max)}`)),
@@ -518,6 +519,63 @@ function effectsBlock(st, def) {
   }
   if (calc.blocked.length) parts.push(h('p.muted.small', t('sheet.blocked', { list: calc.blocked.map(f => f.ent.name).join(', ') })));
   return [h('h3', def.title || t('sheet.activeEffects')), parts.length ? parts : h('p.muted.small', t('sheet.noEffects'))];
+}
+
+/** What an active item does, in short: "+50 em Capacidade de Carga · Imunidade: Lento". Notes stay in Active effects. */
+function itemEffects(st, item) {
+  const { calc, rules } = st;
+  const f = calc.active.find(x => x.item === item);
+  if (!f) return null;
+  const texts = [];
+  for (const ef of f.effects) {
+    if (ef.type === 'note' || ef.type === 'block') continue;
+    if (ef.if && !calc.formula(ef.if, f.vars)) continue;
+    const target = targetName(rules, ef.target);
+    if (ef.type === 'add' || ef.type === 'set') {
+      const v = Number(calc.formula(ef.value, f.vars)) || 0;
+      if (ef.type === 'add' && !v) continue;
+      texts.push(ef.type === 'add' ? `${signed(v)} ${t('effects.on', { target })}` : `${target} = ${fmt(v)}`);
+    } else if (ef.type === 'grant') texts.push(describeEffect(rules, ef));
+    else texts.push(`${t(`effects.${ef.type}`)}: ${ef.text || [].concat(ef.ref ?? ef.tag ?? []).map(r => refName(rules, r)).join(', ') || target || ''}`);
+  }
+  return texts.length ? h('div.small.item-effects', texts.join(' · ')) : null;
+}
+
+function refName(rules, ref) {
+  const [c, i] = String(ref).split('/');
+  return (i ? rules.entities[c]?.[i]?.name : rules.counters[c]?.name) || ref;
+}
+
+// ---------- Debug mode: how each computed value was reached ----------
+function debugText(st, id) {
+  const x = st.debug && st.calc.explain(id);
+  if (!x) return '';
+  const def = ['attributes', 'skills', 'derived', 'resources'].map(s => st.rules[s][id]).find(Boolean);
+  const lines = [`ƒ ${def?.name || id} = ${fmt(x.total)}`];
+  if (x.formula === null) lines.push(t('debug.sheetValue', { n: fmt(x.base) }));
+  else if (/^-?\d+(\.\d+)?$/.test(x.formula.trim())) lines.push(x.formula);
+  else lines.push(x.formula, x.filled !== x.formula ? `= ${x.filled} = ${fmt(x.base)}` : `= ${fmt(x.base)}`);
+  for (const p of x.parts) {
+    const num = /^-?\d+(\.\d+)?$/.test(p.formula);
+    lines.push(`${p.type === 'set' ? '= ' : signed(p.value)}${p.type === 'set' ? fmt(p.value) : ''} ${p.source}`
+      + (num ? '' : `  (${p.formula}${p.filled !== p.formula ? ` → ${p.filled}` : ''})`)
+      + (p.if ? `  [${t('effects.if', { cond: p.if })}]` : '')
+      + (p.on ? '' : `  — ${t('debug.off')}`));
+  }
+  if (x.bonus) lines.push(`${signed(x.bonus)} ${t('sheet.extraBonus')}`);
+  return lines.join('\n');
+}
+
+/** A field's tooltip; in debug mode the calculation goes last. */
+function tip(st, id, base) {
+  return [base, debugText(st, id)].filter(Boolean).join('\n\n');
+}
+
+/** Tooltips do not show on touch screens: in debug mode a small "ƒ" opens the same text. */
+function debugButton(st, id) {
+  if (!st.debug) return null;
+  return h('button.mini.debug-btn', { type: 'button', title: t('debug.show'), 'aria-label': t('debug.show'),
+    onclick: ev => { ev.stopPropagation(); dialog(t('debug.title'), h('pre.debug-pre', debugText(st, id))); } }, 'ƒ');
 }
 
 function targetName(rules, target) {
@@ -694,6 +752,7 @@ function equippedBlock(st, def) {
             h('span.muted.small', fields[c]?.label || c), h('strong', fmtField(now, fields[c], st)));
         }),
         wearStats(item).map(x => h('span.stat.worn', h('span.muted.small', x.label), h('strong', x.value)))) : null,
+      itemEffects(st, item),
       isBroken(rules, item) ? h('div.small', { style: { color: 'var(--danger)' } }, t('sheet.brokenText')) : null,
       ent?.magazine ? magazineRow(st, item, ent) : null,
       col.mods ? h('div.equip-mods.small',
@@ -739,7 +798,7 @@ function inventoryBlock(st, def) {
       .sort((a, b) => byName(a.name, b.name));
     tbody.replaceChildren(...list.map(({ i, col, name }) => h('tr',
       h('td', col.equippable ? h('input', { type: 'checkbox', checked: !!i.equipped, 'aria-label': t('sheet.equipName', { name }), onchange: e => { i.equipped = e.target.checked; st.change(); } }) : null),
-      h('td', h('button.mini.link', { onclick: () => entityDetails(st, i.collection, i.ref, i) }, name), wearBadge(col, i), h('div.small.muted', col.name)),
+      h('td', h('button.mini.link', { onclick: () => entityDetails(st, i.collection, i.ref, i) }, name), wearBadge(col, i), h('div.small.muted', col.name), itemEffects(st, i)),
       listCols.map(f => h('td.small.num', fieldsFor(def.list_fields, i.collection).includes(f) ? fmtField(rules.entities[i.collection]?.[i.ref]?.[f], col.fields?.[f], st) : '—')),
       h('td.num', col.quantity ? h('input', { type: 'number', value: i.qty ?? 1, min: 0, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name }),
         onchange: e => { i.qty = Math.max(0, Number(e.target.value) || 0); st.change(); } }) : null),
@@ -786,7 +845,8 @@ function listBlock(st, def) {
       col?.equippable ? h('td', h('input', { type: 'checkbox', checked: !!item.equipped, 'aria-label': t('sheet.equipName', { name }), onchange: e => { item.equipped = e.target.checked; st.change(); } })) : null,
       h('td', h('button.mini.link', { onclick: () => entityDetails(st, colId, item.ref, item) }, name),
         def.wear_badge ? wearBadge(col, item) : null,
-        ent ? null : h('span.badge.error', t('sheet.notFoundBadge'))),
+        ent ? null : h('span.badge.error', t('sheet.notFoundBadge')),
+        itemEffects(st, item)),
       columns.map(c => h('td.small', fmtField(itemValue(st, colId, item, ent, c), fields[c], st))),
       usesQty ? h('td.num', h('input', { type: 'number', value: item.qty ?? 1, min: 0, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name }),
         onchange: e => { item.qty = Math.max(0, Number(e.target.value) || 0); st.change(); } })) : null,
