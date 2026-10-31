@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.0.0 — 31/10/2026
+
+Primeira versão oficial.
+
+- **Sincronização com o Google Drive**: em Configurações, Conectar Google Drive guarda fichas e pacotes numa pasta escondida do app no seu próprio Drive. As mudanças sobem alguns segundos depois de feitas; ao abrir o app em outro aparelho, um toque sincroniza. Se os dois aparelhos mudaram a mesma ficha, vale a edição mais recente; fichas excluídas continuam excluídas. Cada aparelho mantém as próprias configurações.
+
 ## 0.2.9 — 31/10/2026
 
 - **Requisitos**: as entidades podem ter `requires` (uma fórmula). As buscas e os passos de escolha (criação e subir de nível) mostram "requisito não atendido" e não deixam escolher.

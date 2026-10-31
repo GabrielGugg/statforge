@@ -6,6 +6,7 @@ import { installed } from '../packages.js';
 import { applyTheme } from './theme.js';
 import { VERSION } from '../version.js';
 import { DEFAULT_HUB } from './hub.js';
+import * as sync from '../sync.js';
 import { t, LANGUAGES, getLanguage, setLanguage } from '../i18n.js';
 import { h, toast, downloadJSON, pickFiles, confirm, byName, translateStatic } from './util.js';
 
@@ -48,8 +49,37 @@ export async function settingsScreen(app) {
     .then(txt => changelog.replaceChildren(...simpleMarkdown(txt)))
     .catch(() => changelog.replaceChildren(h('p.muted', t('settings.changelogOffline'))));
 
+  // Cloud sync
+  const syncBox = h('div');
+  const idInput = h('input', { type: 'text', value: await db.getConfig('syncClientId', ''), placeholder: sync.DEFAULT_CLIENT_ID || '….apps.googleusercontent.com',
+    onchange: async e => { await db.setConfig('syncClientId', e.target.value.trim()); toast(t('settings.saved')); drawSync(); } });
+  const run = async fn => {
+    try { const changed = await fn(); toast(changed ? t('sync.doneChanged') : t('sync.done')); }
+    catch (e) { toast(e.message === 'NO_CLIENT_ID' ? t('sync.noClient') : t('sync.failed', { error: e.message }), 'error'); }
+    drawSync();
+  };
+  async function drawSync() {
+    const s = await sync.status();
+    const noId = !(await sync.clientId());
+    syncBox.replaceChildren(...[
+      h('p', s.enabled ? t('sync.on') : t('sync.text')),
+      s.enabled && s.last ? h('p.muted.small', t('sync.last', { when: new Date(s.last).toLocaleString(getLanguage()) })) : null,
+      s.error ? h('p.small', { style: { color: 'var(--danger)' } }, t('sync.failed', { error: s.error })) : null,
+      noId ? h('p.muted.small', t('sync.noClient')) : null,
+      h('div.row',
+        s.enabled
+          ? [h('button.primary', { disabled: s.busy, onclick: () => run(() => sync.syncNow()) }, s.busy ? t('sync.busy') : t('sync.now')),
+             h('button', { onclick: async () => { await sync.disconnect(); drawSync(); } }, t('sync.disconnect'))]
+          : h('button.primary', { disabled: noId, onclick: () => run(() => sync.connect()) }, t('sync.connect'))),
+      h('details', { style: { marginTop: '.75rem' } }, h('summary.small', t('sync.advanced')),
+        h('label.field', h('span', t('sync.clientId')), idInput), h('p.muted.small', t('sync.clientHint'))),
+    ].filter(Boolean));
+  }
+  drawSync();
+
   app.append(
     h('h1.section', t('settings.title')),
+    h('section.card.section', h('h2', t('sync.title')), syncBox),
     h('section.card.section',
       h('h2', t('settings.appearance')),
       h('label.field', h('span', t('settings.language')), selLanguage),

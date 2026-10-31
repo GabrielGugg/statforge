@@ -6,7 +6,7 @@ Ficha de personagem para **qualquer sistema de RPG**. O app não vem com nenhum 
 
 - Funciona no navegador, no celular e offline. Pode ser instalado como app (PWA).
 - Interface em inglês e português do Brasil. Cada pacote declara o próprio idioma.
-- Seus dados ficam só no seu navegador. Use o backup em Configurações para trocar de aparelho.
+- Seus dados ficam no seu navegador. Para usar em vários aparelhos, ligue a sincronização com o Google Drive em Configurações (ela salva numa pasta escondida do app no seu próprio Drive), ou leve um backup na mão.
 
 ## Como usar
 
@@ -36,6 +36,7 @@ python3 -m http.server 8000    # e abra http://localhost:8000/site/
 | Pasta | O que tem |
 | --- | --- |
 | `site/js/engine/` | Fórmulas, validação e montagem de pacotes, cálculo da ficha. Não depende do navegador. |
+| `site/js/sync.js` | Sincronização com o Google Drive (um arquivo na pasta escondida do app; a mescla fica em `engine/merge.js`). Quem hospedar o StatForge por conta própria põe o seu ID de cliente OAuth em Configurações › Sincronização na nuvem › Avançado, ou em `DEFAULT_CLIENT_ID`. |
 | `site/js/ui/` | Telas. |
 | `site/js/locales/` | Textos da interface, um arquivo por idioma. `en.js` é a base; os outros idiomas caem nele quando falta algo. |
 | `site/js/packages.js`, `storage.js` | Instalação de pacotes e armazenamento (IndexedDB). |
