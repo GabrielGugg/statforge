@@ -1,5 +1,6 @@
 // Textos da interface em português do Brasil. Chave ausente aqui cai no inglês.
 export default {
+  'nav.back': 'Voltar',
   'nav.packages': 'Pacotes',
   'nav.settings': 'Configurações',
 
@@ -235,6 +236,9 @@ export default {
   'sheet.addCounter': '+ Adicionar',
   'sheet.noneActive': 'Nenhum ativo.',
   'sheet.rule': 'Regra',
+  'sheet.removeTitle': 'Remover da ficha',
+  'sheet.removeAsk': 'Remover "{name}" desta ficha?',
+  'sheet.remove': 'Remover',
   'sheet.notFound': 'Ficha não encontrada.',
   'sheet.level': 'Nível',
   'sheet.nextLevel': 'Próximo nível: {xp} XP',

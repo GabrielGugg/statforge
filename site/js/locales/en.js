@@ -1,5 +1,6 @@
 // English interface text (the base language: every key must exist here).
 export default {
+  'nav.back': 'Back',
   'nav.packages': 'Packages',
   'nav.settings': 'Settings',
 
@@ -235,6 +236,9 @@ export default {
   'sheet.addCounter': '+ Add',
   'sheet.noneActive': 'None active.',
   'sheet.rule': 'Rule',
+  'sheet.removeTitle': 'Remove from sheet',
+  'sheet.removeAsk': 'Remove "{name}" from this sheet?',
+  'sheet.remove': 'Remove',
   'sheet.notFound': 'Sheet not found.',
   'sheet.level': 'Level',
   'sheet.nextLevel': 'Next level: {xp} XP',

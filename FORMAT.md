@@ -107,6 +107,7 @@ A collection is a kind of thing (weapons, traits, conditions). Entities are the 
 | `quantity` | Shows the quantity column. Adding a repeated item adds 1. |
 | `wear.max` | Shows wear (−/+) up to this maximum. |
 | `max` | How many items the sheet can have in this collection (e.g. 1 class). |
+| `quick_remove` | Removing an item does not ask for confirmation (good for conditions). |
 | `fields` | Data shown in the details and columns. Types: `text`, `number`, `dice`, `boolean`, `list`. |
 
 Collections without `equippable` (traits, perks, conditions) always apply while they are on the sheet.

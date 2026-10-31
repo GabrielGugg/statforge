@@ -20,8 +20,29 @@ import { settingsScreen } from './ui/settings.js';
 import { hubScreen } from './ui/hub.js';
 
 const app = document.getElementById('app');
+const backButton = document.getElementById('back');
+
+// In-app history, so "back" returns to where you were (e.g. Settings → the open sheet).
+const trail = (() => { try { return JSON.parse(sessionStorage.getItem('trail') || '[]'); } catch { return []; } })();
+let current = location.hash || '#/';
+let goingBack = false;
+function remember(next) {
+  if (goingBack) goingBack = false;
+  else if (next !== current) trail.push(current);
+  if (trail.length > 50) trail.splice(0, trail.length - 50);
+  current = next;
+  try { sessionStorage.setItem('trail', JSON.stringify(trail)); } catch { /* private mode */ }
+  backButton.hidden = next === '#/' || next === '#' || next === '';
+}
+backButton.addEventListener('click', () => {
+  let target = trail.pop();
+  while (target === current && trail.length) target = trail.pop();
+  goingBack = true;
+  location.hash = target && target !== current ? target : '#/';
+});
 
 async function route() {
+  remember(location.hash || '#/');
   const [, name, arg] = (location.hash || '#/').split('/');
   clear(app);
   try {

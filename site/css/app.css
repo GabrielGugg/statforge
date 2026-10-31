@@ -329,3 +329,5 @@ details.rule { margin-top: .25rem; } details.rule summary { cursor: pointer; }
 .hub-item { display: grid; gap: .35rem; align-content: start; }
 .hub-head { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
 .hub-desc { margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: var(--text-muted); }
+.wear-value { min-width: 3.2em; text-align: center; display: inline-block; }
+.topbar .back { flex: none; }

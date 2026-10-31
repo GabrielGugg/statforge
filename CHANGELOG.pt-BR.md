@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.1.7 — 31/10/2026
+
+- **Botão voltar** na barra do topo: volta para onde você estava (por exemplo, de Configurações para a ficha aberta).
+- Remover algo da ficha (raça, antecedente, item…) pede confirmação antes. Coleções marcadas com `quick_remove` (como condições) não perguntam.
+- Correção: o contador de desgaste agora fica alinhado com a coluna.
+
 ## 0.1.6 — 30/10/2026
 
 - **Hub**: Pacotes › Explorar o Hub lista os pacotes compartilhados no [StatForge Hub](https://github.com/GabrielGugg/statforge-hub) oficial. Busque, filtre por tipo e idioma, instale com um toque e veja quando um pacote que você tem ganhou versão nova ("Atualizar todos"). O endereço do Hub pode ser trocado em Configurações, então grupos podem ter o próprio.

@@ -106,6 +106,7 @@ Uma coleção (`collections`) é um tipo de coisa (armas, traços, condições).
 | `equippable` | Os itens têm uma caixa "equipado", e os efeitos só valem quando ela está marcada. |
 | `quantity` | Mostra a coluna de quantidade. Adicionar um item repetido soma 1. |
 | `wear.max` | Mostra o desgaste (−/+) até esse máximo. |
+| `quick_remove` | Remover um item não pede confirmação (bom para condições). |
 | `max` | Quantos itens a ficha pode ter nessa coleção (ex.: 1 raça). |
 | `fields` | Dados mostrados nos detalhes e nas colunas. Tipos: `text`, `number`, `dice`, `boolean`, `list`. |
 
