@@ -110,7 +110,8 @@ A collection is a kind of thing (weapons, traits, conditions). Entities are the 
 | `wear.max` | Shows wear (−/+) up to this maximum. |
 | `max` | How many items the sheet can have in this collection (e.g. 1 class). |
 | `quick_remove` | Removing an item does not ask for confirmation (good for conditions). |
-| `fields` | Data shown in the details and columns. Types: `text`, `number`, `dice`, `boolean`, `list`. |
+| `mods` | Id of another collection whose items can be installed inside these (weapon mods). Only mods that are in the inventory can be installed; an entity's `magazine_bonus` adds to the magazine of the item it is installed in. |
+| `fields` | Data shown in the details and columns. Types: `text`, `number`, `dice`, `boolean`, `list`. | `range` is a distance shown in the unit the player picks in Settings (meters, feet or squares of 1.5 m / 5 ft): `"unit": "ft"` says the unit of the data, and with `"per": "PER"` a value like `"x10/x20"` means 10× and 20× that value. |
 
 Collections without `equippable` (traits, perks, conditions) always apply while they are on the sheet.
 
@@ -175,6 +176,10 @@ Each tab is a 12-column grid. `"w"` is the block's width in columns (3, 4, 6, 8 
 
 - A `resources` block with a single item becomes a compact tile (big current/max, bar, −1 +1 and restore). Put a few of them at the top with `"w": 3`.
 - `"only_active": true` on a `counters` block shows only the counters above 0, with a menu to add the others.
+- `"view": "equipped"` on a `list` block shows only the equipped items, as cards with their `columns`, wear, magazine and mods; items are added and counted in the inventory. `"hide_empty": true` hides the block when nothing is equipped.
+- An `inventory` block (`"collections": [...]`, optional `"columns": { collection: [fields] }`) holds every item: the player switches between cards by category and one searchable list.
+- **Magazine**: an entity with `"magazine": { "capacity": 12, "ammo": ["ammo/9mm"], "charge": false, "per_shot": 1 }` shows rounds loaded / capacity with a Reload button that takes rounds from those inventory items (with `charge`, one unit, like an energy cell, fills it). Works for bows, crossbows and guns alike.
+- A derived value with `"editable_bonus": true` gets a small field for an extra modifier the player types (e.g. carrying capacity from a house rule).
 - `abbr` on a resource is shown big on its tile.
 
 ### Character creation

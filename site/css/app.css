@@ -347,3 +347,40 @@ tr.granted td:first-child button, tr.granted .link { font-style: italic; }
 .skill-budget.warn { color: var(--warning); margin-bottom: .4rem; }
 tr.changed td { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .skill-actions { justify-content: flex-end; margin-top: .6rem; }
+
+/* Derived values with an extra modifier field */
+.bonus-cell { display: inline-flex; align-items: center; gap: .5rem; }
+.bonus-input { width: 4.5em; min-height: 32px; padding: .15rem .35rem; text-align: center; font-size: .9rem; }
+
+/* Equipped view (weapons, armor...) */
+.equip-list { display: grid; gap: .6rem; }
+.equip-card { border: 1px solid var(--border); border-radius: 10px; padding: .6rem .7rem; display: grid; gap: .5rem; background: var(--surface-2); }
+.equip-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.equip-name { font-weight: 700; font-size: 1rem; text-align: left; padding-left: 0; }
+.wear-row { gap: 4px; flex-wrap: nowrap; align-items: center; }
+.equip-stats { display: flex; flex-wrap: wrap; gap: .35rem .9rem; }
+.equip-stats .stat { display: inline-flex; flex-direction: column; min-width: 3.5rem; }
+.equip-stats .stat strong { font-size: .95rem; }
+.magazine { display: grid; grid-template-columns: 1fr auto; gap: .2rem .6rem; align-items: center; border-top: 1px solid var(--border); padding-top: .45rem; }
+.mag-count { display: flex; align-items: baseline; gap: .35rem; flex-wrap: wrap; }
+.mag-count strong { font-size: 1.4rem; }
+.mag-buttons { gap: 4px; flex-wrap: nowrap; }
+.magazine > .small { grid-column: 1 / -1; }
+.equip-mods { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.equip-mods button { margin-left: auto; }
+.mod-list { list-style: none; padding: 0; margin: 0 0 .6rem; display: grid; gap: .3rem; }
+.mod-list li { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.choice-button { display: flex; width: 100%; justify-content: flex-start; gap: .4rem; margin-bottom: .4rem; }
+
+/* Inventory */
+.inv-tools { gap: .4rem; flex-wrap: wrap; justify-content: flex-end; }
+.segmented { display: inline-flex; }
+.segmented button { border-radius: 0; }
+.segmented button:first-child { border-radius: 8px 0 0 8px; }
+.segmented button:last-child { border-radius: 0 8px 8px 0; border-left: 0; }
+.segmented button[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.inv-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: .7rem; }
+.inv-card { border: 1px solid var(--border); border-radius: 10px; padding: .6rem .7rem; min-width: 0; }
+.inv-card h3 { font-size: 1rem; }
+.block > input[type=search] { margin-bottom: .5rem; }
+@media (max-width: 420px) { .inv-cards { grid-template-columns: 1fr; } }

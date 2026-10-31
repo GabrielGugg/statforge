@@ -38,6 +38,10 @@ export async function settingsScreen(app) {
       toast(t('settings.saved'));
     } });
 
+  const selUnit = h('select', { onchange: async e => { await db.setConfig('unit', e.target.value); toast(t('settings.saved')); } },
+    h('option', { value: 'm' }, t('settings.unitM')), h('option', { value: 'ft' }, t('settings.unitFt')), h('option', { value: 'sq' }, t('settings.unitSq')));
+  selUnit.value = await db.getConfig('unit', 'm');
+
   const changelog = h('div.markdown.small', h('p.muted', t('common.loading')));
   const file = getLanguage() === 'en' ? 'CHANGELOG.md' : `CHANGELOG.${getLanguage()}.md`;
   fetch(file).then(r => (r.ok ? r.text() : fetch('CHANGELOG.md').then(x => (x.ok ? x.text() : Promise.reject()))))
@@ -51,7 +55,9 @@ export async function settingsScreen(app) {
       h('label.field', h('span', t('settings.language')), selLanguage),
       h('p.muted.small', t('settings.languageHint')),
       h('label.field', h('span', t('settings.theme')), selTheme),
-      h('p.muted.small', t('settings.themeHint'))),
+      h('p.muted.small', t('settings.themeHint')),
+      h('label.field', h('span', t('settings.units')), selUnit),
+      h('p.muted.small', t('settings.unitsHint'))),
     h('section.card.section',
       h('h2', t('hub.title')),
       h('label.field', h('span', t('settings.hubUrl')), hubInput),
