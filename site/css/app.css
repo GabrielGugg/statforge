@@ -398,3 +398,8 @@ tr.changed td { background: color-mix(in srgb, var(--accent) 10%, transparent); 
 .note.result .note-title { white-space: normal; }
 .note-line { margin: .3rem 0 0; white-space: pre-line; }
 mark { background: color-mix(in srgb, var(--warning) 45%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+.search-bar { flex-wrap: nowrap; gap: .4rem; margin-bottom: .5rem; }
+.search-bar input { flex: 1; min-width: 0; }
+.search-bar select { width: auto; max-width: 45%; }
+.wear-badge { margin-left: .35rem; }
