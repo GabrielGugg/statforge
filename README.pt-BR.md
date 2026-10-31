@@ -15,7 +15,7 @@ Ficha de personagem para **qualquer sistema de RPG**. O app não vem com nenhum 
 | 🌐 **Abrir o app** | https://gabrielgugg.github.io/statforge/site/ |
 | 📦 **StatForge Hub** (pacotes para instalar) | https://github.com/GabrielGugg/statforge-hub |
 | 🧭 **Tutorial: usar o app** | [Como usar](#como-usar) (abaixo) |
-| 🛠️ **Tutorial: criar um sistema ou homebrew** | [Guia do formato](FORMAT.pt-BR.md) e os [exemplos](examples/) |
+| 🛠️ **Tutorial: criar um sistema ou homebrew** | [Construtor](https://gabrielgugg.github.io/statforge-hub/builder/) [Guia do formato](FORMAT.pt-BR.md) e os [exemplos](examples/) |
 | 📤 **Tutorial: compartilhar um pacote no Hub** | [Guia de contribuição do Hub](https://github.com/GabrielGugg/statforge-hub/blob/main/CONTRIBUTING.pt-BR.md) |
 | 📝 **O que mudou em cada versão** | [Changelog](CHANGELOG.pt-BR.md) |
 | 🐞 **Relatar um bug ou pedir uma função** | [Issues](https://github.com/GabrielGugg/statforge/issues) |
