@@ -384,3 +384,17 @@ tr.changed td { background: color-mix(in srgb, var(--accent) 10%, transparent); 
 .inv-card h3 { font-size: 1rem; }
 .block > input[type=search] { margin-bottom: .5rem; }
 @media (max-width: 420px) { .inv-cards { grid-template-columns: 1fr; } }
+
+/* Notebook */
+.notebook { display: grid; gap: .5rem; }
+.notebook-search { margin-bottom: .6rem; }
+.note { border: 1px solid var(--border); border-radius: 10px; padding: .45rem .6rem; background: var(--surface-2); min-width: 0; }
+.note-head { display: flex; align-items: center; gap: .4rem; min-width: 0; }
+.note-head > .note-title, .note-head > .note-title-input { flex: 1; min-width: 0; }
+.note-title { text-align: left; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: .2rem 0; }
+.note-title-input { font-weight: 700; min-height: 36px; }
+.note-preview { font-weight: 400; }
+.note-text { margin-top: .45rem; min-height: 8rem; width: 100%; }
+.note.result .note-title { white-space: normal; }
+.note-line { margin: .3rem 0 0; white-space: pre-line; }
+mark { background: color-mix(in srgb, var(--warning) 45%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
