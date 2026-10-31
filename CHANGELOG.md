@@ -2,6 +2,10 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.2.7 — 2026-10-31
+
+- Resources can show only their total as a card (`"display": "card"`), for points spent and refilled every turn.
+
 ## 0.2.6 — 2026-10-31
 
 - **Level up**: a Level up button in the sheet header (highlighted when there is enough XP) opens an assistant defined by the package (`progression.level_up`), with the same steps as character creation: choose a perk or an attribute, spend skill points and so on. The top shows what changes (PV 15 → 20), and a review lists everything before confirming. Spent resources keep their gap to the new maximum. Packages without it just add one level.

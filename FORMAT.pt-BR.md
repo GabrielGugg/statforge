@@ -71,7 +71,7 @@ Fórmulas são código, então as funções e palavras-chave delas (`floor`, `su
 - **Perícia** (`skills`): o total padrão é `pontos + mod(atributo)`. Para outra regra, use `"total": "points * 2 + mod(INT)"`.
 - **Valor calculado** (`derived`): um número calculado. `"if": "has('humano')"` mostra o valor só quando a condição vale. `"unit": "kg"` aparece ao lado.
 - **Bloco de perícias** (`skills`): a ficha mostra pontos e totais com um botão **Editar**; na edição você usa − / + e depois **Aplicar** ou **Cancelar**. `"budget": "fórmula"` diz quantos pontos as perícias devem somar (contando todos os pontos da ficha, inclusive os bônus da criação); gastar a mais ou a menos mostra um aviso e o Aplicar pergunta antes.
-- **Recurso** (`resources`): `"display": "toggles"` mostra uma caixinha por ponto em vez de número e barra (tampas de karma, espaços de magia, usos por dia). Máximo maior, mais caixinhas.
+- **Recurso** (`resources`): `"display": "toggles"` mostra uma caixinha por ponto em vez de número e barra (tampas de karma, espaços de magia, usos por dia). Máximo maior, mais caixinhas. `"display": "card"` mostra só o total, sem valor atual nem barra (pontos gastos e recuperados todo turno).
 - **Recurso** (`resources`): tem valor atual (o jogador mexe) e máximo (fórmula).
 - **Contador** (`counters`): vai de 0 a `max`. Os efeitos dele valem enquanto for maior que 0, com `n` = nível atual.
 - **`progression.xp_per_level`**: XP total para o próximo nível. Quando a ficha tem esse XP, o botão Subir de nível fica destacado. `max_level` esconde o botão no topo.
