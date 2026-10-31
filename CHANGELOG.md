@@ -2,6 +2,10 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.1.1 — 2026-10-31
+
+- **Privacy Policy and Terms of Service** (Portuguese and English), required by Google to publish the sign-in: `site/privacy.html` and `site/terms.html`, linked from Settings, in the sync section and in About.
+
 ## 1.1.0 — 2026-10-31
 
 - **Item effects**: equipped items (and traits, perks and backgrounds) show what they do under their name, with the value already computed, for example "+50 to Carry Capacity" on a backpack. Reminders stay in Active effects.

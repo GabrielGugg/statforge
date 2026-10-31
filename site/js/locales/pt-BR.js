@@ -279,6 +279,8 @@ export default {
   'settings.unitM': 'Metros',
   'settings.unitFt': 'Pés',
   'settings.unitSq': 'Quadrados (1,5 m / 5 pés)',
+  'legal.privacy': 'Política de Privacidade',
+  'legal.terms': 'Termos de Serviço',
   'settings.debug': 'Modo debug',
   'settings.debugHint': 'Mostra como a ficha calcula cada valor: passe o mouse sobre um valor calculado (ou toque no ƒ) para ver a fórmula, os números que ela usou e cada efeito somado.',
   'debug.title': 'Como este valor é calculado',
