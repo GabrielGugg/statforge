@@ -24,6 +24,8 @@ export async function sheetScreen(app, id) {
   // The player's own arrangement of the blocks, shared by every sheet of the same system.
   const layoutKey = `layout:${sheet.system}`;
   state.custom = (await db.getConfig(layoutKey, {})) || {};
+  state.unit = await db.getConfig('unit', 'm');
+  state.invMode = await db.getConfig('inventoryView', 'cards');
   state.saveCustom = () => db.setConfig(layoutKey, state.custom).catch(e => toast(e.message, 'error'));
 
   let timer;
@@ -132,7 +134,7 @@ function body(st) {
   return h('div', bar, content);
 }
 
-const BLOCKS = { attributes: attributesBlock, skills: skillsBlock, derived: derivedBlock, resources: resourcesBlock, counters: countersBlock, effects: effectsBlock, list: listBlock, notes: notesBlock, roller: rollerBlock };
+const BLOCKS = { inventory: inventoryBlock, attributes: attributesBlock, skills: skillsBlock, derived: derivedBlock, resources: resourcesBlock, counters: countersBlock, effects: effectsBlock, list: listBlock, notes: notesBlock, roller: rollerBlock };
 
 function block(st, def) {
   const fn = BLOCKS[def.block];
@@ -319,9 +321,12 @@ function derivedBlock(st, def) {
   const { rules, calc } = st;
   const list = pick(rules.derived, def.items).filter(d => calc.visible(d));
   if (!list.length) return null;
+  const bonusInput = d => h('input.bonus-input', { type: 'number', inputmode: 'numeric', value: st.sheet.bonus?.[d.id] || '', placeholder: '+0',
+    title: t('sheet.extraBonus'), 'aria-label': t('sheet.extraBonusOf', { name: d.name }),
+    onchange: e => { const n = Number(e.target.value) || 0; st.sheet.bonus ||= {}; if (n) st.sheet.bonus[d.id] = n; else delete st.sheet.bonus[d.id]; st.change(); } });
   return [h('h3', def.title || t('sheet.values')), h('table.table', h('tbody', list.map(d => h('tr',
-    h('td', { title: d.description || d.formula }, d.name),
-    h('td.num', h('strong', fmt(calc.value(d.id))), d.unit ? ` ${d.unit}` : '')))))];
+    h('td', { title: d.description || d.formula }, d.name, d.editable_bonus ? h('span.muted.small', ` (${t('sheet.extraBonus')})`) : null),
+    h('td.num', d.editable_bonus ? h('span.bonus-cell', bonusInput(d), h('strong', fmt(calc.value(d.id)))) : h('strong', fmt(calc.value(d.id))), d.unit ? ` ${d.unit}` : '')))))];
 }
 
 function resourcesBlock(st, def) {
@@ -449,8 +454,212 @@ export function describeEffect(rules, ef) {
   }
 }
 
+// ---------- Distances: a "range" field shown in the player's unit ----------
+const TO_FT = { ft: 1, m: 1 / 0.3, sq: 5 };
+/** "x10/x20" (times an attribute, in the field's unit) or "30/60", in meters, feet or squares. */
+function fmtRange(v, field, st) {
+  const unit = st?.unit || 'm';
+  const from = field.unit || 'ft';
+  const parts = String(v).split('/').map(x => x.trim());
+  const out = parts.map(p => {
+    const m = p.match(/^x\s*(\d+(?:[.,]\d+)?)$/i);
+    let n = m ? Number(m[1].replace(',', '.')) : Number(p.replace(',', '.'));
+    if (m) {
+      if (!field.per || !st?.calc) return p;
+      n *= st.calc.value(field.per);
+    }
+    if (!Number.isFinite(n)) return p;
+    const ft = n * TO_FT[from];
+    const r = unit === 'sq' ? Math.floor(ft / 5) : unit === 'm' ? Math.round(ft * 0.3 * 10) / 10 : Math.round(ft);
+    return fmt(r);
+  });
+  return `${out.join(' / ')} ${t(`unit.${unit}`)}`;
+}
+
+// ---------- Magazines: rounds loaded, reload from the inventory ----------
+const refKey = i => `${i.collection}/${i.ref}`;
+
+/** Capacity of a weapon's magazine, with the bonus of the mods installed in it. */
+function magazineCapacity(st, item, ent) {
+  const mods = (item.mods || []).map(u => st.sheet.items.find(x => x.uid === u)).filter(Boolean);
+  const bonus = mods.reduce((n, m) => n + (Number(st.rules.entities[m.collection]?.[m.ref]?.magazine_bonus) || 0), 0);
+  return Math.max(0, (Number(st.calc.formula(ent.magazine.capacity)) || 0) + bonus);
+}
+
+/** Inventory items this magazine accepts, grouped by entity: [{ key, name, qty, items }]. */
+function ammoStock(st, ent) {
+  const ok = new Set([].concat(ent.magazine.ammo || []));
+  const groups = new Map();
+  for (const i of st.sheet.items || []) {
+    if (!ok.has(refKey(i))) continue;
+    const g = groups.get(refKey(i)) || { key: refKey(i), name: st.rules.entities[i.collection]?.[i.ref]?.name || i.ref, qty: 0, items: [] };
+    g.qty += Number(i.qty ?? 1); g.items.push(i);
+    groups.set(g.key, g);
+  }
+  return [...groups.values()];
+}
+
+function takeAmmo(items, n) {
+  let left = n;
+  for (const i of items) {
+    const use = Math.min(left, Number(i.qty ?? 1));
+    i.qty = Number(i.qty ?? 1) - use; left -= use;
+    if (!left) break;
+  }
+  return n - left;
+}
+
+function reload(st, item, ent) {
+  const mag = ent.magazine;
+  const cap = magazineCapacity(st, item, ent);
+  const stock = ammoStock(st, ent).filter(g => g.qty > 0);
+  if (!stock.length) { toast(t('sheet.noAmmo'), 'error'); return; }
+  const go = g => {
+    // Switching ammo: the rounds still in the magazine go back to the inventory.
+    if (item.loaded && item.loaded_ref && item.loaded_ref !== g.key && !mag.charge) {
+      const [c, r] = item.loaded_ref.split('/');
+      const back = st.sheet.items.find(x => refKey(x) === item.loaded_ref);
+      if (back) back.qty = Number(back.qty ?? 1) + item.loaded;
+      else st.sheet.items.push({ uid: uid(), collection: c, ref: r, qty: item.loaded });
+      item.loaded = 0;
+    }
+    if (mag.charge) { takeAmmo(g.items, 1); item.loaded = cap; }
+    else item.loaded = (item.loaded || 0) + takeAmmo(g.items, Math.max(0, cap - (item.loaded || 0)));
+    item.loaded_ref = g.key;
+    st.change();
+  };
+  if (stock.length === 1) return go(stock[0]);
+  let dlg;
+  dlg = dialog(t('sheet.chooseAmmo'), h('div.choices', stock.map(g => h('button.choice-button', { type: 'button', onclick: () => { dlg.close(); go(g); } },
+    h('strong', g.name), h('span.muted', ` ×${fmt(g.qty)}`), g.key === item.loaded_ref ? h('span.badge.ok', t('sheet.loadedNow')) : null))));
+}
+
+function magazineRow(st, item, ent) {
+  const mag = ent.magazine;
+  const cap = magazineCapacity(st, item, ent);
+  const loaded = Math.min(item.loaded || 0, cap);
+  const per = Number(mag.per_shot) || 1;
+  const reserve = ammoStock(st, ent).reduce((n, g) => n + g.qty, 0);
+  const set = v => { item.loaded = Math.max(0, Math.min(cap, v)); st.change(); };
+  const loadedName = item.loaded_ref && loaded ? st.rules.entities[item.loaded_ref.split('/')[0]]?.[item.loaded_ref.split('/')[1]]?.name : null;
+  return h('div.magazine',
+    h('div.mag-count', h('span.muted.small', t('sheet.magazine')), h('strong', fmt(loaded)), h('span.muted', `/ ${fmt(cap)}`),
+      loadedName ? h('span.small.muted', ` · ${loadedName}`) : null),
+    h('div.row.mag-buttons',
+      h('button.mini', { type: 'button', 'aria-label': t('sheet.shoot'), title: t('sheet.shoot'), disabled: loaded < 1, onclick: () => set(loaded - per) }, per > 1 ? `−${per}` : '−1'),
+      h('button.mini', { type: 'button', 'aria-label': t('sheet.addRound'), disabled: loaded >= cap, onclick: () => set(loaded + 1) }, '+1'),
+      h('button.mini.primary', { type: 'button', disabled: loaded >= cap || !reserve, onclick: () => reload(st, item, ent) }, t('sheet.reload'))),
+    h('div.small.muted', t('sheet.reserve', { n: fmt(reserve) })));
+}
+
+// ---------- Mods installed inside an item (weapon mods...) ----------
+function modsDialog(st, item, col) {
+  const modCol = col.mods;
+  const { rules, sheet } = st;
+  const installedCount = u => sheet.items.reduce((n, x) => n + (x.mods || []).filter(m => m === u).length, 0);
+  const body = h('div');
+  const draw = () => {
+    const mine = (item.mods || []).map(u => sheet.items.find(x => x.uid === u)).filter(Boolean);
+    const free = sheet.items.filter(x => x.collection === modCol && Number(x.qty ?? 1) - installedCount(x.uid) > 0);
+    const name = x => x.name || rules.entities[x.collection]?.[x.ref]?.name || x.ref;
+    body.replaceChildren(
+      h('h4', t('sheet.modsInstalled')),
+      mine.length ? h('ul.mod-list', mine.map(m => h('li', h('button.mini.link', { onclick: () => entityDetails(st, m.collection, m.ref) }, name(m)),
+        h('button.mini', { onclick: () => { item.mods = item.mods.filter(u => u !== m.uid); st.change(); draw(); } }, t('sheet.uninstall'))))) : h('p.muted.small', t('sheet.noMods')),
+      h('h4', t('sheet.modsAvailable')),
+      free.length ? h('ul.mod-list', free.map(m => {
+        const e = rules.entities[m.collection]?.[m.ref];
+        const fit = e?.compativeis || e?.compatible;
+        return h('li', h('span', h('button.mini.link', { onclick: () => entityDetails(st, m.collection, m.ref) }, name(m)), fit ? h('div.small.muted', fit) : null),
+          h('button.mini.primary', { onclick: () => { (item.mods ||= []).push(m.uid); st.change(); draw(); } }, t('sheet.install')));
+      })) : h('p.muted.small', t('sheet.noFreeMods', { name: rules.collections[modCol]?.name || modCol })));
+  };
+  draw();
+  dialog(t('sheet.modsOf', { name: item.name || rules.entities[item.collection]?.[item.ref]?.name || item.ref }), body, { width: '560px' });
+}
+
+// ---------- Equipped view: only what is equipped, as cards with its numbers ----------
+function equippedBlock(st, def) {
+  const { rules, sheet } = st;
+  const colId = def.collection;
+  const col = rules.collections[colId] || {};
+  const fields = col.fields || {};
+  const items = (sheet.items || []).filter(i => i.collection === colId && (!col.equippable || i.equipped));
+  const title = def.title || col.name || colId;
+  const wearMax = col.wear?.max;
+  if (!items.length) return def.hide_empty ? null : [h('h3', title), h('p.muted.small', t('sheet.nothingEquipped'))];
+  return [h('h3', title), h('div.equip-list', items.map(item => {
+    const ent = rules.entities[colId]?.[item.ref];
+    const name = item.name || ent?.name || item.ref;
+    const mods = (item.mods || []).map(u => sheet.items.find(x => x.uid === u)).filter(Boolean);
+    return h('div.equip-card',
+      h('div.equip-head',
+        h('button.mini.link.equip-name', { onclick: () => entityDetails(st, colId, item.ref, item) }, name),
+        wearMax ? h('div.row.wear-row',
+          h('span.small.muted', t('sheet.wear')),
+          h('button.mini', { 'aria-label': t('sheet.lessWear'), onclick: () => { item.wear = Math.max(0, (item.wear || 0) - 1); st.change(); } }, '−'),
+          h('span.wear-value', `${item.wear || 0}/${wearMax}`),
+          h('button.mini', { 'aria-label': t('sheet.moreWear'), onclick: () => { item.wear = Math.min(wearMax, (item.wear || 0) + 1); st.change(); } }, '+')) : null),
+      (def.columns || []).length ? h('div.equip-stats', def.columns.filter(c => ent?.[c] !== undefined && ent[c] !== '').map(c =>
+        h('span.stat', h('span.muted.small', fields[c]?.label || c), h('strong', fmtField(ent[c], fields[c], st))))) : null,
+      ent?.magazine ? magazineRow(st, item, ent) : null,
+      col.mods ? h('div.equip-mods.small',
+        h('span.muted', `${t('sheet.mods')}: `), mods.length ? mods.map(m => m.name || rules.entities[m.collection]?.[m.ref]?.name).join(', ') : t('sheet.none'),
+        h('button.mini', { onclick: () => modsDialog(st, item, col) }, t('sheet.manageMods'))) : null);
+  }))];
+}
+
+// ---------- Inventory: every item, as cards by category or as one list ----------
+function inventoryBlock(st, def) {
+  const { rules, sheet } = st;
+  const cols = (def.collections || Object.keys(rules.collections)).filter(c => rules.collections[c]);
+  const items = (sheet.items || []).filter(i => cols.includes(i.collection));
+  const setMode = m => { st.invMode = m; db.setConfig('inventoryView', m).catch(() => {}); st.redraw(); };
+  const adder = h('select.mini-select', { 'aria-label': t('sheet.addItem'), onchange: e => { if (e.target.value) search(st, e.target.value); e.target.value = ''; } },
+    h('option', { value: '' }, t('sheet.addItem')), cols.map(c => h('option', { value: c }, rules.collections[c].name || c)));
+  const head = h('h3', h('span', def.title || t('sheet.inventory')),
+    h('span.row.inv-tools',
+      h('span.segmented', { role: 'group', 'aria-label': t('sheet.inventoryView') },
+        h('button.mini', { 'aria-pressed': String(st.invMode !== 'list'), onclick: () => setMode('cards') }, t('sheet.viewCards')),
+        h('button.mini', { 'aria-pressed': String(st.invMode === 'list'), onclick: () => setMode('list') }, t('sheet.viewList'))),
+      adder));
+  if (!items.length) return [head, h('p.muted.small', t('sheet.nothingYet'))];
+
+  if (st.invMode !== 'list') {
+    return [head, h('div.inv-cards', cols.filter(c => items.some(i => i.collection === c)).map(c =>
+      h('div.inv-card', listBlock(st, { block: 'list', collection: c, columns: (def.columns || {})[c], no_wear: true }))))];
+  }
+
+  const q = h('input', { type: 'search', placeholder: t('sheet.search'), 'aria-label': t('sheet.search'), value: st.invQuery || '' });
+  const tbody = h('tbody');
+  const rows = () => {
+    const f = normalize(st.invQuery || '');
+    const list = items.map(i => ({ i, ent: rules.entities[i.collection]?.[i.ref], col: rules.collections[i.collection] }))
+      .map(x => ({ ...x, name: x.i.name || x.ent?.name || x.i.ref }))
+      .filter(x => !f || normalize(`${x.name} ${x.col.name}`).includes(f))
+      .sort((a, b) => byName(a.name, b.name));
+    tbody.replaceChildren(...list.map(({ i, col, name }) => h('tr',
+      h('td', col.equippable ? h('input', { type: 'checkbox', checked: !!i.equipped, 'aria-label': t('sheet.equipName', { name }), onchange: e => { i.equipped = e.target.checked; st.change(); } }) : null),
+      h('td', h('button.mini.link', { onclick: () => entityDetails(st, i.collection, i.ref, i) }, name), h('div.small.muted', col.name)),
+      h('td.num', col.quantity ? h('input', { type: 'number', value: i.qty ?? 1, min: 0, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name }),
+        onchange: e => { i.qty = Math.max(0, Number(e.target.value) || 0); st.change(); } }) : null),
+      h('td.num', h('button.mini.danger', { 'aria-label': t('sheet.removeName', { name }), onclick: async () => {
+        if (!col.quick_remove && !(await confirm(t('sheet.removeTitle'), t('sheet.removeAsk', { name }), { yes: t('sheet.remove'), danger: true }))) return;
+        sheet.items = sheet.items.filter(x => x !== i);
+        for (const x of sheet.items) if (x.mods?.includes(i.uid)) x.mods = x.mods.filter(u => u !== i.uid);
+        st.change();
+      } }, '✕')))));
+  };
+  q.addEventListener('input', () => { st.invQuery = q.value; rows(); });
+  rows();
+  return [head, q, h('div.scroll-table', h('table.table',
+    h('thead', h('tr', h('th', { title: t('sheet.equipped') }, t('sheet.equippedShort')), h('th', t('sheet.name')), h('th.num', t('sheet.qty')), h('th'))),
+    tbody))];
+}
+
 // ---------- Entity lists (items, traits, conditions...) ----------
 function listBlock(st, def) {
+  if (def.view === 'equipped') return equippedBlock(st, def);
   const { rules, sheet } = st;
   const colId = def.collection;
   const col = rules.collections[colId];
@@ -461,7 +670,7 @@ function listBlock(st, def) {
   const columns = def.columns || [];
   const fields = col?.fields || {};
   const usesQty = col?.quantity;
-  const wearMax = col?.wear?.max;
+  const wearMax = def.no_wear ? null : col?.wear?.max;
 
   const rows = items.map(item => {
     const ent = rules.entities[colId]?.[item.ref];
@@ -469,13 +678,14 @@ function listBlock(st, def) {
     const removeItem = async () => {
       if (!col?.quick_remove && !(await confirm(t('sheet.removeTitle'), t('sheet.removeAsk', { name }), { yes: t('sheet.remove'), danger: true }))) return;
       sheet.items = sheet.items.filter(x => x !== item);
+      for (const x of sheet.items) if (x.mods?.includes(item.uid)) x.mods = x.mods.filter(u => u !== item.uid);
       st.change();
     };
     return h('tr', { class: ent ? '' : 'muted' },
       col?.equippable ? h('td', h('input', { type: 'checkbox', checked: !!item.equipped, 'aria-label': t('sheet.equipName', { name }), onchange: e => { item.equipped = e.target.checked; st.change(); } })) : null,
       h('td', h('button.mini.link', { onclick: () => entityDetails(st, colId, item.ref, item) }, name),
         ent ? null : h('span.badge.error', t('sheet.notFoundBadge'))),
-      columns.map(c => h('td.small', fmtField(ent?.[c], fields[c]))),
+      columns.map(c => h('td.small', fmtField(ent?.[c], fields[c], st))),
       usesQty ? h('td.num', h('input', { type: 'number', value: item.qty ?? 1, min: 0, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name }),
         onchange: e => { item.qty = Math.max(0, Number(e.target.value) || 0); st.change(); } })) : null,
       wearMax ? h('td.num', h('div.row', { style: { flexWrap: 'nowrap', gap: '2px', justifyContent: 'flex-end' } },
@@ -490,7 +700,7 @@ function listBlock(st, def) {
   const granted = st.calc.active.filter(f => f.col === colId && !f.item && f.from && !owned.has(f.ent.id)).map(f => h('tr.granted',
     col?.equippable ? h('td') : null,
     h('td', h('button.mini.link', { onclick: () => entityDetails(st, colId, f.ent.id) }, f.ent.name)),
-    columns.map(c => h('td.small', fmtField(f.ent[c], fields[c]))),
+    columns.map(c => h('td.small', fmtField(f.ent[c], fields[c], st))),
     usesQty ? h('td') : null,
     wearMax ? h('td') : null,
     h('td.num', h('span.badge', { title: t('sheet.grantedBy', { name: f.from }) }, f.from))));
@@ -512,8 +722,9 @@ function listBlock(st, def) {
   ];
 }
 
-function fmtField(v, field) {
+function fmtField(v, field, st) {
   if (v === undefined || v === null || v === '') return '—';
+  if (field?.type === 'range') return fmtRange(v, field, st);
   if (Array.isArray(v)) return v.join(', ');
   if (typeof v === 'boolean') return v ? t('common.yes') : t('common.no');
   const u = field?.unit ? ` ${field.unit}` : '';
@@ -556,7 +767,7 @@ export function entityDetails(st, colId, id, item) {
   const ent = rules.entities[colId]?.[id];
   if (!ent) { dialog(t('sheet.notFoundTitle'), h('p', t('sheet.notFoundText', { name: item?.name || id }))); return; }
   const fields = rules.collections[colId]?.fields || {};
-  const rows = Object.entries(fields).filter(([k]) => ent[k] !== undefined && ent[k] !== '').map(([k, c]) => h('tr', h('td.muted', c.label || k), h('td', fmtField(ent[k], c))));
+  const rows = Object.entries(fields).filter(([k]) => ent[k] !== undefined && ent[k] !== '').map(([k, c]) => h('tr', h('td.muted', c.label || k), h('td', fmtField(ent[k], c, st))));
   const origin = rules.origin[`${colId}/${id}`];
   const content = [
     ent.description ? h('p', { style: { whiteSpace: 'pre-line' } }, ent.description) : null,

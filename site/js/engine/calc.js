@@ -150,7 +150,7 @@ export function compute(rules, sheet) {
           ? run(def.total, { points })
           : points + (def.attribute && rules.attributes[def.attribute] ? functions.mod(value(def.attribute)) : 0);
         v = applyEffects(id, num(base));
-      } else if (sec === 'derived') v = applyEffects(id, num(run(def.formula)));
+      } else if (sec === 'derived') v = applyEffects(id, num(run(def.formula))) + (def.editable_bonus ? num(sheet.bonus?.[id]) : 0);
       else if (sec === 'resources') v = applyEffects(id, num(run(def.max)));
       else if (sec === 'counters') v = num(sheet.counters?.[id]);
     } catch (e) {

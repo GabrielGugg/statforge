@@ -2,6 +2,15 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.2.0 — 2026-10-31
+
+- **Inventory in one place**: a new `inventory` block holds every item, shown as cards by category or as one searchable list (the choice is remembered). Items and quantities are edited there.
+- **Equipped views**: list blocks with `"view": "equipped"` show only what is equipped, as cards with the item's numbers and wear.
+- **Magazines and reloading**: weapons with a `magazine` show rounds loaded / capacity, spend shots, and reload from the matching ammo in the inventory (choosing which ammo when there are several; switching returns the loaded rounds). Charge weapons spend one unit to fill. Generic, so bows and crossbows work too.
+- **Mods inside weapons**: collections with `mods` let you install mods that are in the inventory into an item; `magazine_bonus` raises its capacity.
+- **Distance unit** in Settings (meters, feet or squares); `range` fields are converted, including ranges that multiply an attribute.
+- Derived values with `editable_bonus` get a field for an extra modifier.
+
 ## 0.1.9 — 2026-10-31
 
 - **Skills editor**: skills are read-only until you tap **Edit**. Then each skill has − / +, the total updates as you go, and **Apply** saves (or **Cancel** drops the changes).

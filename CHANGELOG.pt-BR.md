@@ -2,6 +2,15 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.2.0 — 31/10/2026
+
+- **Inventário num lugar só**: o novo bloco `inventory` reúne todos os itens, em cartões por categoria ou numa lista única com busca (a escolha fica salva). Itens e quantidades são editados ali.
+- **Visão de equipados**: blocos de lista com `"view": "equipped"` mostram só o que está equipado, em cartões com os números e o desgaste do item.
+- **Pente e recarga**: armas com `magazine` mostram balas no pente / capacidade, gastam disparos e recarregam com a munição compatível do inventário (perguntando qual quando há mais de uma; trocar devolve as balas do pente). Armas de carga gastam uma unidade para encher. É genérico, então arco e besta funcionam também.
+- **Mods dentro das armas**: coleções com `mods` deixam instalar num item as modificações que estão no inventário; `magazine_bonus` aumenta o pente.
+- **Unidade de distância** em Configurações (metros, pés ou quadrados); campos `range` são convertidos, inclusive alcances que multiplicam um atributo.
+- Valores calculados com `editable_bonus` ganham um campo para modificador extra.
+
 ## 0.1.9 — 31/10/2026
 
 - **Editor de perícias**: as perícias ficam só para leitura até você tocar em **Editar**. Aí cada perícia tem − / +, o total muda na hora, e **Aplicar** salva (ou **Cancelar** desfaz).

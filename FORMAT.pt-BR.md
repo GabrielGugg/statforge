@@ -109,8 +109,9 @@ Uma coleção (`collections`) é um tipo de coisa (armas, traços, condições).
 | `quantity` | Mostra a coluna de quantidade. Adicionar um item repetido soma 1. |
 | `wear.max` | Mostra o desgaste (−/+) até esse máximo. |
 | `quick_remove` | Remover um item não pede confirmação (bom para condições). |
+| `mods` | Id de outra coleção cujos itens podem ser instalados dentro destes (modificações de arma). Só dá para instalar o que está no inventário; o `magazine_bonus` de uma entidade soma no pente do item em que está instalada. |
 | `max` | Quantos itens a ficha pode ter nessa coleção (ex.: 1 raça). |
-| `fields` | Dados mostrados nos detalhes e nas colunas. Tipos: `text`, `number`, `dice`, `boolean`, `list`. |
+| `fields` | Dados mostrados nos detalhes e nas colunas. Tipos: `text`, `number`, `dice`, `boolean`, `list`. | `range` é uma distância mostrada na unidade que o jogador escolhe em Configurações (metros, pés ou quadrados de 1,5 m / 5 pés): `"unit": "ft"` diz a unidade do dado, e com `"per": "PER"` um valor como `"x10/x20"` vale 10× e 20× esse valor. |
 
 Coleções sem `equippable` (traços, talentos, condições) valem sempre que estão na ficha.
 
@@ -175,6 +176,10 @@ Cada aba é uma grade de 12 colunas. `"w"` é a largura do bloco em colunas (3, 
 
 - Um bloco `resources` com um item só vira um cartão compacto (atual/máximo grande, barra, −1 +1 e restaurar). Coloque alguns no topo com `"w": 3`.
 - `"only_active": true` num bloco `counters` mostra só os contadores acima de 0, com um menu para adicionar os outros.
+- `"view": "equipped"` num bloco `list` mostra só os itens equipados, em cartões com suas `columns`, desgaste, pente e mods; itens são adicionados e contados no inventário. `"hide_empty": true` esconde o bloco quando nada está equipado.
+- Um bloco `inventory` (`"collections": [...]`, opcional `"columns": { colecao: [campos] }`) reúne todos os itens: o jogador alterna entre cartões por categoria e uma lista única com busca.
+- **Pente** (`magazine`): uma entidade com `"magazine": { "capacity": 12, "ammo": ["municao/9mm"], "charge": false, "per_shot": 1 }` mostra balas no pente / capacidade e um botão Recarregar que tira as balas desses itens do inventário (com `charge`, uma unidade, como uma célula de energia, enche o pente). Serve igual para arco, besta e arma de fogo.
+- Um valor calculado com `"editable_bonus": true` ganha um campinho para um modificador extra que o jogador digita (ex.: capacidade de carga de uma regra da casa).
 - `abbr` num recurso aparece grande no cartão.
 
 ### Criação de personagem
