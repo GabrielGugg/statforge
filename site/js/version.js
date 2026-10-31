@@ -1,2 +1,2 @@
 // Current app version. Update together with CHANGELOG.md on every release.
-export const VERSION = '0.2.4';
+export const VERSION = '0.2.5';

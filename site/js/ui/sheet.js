@@ -847,9 +847,12 @@ function search(st, colIds) {
   const draw = () => {
     const q = normalize(input.value);
     const found = all.filter(({ c, e }) => (!filter?.value || c === filter.value) &&
-      (!q || normalize(`${e.name} ${e.description || ''} ${(e.tags || []).join(' ')} ${many ? nameOf(c) : ''}`).includes(q))).slice(0, 200);
+      (!q || normalize(`${e.name} ${e.description || ''} ${(e.tags || []).join(' ')} ${many ? nameOf(c) : ''}`).includes(q)))
+      // Names that match come before matches found only in descriptions.
+      .sort((a, b) => (q && !normalize(a.e.name).includes(q)) - (q && !normalize(b.e.name).includes(q))).slice(0, 200);
     list.replaceChildren(...(found.length ? found.map(x => h('div.search-item',
-      h('div', h('div', h('strong', x.e.name), many ? h('span.badge', { style: { marginLeft: '.4rem' } }, nameOf(x.c)) : null),
+      h('div', h('div', h('strong', x.e.name), many ? h('span.badge', { style: { marginLeft: '.4rem' } }, nameOf(x.c)) : null,
+          x.e.custom ? h('span.badge.ok', { style: { marginLeft: '.4rem' } }, t('custom.badge')) : null),
         x.e.description ? h('div.desc', String(x.e.description).slice(0, 140) + (String(x.e.description).length > 140 ? '…' : '')) : null),
       h('div.row', { style: { flexWrap: 'nowrap' } },
         h('button.mini', { onclick: () => entityDetails(st, x.c, x.e.id) }, t('sheet.view')),
@@ -858,8 +861,95 @@ function search(st, colIds) {
   input.addEventListener('input', draw);
   filter?.addEventListener('change', draw);
   draw();
-  dlg = dialog(many ? t('sheet.addItemTitle') : t('sheet.addTo', { name: nameOf(ids[0]) }), [filter ? h('div.row.search-bar', input, filter) : input, list], { width: '640px' });
+  const customCols = ids.filter(c => rules.collections[c]?.custom);
+  const create = customCols.length ? h('button.mini', { onclick: () => { dlg.close(); customItem(st, customCols, filter?.value); } }, t('custom.create')) : null;
+  dlg = dialog(many ? t('sheet.addItemTitle') : t('sheet.addTo', { name: nameOf(ids[0]) }), [filter ? h('div.row.search-bar', input, filter) : input, list, create ? h('div.row', { style: { marginTop: '.6rem' } }, create) : null], { width: '640px' });
   input.focus();
+}
+
+/** Which fields a custom item of this collection may have: "custom" is true (all), a list, or { fields, magazine }. */
+function customFields(col) {
+  const c = col?.custom;
+  const list = c === true ? Object.keys(col.fields || {}) : Array.isArray(c) ? c : c?.fields || Object.keys(col.fields || {});
+  return list.filter(f => col.fields?.[f]);
+}
+
+/** Form to create (or edit) an item that only exists in this sheet. */
+function customItem(st, colIds, preferred, ent) {
+  const { rules, sheet } = st;
+  const nameOf = c => rules.collections[c]?.name || c;
+  const cat = h('select', { disabled: !!ent, 'aria-label': t('custom.category') }, colIds.map(c => h('option', { value: c }, nameOf(c))));
+  cat.value = ent ? colIds[0] : colIds.includes(preferred) ? preferred : colIds[0];
+  const name = h('input', { type: 'text', value: ent?.name || '' });
+  const desc = h('textarea', { rows: 3 }, ent?.description || '');
+  const box = h('div.custom-fields');
+  let inputs = {}, ammo = [], cap = null;
+  const field = (label, control, hint) => h('label.field', h('span', label), control, hint ? h('div.small.muted', hint) : null);
+  const drawFields = () => {
+    const colId = cat.value, col = rules.collections[colId] || {};
+    inputs = {};
+    const out = customFields(col).map(f => {
+      const def = col.fields[f], v = ent?.[f] ?? '';
+      const label = `${def.label || f}${def.unit ? ` (${def.unit})` : ''}`;
+      if (def.type === 'boolean') { inputs[f] = h('input', { type: 'checkbox', checked: !!v }); return h('label.check', inputs[f], def.label || f); }
+      const inp = inputs[f] = h('input', { type: def.type === 'number' ? 'number' : 'text', value: v, inputmode: def.type === 'number' ? 'decimal' : null });
+      const hint = def.type === 'range' && def.per ? t('custom.perHint', { name: rules.attributes?.[def.per]?.name || rules.derived?.[def.per]?.name || def.per }) : null;
+      if (def.links && rules.entities[def.links]) {
+        // Pick terms (properties…) from their collection instead of typing them.
+        const pick = h('select', { 'aria-label': def.label || f, onchange: () => {
+          const term = rules.entities[def.links][pick.value]?.name;
+          if (term) inp.value = `${inp.value.trim()}${inp.value.trim() && !/[.,]$/.test(inp.value.trim()) ? '.' : ''} ${term}.`.trim();
+          pick.value = '';
+        } }, h('option', { value: '' }, t('custom.addTerm')), Object.values(rules.entities[def.links]).sort((a, b) => byName(a.name, b.name)).map(e => h('option', { value: e.id }, e.name)));
+        return field(label, h('div.row.search-bar', inp, pick), hint);
+      }
+      return field(label, inp, hint);
+    });
+    // Magazine: capacity and the ammo it takes, picked from the ammo collection.
+    const magCol = col.custom?.magazine;
+    cap = null;
+    if (magCol && rules.entities[magCol]) {
+      ammo = [...(ent?.magazine?.ammo || [])];
+      cap = h('input', { type: 'number', min: 0, value: ent?.magazine?.capacity ?? '', inputmode: 'numeric' });
+      const chips = h('div.row');
+      const drawChips = () => chips.replaceChildren(...ammo.map(r => h('span.badge', rules.entities[magCol]?.[r.split('/')[1]]?.name || r,
+        h('button.icon', { 'aria-label': t('sheet.remove'), onclick: () => { ammo = ammo.filter(x => x !== r); drawChips(); } }, '✕'))));
+      const pick = h('select', { 'aria-label': t('custom.ammo'), onchange: () => { const r = `${magCol}/${pick.value}`; if (pick.value && !ammo.includes(r)) ammo.push(r); pick.value = ''; drawChips(); } },
+        h('option', { value: '' }, t('custom.addAmmo')), Object.values(rules.entities[magCol]).sort((a, b) => byName(a.name, b.name)).map(e => h('option', { value: e.id }, e.name)));
+      drawChips();
+      out.push(field(t('custom.capacity'), cap), field(t('custom.ammo'), h('div', chips, pick)));
+    }
+    box.replaceChildren(...out);
+  };
+  cat.addEventListener('change', drawFields);
+  drawFields();
+  dialog(ent ? t('custom.editTitle') : t('custom.title'), [
+    colIds.length > 1 || ent ? field(t('custom.category'), cat) : null,
+    field(t('custom.name'), name), field(t('custom.description'), desc), box,
+  ], { width: '560px', actions: [
+    { text: t('common.cancel') },
+    { text: t('custom.save'), primary: true, action: () => {
+      if (!name.value.trim()) { toast(t('custom.needName'), 'error'); return false; }
+      const colId = cat.value, col = rules.collections[colId] || {};
+      const obj = ent || { id: `custom_${uid()}`, custom: true };
+      obj.name = name.value.trim();
+      obj.description = desc.value.trim() || undefined;
+      for (const [f, inp] of Object.entries(inputs)) {
+        const def = col.fields[f];
+        const v = def.type === 'boolean' ? inp.checked : def.type === 'number' ? (inp.value === '' ? undefined : Number(inp.value)) : inp.value.trim() || undefined;
+        if (v === undefined) delete obj[f]; else obj[f] = v;
+      }
+      if (cap) { if (Number(cap.value) > 0) obj.magazine = { ...(obj.magazine || {}), capacity: Number(cap.value), ammo }; else delete obj.magazine; }
+      ((sheet.custom ||= {})[colId] ||= {})[obj.id] = obj;
+      (rules.entities[colId] ||= {})[obj.id] = obj;
+      if (!ent) {
+        (sheet.items ||= []).push({ uid: uid(), collection: colId, ref: obj.id, ...(col.quantity ? { qty: 1 } : {}), ...(col.equippable ? { equipped: false } : {}) });
+        toast(t('sheet.added', { name: obj.name }));
+      }
+      st.change();
+    } },
+  ] });
+  name.focus();
 }
 
 export function entityDetails(st, colId, id, item) {
@@ -874,9 +964,19 @@ export function entityDetails(st, colId, id, item) {
     rows.length ? h('table.table', h('tbody', rows)) : null,
     ent.effects?.length ? [h('h4', { style: { margin: '.8rem 0 .3rem' } }, t('sheet.effects')), h('ul.effects-list', ent.effects.map(ef => h('li', describeEffect(rules, ef))))] : null,
     ent.tags?.length ? h('p.small', ent.tags.map(x => h('span.badge', { style: { marginRight: '4px' } }, x))) : null,
-    origin ? h('p.muted.small', t('sheet.origin', { name: st.inst[origin]?.name || origin })) : null,
+    ent.custom ? h('p.muted.small', t('custom.origin')) : origin ? h('p.muted.small', t('sheet.origin', { name: st.inst[origin]?.name || origin })) : null,
   ];
   const actions = [];
+  if (ent.custom) {
+    actions.push({ text: t('custom.edit'), action: () => { customItem(st, [colId], colId, ent); } });
+    actions.push({ text: t('custom.delete'), danger: true, action: async () => {
+      if (!(await confirm(t('custom.delete'), t('custom.deleteText', { name: ent.name }), { yes: t('sheet.remove'), danger: true }))) return false;
+      delete st.sheet.custom?.[colId]?.[id];
+      delete rules.entities[colId][id];
+      st.sheet.items = (st.sheet.items || []).filter(i => !(i.collection === colId && i.ref === id));
+      st.change();
+    } });
+  }
   if (item) {
     actions.push({ text: t('sheet.rename'), action: async () => {
       const fresh = await ask(t('sheet.rename'), t('sheet.renameLabel'), item.name || '');

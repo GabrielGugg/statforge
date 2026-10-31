@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.2.5 — 31/10/2026
+
+- **Itens personalizados**: a janela de Adicionar item tem "Criar item personalizado". Escolha a categoria e preencha os campos que o pacote permite para ela (`custom` na coleção); armas também podem ganhar pente com as munições que aceitam, e campos de propriedades têm um seletor. Os itens personalizados ficam salvos na ficha, funcionam como qualquer outro (carga, desgaste, equipar, mods) e podem ser editados ou excluídos nos detalhes.
+- A busca de itens mostra primeiro os que têm a palavra no nome, depois os que só a têm na descrição.
+
 ## 0.2.4 — 31/10/2026
 
 - **Aviso automático de condições**: os pacotes podem listar condições que o app percebe sozinho (`auto_conditions`). Um aviso discreto no topo da ficha oferece aplicar a condição, ou removê-la quando deixa de valer, e some depois de 10 segundos. Avisos dispensados ficam quietos até a situação mudar, e imunidades (como um talento) impedem o aviso.
