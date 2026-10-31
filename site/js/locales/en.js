@@ -279,6 +279,8 @@ export default {
   'settings.unitM': 'Meters',
   'settings.unitFt': 'Feet',
   'settings.unitSq': 'Squares (1.5 m / 5 ft)',
+  'legal.privacy': 'Privacy Policy',
+  'legal.terms': 'Terms of Service',
   'settings.debug': 'Debug mode',
   'settings.debugHint': 'Shows how the sheet computes each value: hover a computed value (or tap the ƒ) to see the formula, the numbers it used and each effect added on top.',
   'debug.title': 'How this value is computed',

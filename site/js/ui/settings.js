@@ -73,6 +73,8 @@ export async function settingsScreen(app) {
           ? [h('button.primary', { disabled: s.busy, onclick: () => run(() => sync.syncNow()) }, s.busy ? t('sync.busy') : t('sync.now')),
              h('button', { onclick: async () => { await sync.disconnect(); drawSync(); } }, t('sync.disconnect'))]
           : h('button.primary', { disabled: noId, onclick: () => run(() => sync.connect()) }, t('sync.connect'))),
+      h('p.small.legal-links', h('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, t('legal.privacy')), ' · ',
+        h('a', { href: 'terms.html', target: '_blank', rel: 'noopener' }, t('legal.terms'))),
       h('details', { style: { marginTop: '.75rem' } }, h('summary.small', t('sync.advanced')),
         h('label.field', h('span', t('sync.clientId')), idInput), h('p.muted.small', t('sync.clientHint'))),
     ].filter(Boolean));
@@ -115,6 +117,8 @@ export async function settingsScreen(app) {
     h('section.card.section',
       h('h2', t('settings.about')),
       h('p', t('settings.aboutText', { version: VERSION })),
+      h('p.small', h('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, t('legal.privacy')), ' · ',
+        h('a', { href: 'terms.html', target: '_blank', rel: 'noopener' }, t('legal.terms'))),
       h('details', h('summary', t('settings.changelog')), changelog)));
 }
 

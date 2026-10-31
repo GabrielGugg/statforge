@@ -2,6 +2,10 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.1.1 — 31/10/2026
+
+- **Política de Privacidade e Termos de Serviço** (em português e inglês), exigidos pelo Google para publicar o login: `site/privacy.html` e `site/terms.html`, com links em Configurações, na seção de sincronização e em Sobre.
+
 ## 1.1.0 — 31/10/2026
 
 - **Efeitos nos itens**: itens equipados (e traços, talentos e antecedentes) mostram abaixo do nome o que fazem, com o valor já calculado, por exemplo "+50 em Capacidade de Carga" na Mochila. Lembretes continuam em Efeitos ativos.
