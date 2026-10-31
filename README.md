@@ -8,6 +8,19 @@ Character sheets for **any tabletop RPG**. The app ships with no game: each syst
 - Interface in English and Brazilian Portuguese. Each package declares its own language.
 - Your data stays in your browser. To use it on several devices, turn on Google Drive sync in Settings (it saves to a hidden app folder in your own Drive), or move a backup by hand.
 
+## Useful links
+
+| | |
+| --- | --- |
+| 🌐 **Open the app** | https://gabrielgugg.github.io/statforge/site/ |
+| 📦 **StatForge Hub** (packages to install) | https://github.com/GabrielGugg/statforge-hub |
+| 🧭 **Tutorial: using the app** | [How to use](#how-to-use) (below) |
+| 🛠️ **Tutorial: make a system or homebrew** | [Format guide](FORMAT.md) and the [examples](examples/) |
+| 📤 **Tutorial: share a package in the Hub** | [Hub contributing guide](https://github.com/GabrielGugg/statforge-hub/blob/main/CONTRIBUTING.md) |
+| 📝 **What changed in each version** | [Changelog](CHANGELOG.md) |
+| 🐞 **Report a bug or ask for a feature** | [Issues](https://github.com/GabrielGugg/statforge/issues) |
+| 🔒 **Privacy Policy and Terms** | [Privacy](https://gabrielgugg.github.io/statforge/site/privacy.html) · [Terms](https://gabrielgugg.github.io/statforge/site/terms.html) |
+
 ## How to use
 
 1. Open the app and go to **Packages**.

@@ -8,6 +8,19 @@ Ficha de personagem para **qualquer sistema de RPG**. O app não vem com nenhum 
 - Interface em inglês e português do Brasil. Cada pacote declara o próprio idioma.
 - Seus dados ficam no seu navegador. Para usar em vários aparelhos, ligue a sincronização com o Google Drive em Configurações (ela salva numa pasta escondida do app no seu próprio Drive), ou leve um backup na mão.
 
+## Links úteis
+
+| | |
+| --- | --- |
+| 🌐 **Abrir o app** | https://gabrielgugg.github.io/statforge/site/ |
+| 📦 **StatForge Hub** (pacotes para instalar) | https://github.com/GabrielGugg/statforge-hub |
+| 🧭 **Tutorial: usar o app** | [Como usar](#como-usar) (abaixo) |
+| 🛠️ **Tutorial: criar um sistema ou homebrew** | [Guia do formato](FORMAT.pt-BR.md) e os [exemplos](examples/) |
+| 📤 **Tutorial: compartilhar um pacote no Hub** | [Guia de contribuição do Hub](https://github.com/GabrielGugg/statforge-hub/blob/main/CONTRIBUTING.pt-BR.md) |
+| 📝 **O que mudou em cada versão** | [Changelog](CHANGELOG.pt-BR.md) |
+| 🐞 **Relatar um bug ou pedir uma função** | [Issues](https://github.com/GabrielGugg/statforge/issues) |
+| 🔒 **Política de Privacidade e Termos** | [Privacidade](https://gabrielgugg.github.io/statforge/site/privacy.html) · [Termos](https://gabrielgugg.github.io/statforge/site/terms.html) |
+
 ## Como usar
 
 1. Abra o app e vá em **Pacotes**.
