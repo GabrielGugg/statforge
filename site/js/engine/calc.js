@@ -30,7 +30,20 @@ export const key = (col, id) => `${col}/${id}`;
 /** Is a sheet item active? (equippable ones only when equipped) */
 export function itemActive(rules, item) {
   const col = rules.collections[item.collection];
+  if (isBroken(rules, item)) return false;
   return !col?.equippable || !!item.equipped;
+}
+
+/** Collections with "wear": { "breaks": true } stop working at the maximum wear. */
+export function isBroken(rules, item) {
+  const w = rules.collections[item.collection]?.wear;
+  return !!(w?.breaks && w.max && Number(item.wear || 0) >= w.max);
+}
+
+/** Wear that counts, after what the entity ignores ("wear_ignore": the first N levels). */
+export function effectiveWear(rules, item) {
+  const ent = rules.entities[item.collection]?.[item.ref];
+  return Math.max(0, Number(item.wear || 0) - (Number(ent?.wear_ignore) || 0));
 }
 
 /**
@@ -50,7 +63,7 @@ export function compute(rules, sheet) {
     const ent = rules.entities[col]?.[id];
     if (!ent) { if (item) warn(t('calc.goneItem', { name: item.name || k })); return; }
     seen.add(k);
-    sources.push({ k, col, ent, item, from, effects: ent.effects || [], vars: { qty: item?.qty ?? 1, wear: item?.wear ?? 0 } });
+    sources.push({ k, col, ent, item, from, effects: ent.effects || [], vars: { qty: item?.qty ?? 1, wear: item ? effectiveWear(rules, item) : 0 } });
     for (const ef of ent.effects || []) {
       if (ef.type === 'grant' && ef.ref) {
         const [c, i] = ef.ref.split('/');

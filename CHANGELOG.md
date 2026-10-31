@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.2.3 — 2026-10-31
+
+- **Wear has effects**: collections can say how wear changes an item's numbers (`wear.fields`, e.g. armor DF and TD drop), add penalties that only exist while worn (`wear.stats`, e.g. attack −2), and break the item at the maximum (`wear.breaks`: its effects stop and it shows as Broken). Worn values show in the equipped cards and lists, with the base value in the tooltip. `wear_ignore` lets sturdy items ignore the first levels.
+- **Terms with tooltips**: a text field with `links` turns property names into links; hover shows the description and a tap opens it.
+
 ## 0.2.2 — 2026-10-31
 
 - **Add item by searching**: in the inventory, Add item searches every category at once (each result shows its category, and a filter narrows it down).

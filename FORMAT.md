@@ -110,8 +110,9 @@ A collection is a kind of thing (weapons, traits, conditions). Entities are the 
 | `wear.max` | Shows wear (−/+) up to this maximum. |
 | `max` | How many items the sheet can have in this collection (e.g. 1 class). |
 | `quick_remove` | Removing an item does not ask for confirmation (good for conditions). |
+| `wear` | `{ "max": 10 }` gives items a wear counter. `"breaks": true`: at the maximum the item is broken and its effects stop. `"fields": { "df": "max(10, value - floor(wear / 2))" }` shows a field as it is after wear (`value` is the base, `wear` the levels). `"stats": [{ "label": "Attack", "value": "-wear" }]` adds numbers that only exist while worn. `"text"` explains the rule. Inside the item's own effects, `wear` is already the wear that counts; an entity with `"wear_ignore": 2` ignores its first 2 levels. |
 | `mods` | Id of another collection whose items can be installed inside these (weapon mods). Only mods that are in the inventory can be installed; an entity's `magazine_bonus` adds to the magazine of the item it is installed in. |
-| `fields` | Data shown in the details and columns. Types: `text`, `number`, `dice`, `boolean`, `list`. | `range` is a distance shown in the unit the player picks in Settings (meters, feet or squares of 1.5 m / 5 ft): `"unit": "ft"` says the unit of the data, and with `"per": "PER"` a value like `"x10/x20"` means 10× and 20× that value. |
+| `fields` | Data shown in the details and columns. Types: `text`, `number`, `dice`, `boolean`, `list`. | `"links": "collection"` on a text field turns the terms that name entities of that collection (weapon properties…) into links with a tooltip. `range` is a distance shown in the unit the player picks in Settings (meters, feet or squares of 1.5 m / 5 ft): `"unit": "ft"` says the unit of the data, and with `"per": "PER"` a value like `"x10/x20"` means 10× and 20× that value. |
 
 Collections without `equippable` (traits, perks, conditions) always apply while they are on the sheet.
 

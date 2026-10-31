@@ -4,7 +4,7 @@
 import * as db from '../storage.js';
 import * as pk from '../packages.js';
 import { checkSet } from '../engine/package.js';
-import { compute, roll } from '../engine/calc.js';
+import { compute, roll, isBroken, effectiveWear } from '../engine/calc.js';
 import { t } from '../i18n.js';
 import { h, toast, dialog, confirm, ask, downloadJSON, uid, fmt, signed, byName, normalize } from './util.js';
 
@@ -587,6 +587,8 @@ function equippedBlock(st, def) {
   const items = (sheet.items || []).filter(i => i.collection === colId && (!col.equippable || i.equipped));
   const title = def.title || col.name || colId;
   const wearMax = col.wear?.max;
+  // "wear.stats": numbers that only exist while the item is worn (e.g. attack −2).
+  const wearStats = item => (effectiveWear(rules, item) > 0 ? (col.wear?.stats || []).map(x => ({ label: x.label, value: signed(Number(st.calc.formula(x.value, { wear: effectiveWear(rules, item) }))) })) : []);
   if (!items.length) return def.hide_empty ? null : [h('h3', title), h('p.muted.small', t('sheet.nothingEquipped'))];
   return [h('h3', title), h('div.equip-list', items.map(item => {
     const ent = rules.entities[colId]?.[item.ref];
@@ -600,8 +602,14 @@ function equippedBlock(st, def) {
           h('button.mini', { 'aria-label': t('sheet.lessWear'), onclick: () => { item.wear = Math.max(0, (item.wear || 0) - 1); st.change(); } }, '−'),
           h('span.wear-value', `${item.wear || 0}/${wearMax}`),
           h('button.mini', { 'aria-label': t('sheet.moreWear'), onclick: () => { item.wear = Math.min(wearMax, (item.wear || 0) + 1); st.change(); } }, '+')) : null),
-      (def.columns || []).length ? h('div.equip-stats', def.columns.filter(c => ent?.[c] !== undefined && ent[c] !== '').map(c =>
-        h('span.stat', h('span.muted.small', fields[c]?.label || c), h('strong', fmtField(ent[c], fields[c], st))))) : null,
+      (def.columns || []).length || wearStats(item).length ? h('div.equip-stats',
+        (def.columns || []).filter(c => ent?.[c] !== undefined && ent[c] !== '').map(c => {
+          const now = itemValue(st, colId, item, ent, c);
+          return h('span.stat', { class: now !== ent[c] ? 'worn' : '', title: now !== ent[c] ? t('sheet.baseValue', { n: fmtField(ent[c], fields[c], st) }) : null },
+            h('span.muted.small', fields[c]?.label || c), h('strong', fmtField(now, fields[c], st)));
+        }),
+        wearStats(item).map(x => h('span.stat.worn', h('span.muted.small', x.label), h('strong', x.value)))) : null,
+      isBroken(rules, item) ? h('div.small', { style: { color: 'var(--danger)' } }, t('sheet.brokenText')) : null,
       ent?.magazine ? magazineRow(st, item, ent) : null,
       col.mods ? h('div.equip-mods.small',
         h('span.muted', `${t('sheet.mods')}: `), mods.length ? mods.map(m => m.name || rules.entities[m.collection]?.[m.ref]?.name).join(', ') : t('sheet.none'),
@@ -694,7 +702,7 @@ function listBlock(st, def) {
       h('td', h('button.mini.link', { onclick: () => entityDetails(st, colId, item.ref, item) }, name),
         def.wear_badge ? wearBadge(col, item) : null,
         ent ? null : h('span.badge.error', t('sheet.notFoundBadge'))),
-      columns.map(c => h('td.small', fmtField(ent?.[c], fields[c], st))),
+      columns.map(c => h('td.small', fmtField(itemValue(st, colId, item, ent, c), fields[c], st))),
       usesQty ? h('td.num', h('input', { type: 'number', value: item.qty ?? 1, min: 0, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name }),
         onchange: e => { item.qty = Math.max(0, Number(e.target.value) || 0); st.change(); } })) : null,
       wearMax ? h('td.num', h('div.row', { style: { flexWrap: 'nowrap', gap: '2px', justifyContent: 'flex-end' } },
@@ -731,14 +739,40 @@ function listBlock(st, def) {
   ];
 }
 
+/** Text whose terms (properties…) name entities of a collection: each one gets a tooltip and opens its details. */
+function linkTerms(text, colId, st) {
+  const ents = Object.values(st.rules.entities[colId]);
+  const names = ents.map(e => ({ e, n: normalize(e.name) })).sort((a, b) => b.n.length - a.n.length);
+  const out = []; let rest = String(text);
+  // Split on ". " and ", " but keep the separators, so "Arremessável: x6/x10" stays whole.
+  for (const part of rest.split(/(\.\s*|,\s*)/)) {
+    const hit = names.find(x => normalize(part).startsWith(x.n));
+    if (!hit) { out.push(part); continue; }
+    const label = part.slice(0, hit.e.name.length), tail = part.slice(hit.e.name.length);
+    out.push(h('button.term', { type: 'button', title: String(hit.e.description || '').slice(0, 300), onclick: ev => { ev.stopPropagation(); entityDetails(st, colId, hit.e.id); } }, label), tail);
+  }
+  return h('span', out);
+}
+
+/** A field of an item as it is now: "wear.fields" formulas lower it as the item wears. */
+function itemValue(st, colId, item, ent, f) {
+  const v = ent?.[f];
+  const formula = st.rules.collections[colId]?.wear?.fields?.[f];
+  if (!formula || !item || typeof v !== 'number' || !st.calc) return v;
+  return Number(st.calc.formula(formula, { value: v, wear: effectiveWear(st.rules, item) }));
+}
+
 /** "Wear 2" badge, only when the item has wear. */
 function wearBadge(col, item) {
-  return col?.wear?.max && item.wear > 0 ? h('span.badge.warning.wear-badge', { title: t('sheet.wear') }, t('sheet.wearShort', { n: item.wear })) : null;
+  if (!col?.wear?.max || !(item.wear > 0)) return null;
+  const broken = col.wear.breaks && item.wear >= col.wear.max;
+  return h(`span.badge.wear-badge.${broken ? 'error' : 'warning'}`, { title: col.wear.text || t('sheet.wear') }, broken ? t('sheet.broken') : t('sheet.wearShort', { n: item.wear }));
 }
 
 function fmtField(v, field, st) {
   if (v === undefined || v === null || v === '') return '—';
   if (field?.type === 'range') return fmtRange(v, field, st);
+  if (field?.links && st?.rules?.entities?.[field.links] && typeof v === 'string') return linkTerms(v, field.links, st);
   if (Array.isArray(v)) return v.join(', ');
   if (typeof v === 'boolean') return v ? t('common.yes') : t('common.no');
   const u = field?.unit ? ` ${field.unit}` : '';

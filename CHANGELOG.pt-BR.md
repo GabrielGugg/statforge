@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.2.3 — 31/10/2026
+
+- **Desgaste com efeito**: as coleções podem dizer como o desgaste muda os números do item (`wear.fields`, por exemplo DF e TD da armadura caem), acrescentar penalidades que só existem com desgaste (`wear.stats`, por exemplo ataque −2) e quebrar o item no máximo (`wear.breaks`: os efeitos param e ele aparece como Quebrado). Os valores com desgaste aparecem nos cartões de equipados e nas listas, com o valor base na dica. `wear_ignore` faz itens robustos ignorarem os primeiros níveis.
+- **Termos com dica**: um campo de texto com `links` transforma nomes de propriedades em links; passar o mouse mostra a descrição, e tocar abre.
+
 ## 0.2.2 — 31/10/2026
 
 - **Adicionar item pesquisando**: no inventário, Adicionar item pesquisa em todas as categorias de uma vez (cada resultado mostra a categoria, e um filtro estreita a busca).
