@@ -211,7 +211,7 @@ function body(st) {
   return h('div', bar, content);
 }
 
-const BLOCKS = { notebook: notebookBlock, inventory: inventoryBlock, attributes: attributesBlock, skills: skillsBlock, derived: derivedBlock, resources: resourcesBlock, counters: countersBlock, effects: effectsBlock, list: listBlock, notes: notesBlock, roller: rollerBlock };
+const BLOCKS = { money: moneyBlock, notebook: notebookBlock, inventory: inventoryBlock, attributes: attributesBlock, skills: skillsBlock, derived: derivedBlock, resources: resourcesBlock, counters: countersBlock, effects: effectsBlock, list: listBlock, notes: notesBlock, roller: rollerBlock };
 
 function block(st, def) {
   const fn = BLOCKS[def.block];
@@ -1029,6 +1029,44 @@ export function entityDetails(st, colId, id, item) {
   }
   actions.push({ text: t('common.close'), primary: true });
   dialog(item?.name || ent.name, content, { actions });
+}
+
+// ---------- Money: the coins of a "currency" collection and their total in the base coin ----------
+function moneyBlock(st, def) {
+  const { rules, sheet } = st;
+  const colId = def.collection || Object.keys(rules.collections).find(c => rules.collections[c].currency);
+  const col = rules.collections[colId];
+  if (!col?.currency) return null;
+  const field = col.currency.value || 'value';
+  const coins = Object.values(rules.entities[colId] || {}).sort((a, b) => (Number(b[field]) || 0) - (Number(a[field]) || 0));
+  const base = rules.entities[colId]?.[col.currency.base] || coins.find(c => Number(c[field]) === 1) || coins[0];
+  if (!base) return null;
+  const unit = c => c.abbr || c.name;
+  const qty = c => (sheet.items || []).filter(i => i.collection === colId && i.ref === c.id).reduce((n, i) => n + Number(i.qty ?? 1), 0);
+  // Coins are inventory items, so their weight counts like anything else.
+  const setQty = (c, n) => {
+    const own = (sheet.items || []).filter(i => i.collection === colId && i.ref === c.id);
+    sheet.items = (sheet.items || []).filter(i => !own.includes(i) || i === own[0]);
+    if (own[0]) own[0].qty = Math.max(0, n); else (sheet.items ||= []).push({ uid: uid(), collection: colId, ref: c.id, qty: Math.max(0, n) });
+    st.change();
+  };
+  const total = coins.reduce((n, c) => n + qty(c) * (Number(c[field]) || 0), 0) / (Number(base[field]) || 1);
+  const round = n => Math.round(n * 1000) / 1000;
+  return [
+    h('h3', def.title || col.name),
+    // With one coin its own line already says it all.
+    coins.length > 1 ? h('div.money-total', h('span.muted.small', t('money.total')), h('strong', `${fmt(round(total))} ${unit(base)}`)) : null,
+    h('div.money-rows', coins.map(c => {
+      const have = qty(c);
+      // Type +50 or -20 and press Enter to gain or spend.
+      const delta = h('input.money-delta', { type: 'text', inputmode: 'numeric', placeholder: '±', 'aria-label': t('money.change', { name: c.name }),
+        onkeydown: e => { if (e.key !== 'Enter') return; const n = Number(String(e.target.value).replace(',', '.')); if (Number.isFinite(n) && n) setQty(c, have + n); } });
+      return h('div.money-row',
+        h('div', h('strong', c.name), coins.length > 1 && c !== base ? h('span.muted.small', ` = ${fmt(round((Number(c[field]) || 0) / (Number(base[field]) || 1)))} ${unit(base)}`) : null),
+        h('input', { type: 'number', min: 0, value: have, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name: c.name }), onchange: e => setQty(c, Number(e.target.value) || 0) }),
+        delta);
+    })),
+  ];
 }
 
 // ---------- Notebook: many notes with a title, folded or open, with search ----------

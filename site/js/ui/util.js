@@ -20,7 +20,8 @@ export function h(tag, attrs = {}, ...children) {
     if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
     else if (k === 'class') el.className = [el.className, v].filter(Boolean).join(' ');
     else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
-    else if (k in el && typeof v !== 'string') el[k] = v;
+    // A textarea has no value attribute: its text only shows when set as a property.
+    else if ((k in el && typeof v !== 'string') || (k === 'value' && name === 'textarea')) el[k] = v;
     else el.setAttribute(k, v === true ? '' : v);
   }
   for (const c of children.flat(Infinity)) {

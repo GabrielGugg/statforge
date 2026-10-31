@@ -113,10 +113,23 @@ Uma coleção (`collections`) é um tipo de coisa (armas, traços, condições).
 | `wear` | `{ "max": 10 }` dá aos itens um contador de desgaste. `"breaks": true`: no máximo o item quebra e seus efeitos param. `"fields": { "df": "max(10, value - floor(wear / 2))" }` mostra um campo como fica depois do desgaste (`value` é a base, `wear` os níveis). `"stats": [{ "label": "Ataque", "value": "-wear" }]` acrescenta números que só existem com desgaste. `"text"` explica a regra. Dentro dos efeitos do próprio item, `wear` já é o desgaste que conta; uma entidade com `"wear_ignore": 2` ignora os 2 primeiros níveis. |
 | `mods` | Id de outra coleção cujos itens podem ser instalados dentro destes (modificações de arma). Só dá para instalar o que está no inventário; o `magazine_bonus` de uma entidade soma no pente do item em que está instalada. |
 | `custom` | Deixa o jogador criar os próprios itens nesta coleção ("Criar item personalizado" na janela de Adicionar). `true` oferece todos os campos; uma lista (`["dano", "carga"]`) oferece só esses; `{ "fields": [...], "magazine": "municao" }` também pede a capacidade do pente e quais entidades dessa coleção ele aceita. Os itens personalizados ficam na ficha, aparecem nas buscas com o selo Personalizado e podem ser editados ou excluídos nos detalhes. |
+| `currency` | Faz da coleção o dinheiro do personagem: `{ "value": "valor", "base": "pp" }` diz o campo com o valor de cada moeda e em qual moeda o total aparece. Um bloco `money` (`{ "block": "money", "collection": "moedas" }`) lista as moedas com a quantidade, uma caixa ± (digite +50 ou -20 e Enter) e o total convertido para a moeda base. As moedas são itens do inventário com quantidade, então um campo de peso entra no `sum()` como qualquer item. |
 | `max` | Quantos itens a ficha pode ter nessa coleção (ex.: 1 raça). |
 | `fields` | Dados mostrados nos detalhes e nas colunas. Tipos: `text`, `number`, `dice`, `boolean`, `list`. | `"links": "colecao"` num campo de texto transforma os termos que são entidades daquela coleção (propriedades de arma…) em links com dica. `range` é uma distância mostrada na unidade que o jogador escolhe em Configurações (metros, pés ou quadrados de 1,5 m / 5 pés): `"unit": "ft"` diz a unidade do dado, e com `"per": "PER"` um valor como `"x10/x20"` vale 10× e 20× esse valor. |
 
 Coleções sem `equippable` (traços, talentos, condições) valem sempre que estão na ficha.
+
+Exemplo com três moedas e total em prata (10 de ouro, 3 de prata e 2 de cobre aparecem como 103,2 pp):
+
+```json
+"collections": { "moedas": { "name": "Dinheiro", "quantity": true, "currency": { "value": "valor", "base": "pp" },
+  "fields": { "valor": { "type": "number", "label": "Valor (pp)" }, "peso": { "type": "number", "label": "Peso" } } } },
+"entities": { "moedas": [
+  { "id": "po", "name": "Peças de ouro", "abbr": "PO", "valor": 10, "peso": 0.02 },
+  { "id": "pp", "name": "Peças de prata", "abbr": "PP", "valor": 1, "peso": 0.02 },
+  { "id": "pc", "name": "Peças de cobre", "abbr": "PC", "valor": 0.1, "peso": 0.02 }
+] }
+```
 
 ### Efeitos
 
@@ -186,7 +199,7 @@ Uma fórmula que se refere a si mesma (direta ou indiretamente) vira aviso na fi
 }
 ```
 
-Blocos: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `list`, `notes` e `roller`. `items` filtra e ordena; `title` troca o título; `points_label` troca o nome da coluna "Pontos" do bloco `skills`. Sem `layout`, o app monta um automático.
+Blocos: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `list`, `notes`, `money` e `roller`. `items` filtra e ordena; `title` troca o título; `points_label` troca o nome da coluna "Pontos" do bloco `skills`. Sem `layout`, o app monta um automático.
 
 Cada aba é uma grade de 12 colunas. `"w"` é a largura do bloco em colunas (3, 4, 6, 8 ou 12; padrão 6, e `"wide": true` vale 12). Em tablets e celulares as larguras diminuem na mesma proporção; blocos de largura 3 ficam dois lado a lado no celular. Dê um `"id"` a cada bloco: o jogador pode arrastar, redimensionar e ocultar blocos em "Organizar", e o id mantém o arranjo dele quando você atualiza o pacote.
 
@@ -225,7 +238,7 @@ Cada aba é uma grade de 12 colunas. `"w"` é a largura do bloco em colunas (3, 
 | `pick` | Escolher entidades de `collection`, entre `min` e `max` (números ou fórmulas). Com `max: 1` é escolha única. `match_field` esconde entidades cujo campo cita algo que o personagem não tem (por nome ou id; por exemplo, uma variante com `"raca": "Humano"` só aparece para humanos); o jogador ainda pode mostrar todas. `tag` lista só as entidades com essa tag (ex.: só as magias de uma escola). |
 | `attributes` | Compra de pontos a partir do `default` de cada atributo, dentro de `min` e `max`. `points` é o orçamento; diminuir um atributo devolve pontos, a menos que `"decrease": false`. |
 | `skills` | Com `choose` e `bonus`: escolher essa quantidade de perícias, cada uma ganha `bonus` pontos. `from` limita a lista às perícias citadas num campo da entidade escolhida (nomes ou ids separados por vírgula). Com `points`: gastar essa quantidade de pontos livremente, até `max_per_skill` em cada. |
-| `items` | Equipamento inicial. Lê `starting_items` (ou o campo indicado em `field`) do que foi escolhido na coleção `from` e põe na ficha. `alternative: { label, text }` oferece outra opção no lugar (por exemplo, dinheiro para comprar), cujo texto vai para o bloco de notas `note`. |
+| `items` | Equipamento inicial. Lê `starting_items` (ou o campo indicado em `field`) do que foi escolhido na coleção `from` e põe na ficha. `alternative: { label, text }` oferece outra opção no lugar (por exemplo, dinheiro para comprar), cujo texto vai para o bloco de notas `note`; `items: [{ "ref": "moedas/po", "qty": 100 }]` dá itens no lugar. |
 | `info` | Mostra `text` e a descrição completa do que foi escolhido na coleção `show`. |
 | `notes` | Caixas de texto que preenchem os blocos `notes` da ficha com o mesmo `id`. |
 | `choice` | Uma opção entre algumas: `"id": "uso", "options": [{ "label": "Um talento", "text": "…" }, { "label": "+1 atributo" }]`. Os passos seguintes leem a resposta pelo id no `if` (`"uso == 2"`; 1 é a primeira opção). |

@@ -423,3 +423,10 @@ mark { background: color-mix(in srgb, var(--warning) 45%, transparent); color: i
 @keyframes prompt-in { from { opacity: 0; transform: translateY(-8px); } }
 @keyframes prompt-timer { to { transform: scaleX(0); } }
 @media (prefers-reduced-motion: reduce) { .auto-prompt, .auto-timer { animation: none; } }
+
+/* Money */
+.money-total { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: .5rem; }
+.money-total strong { font-size: 1.5rem; }
+.money-rows { display: grid; gap: .4rem; }
+.money-row { display: grid; grid-template-columns: 1fr 7rem 4.5rem; gap: .4rem; align-items: center; }
+.money-row input { text-align: right; }
