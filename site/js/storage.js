@@ -80,7 +80,8 @@ export async function exportAll() {
     const out = {};
     tx.objectStore('config').openCursor().onsuccess = e => {
       const c = e.target.result;
-      if (c) { out[c.key] = c.value; c.continue(); }
+      // The Google access token never leaves this device, not even in a backup file.
+      if (c) { if (c.key !== 'syncToken') out[c.key] = c.value; c.continue(); }
     };
     tx.oncomplete = () => ok(out);
     tx.onerror = () => fail(tx.error);
