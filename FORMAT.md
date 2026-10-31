@@ -74,7 +74,8 @@ Formulas are code, so their functions and keywords (`floor`, `sum`, `and`...) ar
 - **Resource**: `"display": "toggles"` shows one checkbox per point instead of a number and a bar (karma caps, spell slots, uses per day). A higher maximum means more checkboxes.
 - **Resource**: has a current value (the player changes it) and a maximum (formula).
 - **Counter**: goes from 0 to `max`. Its effects apply while it is above 0, with `n` = current level.
-- **`progression.xp_per_level`**: total XP for the next level. The app shows a notice, but the player levels up by hand.
+- **`progression.xp_per_level`**: total XP for the next level. When the sheet has it, the Level up button is highlighted. `max_level` hides the button at the top.
+- **`progression.level_up`**: `{ "steps": [...], "summary": [...] }`, an assistant for leveling up with the same step types as character creation (see below). The steps run on the sheet one level higher, so formulas see the new `level`; they add to what the sheet has (a `pick` step hides what the character already has, unless `"repeat": true`; an `attributes` step counts points from the current values and cannot go below them). The summary shows what changes as "old → new". Without it, Level up just adds one level.
 
 Use ids without hyphens for attributes, skills and values, because they appear in formulas (`load_max`, not `load-max`).
 
@@ -227,6 +228,7 @@ Each tab is a 12-column grid. `"w"` is the block's width in columns (3, 4, 6, 8 
 | `items` | Starting equipment. Reads `starting_items` (or the field named in `field`) from what was picked in collection `from` and adds it to the sheet. `alternative: { label, text }` offers another option instead (e.g. gold to buy gear), whose text goes to the notes block `note`. |
 | `info` | Shows `text`, plus the full description of what was picked in the `show` collection. |
 | `notes` | Text boxes that fill the sheet's `notes` blocks with the same `id`. |
+| `choice` | One option out of a few: `"id": "use", "options": [{ "label": "A perk", "text": "…" }, { "label": "+1 attribute" }]`. Later steps read the answer by the id in their `if` (`"use == 2"`; 1 is the first option). |
 
 Every step accepts `title`, `description` and `if` (a formula: the step only appears when it is true, for example `"has('robot')"`). `summary` lists the values shown at the top of every step (default: all resources). Resources, attributes and derived values may have an `abbr`, used there.
 

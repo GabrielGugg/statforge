@@ -14,9 +14,10 @@ const SHOWN = 60; // entities listed at once in a pick step; search narrows the 
  * Draws the assistant into `app`.
  * base: an empty sheet (already named, with system and extensions).
  * onDone(sheet) receives the finished sheet; onSkip() creates the blank one.
+ * Level up uses the same assistant: `levelUp` is the sheet as it was, `base` a copy one level higher,
+ * and the steps add to what the sheet already has.
  */
-export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
-  const steps = rules.creation.steps;
+export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps = rules.creation.steps, summaryIds = rules.creation?.summary, levelUp = null }) {
   const choices = steps.map(() => ({}));
   const st = { rules, inst }; // what entityDetails needs
   let index = firstFrom(0);
@@ -29,15 +30,27 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
   };
 
   // ---------- Building the sheet from the choices ----------
+  // A "choice" step's answer is a formula variable named after its id: 1 for the first option, 0 while unanswered.
+  function choiceVars() {
+    return Object.fromEntries(steps.map((st, i) => [st, i]).filter(([st]) => st.type === 'choice' && st.id).map(([st, i]) => [st.id, choices[i].option || 0]));
+  }
+
   function applies(step, sheet) {
     if (!step.if) return true;
-    return !!compute(rules, sheet).formula(step.if);
+    return !!compute(rules, sheet).formula(step.if, choiceVars());
+  }
+
+  /** A fresh sheet to rebuild on: empty when creating, the current sheet when leveling up. */
+  function fresh() {
+    const s = structuredClone(base);
+    if (!levelUp) { s.items = []; s.skills = {}; s.notes = {}; }
+    s.items ||= []; s.skills ||= {}; s.notes ||= {};
+    return s;
   }
 
   /** The sheet with the choices of steps 0..upto-1 (only the steps that apply). */
   function build(upto = steps.length) {
-    const s = structuredClone(base);
-    s.items = []; s.skills = {}; s.notes = {};
+    const s = fresh();
     for (let i = 0; i < upto; i++) {
       if (!applies(steps[i], s)) continue;
       applyStep(steps[i], choices[i], s);
@@ -112,8 +125,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
   /** Steps that apply with the current choices (for "step N of M"). */
   function visibleSteps() {
     const out = [];
-    const s = structuredClone(base);
-    s.items = []; s.skills = {}; s.notes = {};
+    const s = fresh();
     steps.forEach((step, i) => {
       if (!applies(step, s)) return;
       out.push(i);
@@ -151,6 +163,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
   /** { ok, msg (blocks), warn (does not block) } */
   function validate(i, calc, sheet) {
     const step = steps[i], c = choices[i];
+    if (step.type === 'choice') return c.option ? { ok: true } : { ok: false, msg: t('creation.chooseOne') };
     if (step.type === 'pick') {
       const n = (c.picks || []).length;
       const min = num(step.min, calc, 0), max = num(step.max, calc, Infinity);
@@ -183,7 +196,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
   function attributePointsLeft(step, calc) {
     const values = choices[steps.indexOf(step)].values || {};
     const spent = Object.values(rules.attributes).reduce((sum, a) => {
-      const d = a.default ?? a.min ?? 0;
+      const d = levelUp ? base.attributes?.[a.id] ?? a.default ?? a.min ?? 0 : a.default ?? a.min ?? 0;
       return sum + ((values[a.id] ?? base.attributes[a.id] ?? d) - d);
     }, 0);
     return num(step.points, calc, 0) - spent;
@@ -201,7 +214,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
     const pos = vis.indexOf(index) + 1;
     const v = validate(index, calcBefore, before);
 
-    const content = ({ pick: pickStep, attributes: attributesStep, skills: skillsStep, info: infoStep, notes: notesStep, items: itemsStep }[step.type] || (() => null))(step, calcBefore, before, calcAfter);
+    const content = ({ choice: choiceStep, pick: pickStep, attributes: attributesStep, skills: skillsStep, info: infoStep, notes: notesStep, items: itemsStep }[step.type] || (() => null))(step, calcBefore, before, calcAfter);
     app.replaceChildren(h('div.wizard',
       progress(pos, vis.length + 1, step.title || defaultTitle(step)),
       summary(calcAfter),
@@ -224,17 +237,21 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
     return h('div.wizard-progress',
       h('div.row.spread',
         h('span.muted.small', t('creation.stepOf', { n: pos, total })),
-        h('button.mini.link', { type: 'button', onclick: onSkip }, t('creation.skip'))),
+        h('button.mini.link', { type: 'button', onclick: onSkip }, levelUp ? t('common.cancel') : t('creation.skip'))),
       h('div.bar', h('div', { style: { width: `${Math.round((pos / total) * 100)}%` } })),
       h('span.sr-only', title));
   }
 
+  // When leveling up, values that change show as "old → new".
+  const calcOld = levelUp ? compute(rules, levelUp) : null;
   function summary(calc) {
-    const ids = rules.creation.summary || Object.keys(rules.resources);
+    const ids = summaryIds || Object.keys(rules.resources);
     const chips = ids.map(id => {
       const def = rules.resources[id] || rules.derived[id] || rules.attributes[id] || rules.skills[id];
       if (!def || (rules.derived[id] && !calc.visible(def))) return null;
-      return h('span.stat-chip', { title: def.name }, h('span', def.abbr || def.name), h('strong', fmt(calc.value(id))));
+      const now = calc.value(id), old = calcOld?.value(id);
+      return h('span.stat-chip', { title: def.name, class: calcOld && old !== now ? 'changed' : '' }, h('span', def.abbr || def.name),
+        h('strong', calcOld && old !== now ? `${fmt(old)} → ${fmt(now)}` : fmt(now)));
     }).filter(Boolean);
     return chips.length ? h('div.stat-chips', { 'aria-label': t('creation.summary') }, chips) : null;
   }
@@ -249,14 +266,24 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
           `${t('creation.next')} →`)));
   }
 
+  // One option out of a few; later steps read the answer through their "if".
+  function choiceStep(step) {
+    const c = choices[index];
+    return h('div.choices', (step.options || []).map((o, i) => h('div.choice', { class: c.option === i + 1 ? 'selected' : '' },
+      h('label.choice-main',
+        h('input', { type: 'radio', name: `step${index}`, checked: c.option === i + 1, onchange: () => { c.option = i + 1; redraw(); } }),
+        h('span.choice-text', h('strong', o.label), o.text ? h('span.choice-desc', o.text) : null)))));
+  }
+
   // Pick entities from a collection.
   function pickStep(step, calc) {
     const c = choices[index];
     c.picks ||= [];
     const max = num(step.max, calc, Infinity), min = num(step.min, calc, 0);
     const single = max === 1;
+    const owned = new Set(levelUp && !step.repeat ? (levelUp.items || []).filter(i => i.collection === step.collection).map(i => i.ref) : []);
     const all = Object.values(rules.entities[step.collection] || {})
-      .filter(e => !step.tag || (e.tags || []).includes(step.tag)).sort((a, b) => byName(a.name, b.name));
+      .filter(e => (!step.tag || (e.tags || []).includes(step.tag)) && !owned.has(e.id)).sort((a, b) => byName(a.name, b.name));
     const okAll = all.filter(e => available(step, e, calc));
     const hidden = all.length - okAll.length;
     let list = showAll ? all : okAll;
@@ -311,20 +338,20 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
   // Point-buy for attributes.
   function attributesStep(step, calc, _sheet, calcAfter) {
     const c = choices[index];
-    c.values ||= Object.fromEntries(Object.values(rules.attributes).map(a => [a.id, base.attributes[a.id] ?? a.default ?? a.min ?? 0]));
+    c.values ||= Object.fromEntries(Object.values(rules.attributes).map(a => [a.id, base.attributes?.[a.id] ?? a.default ?? a.min ?? 0]));
     const left = attributePointsLeft(step, calc);
     const allowDecrease = step.decrease !== false;
     return [
       h('div.points-left', { class: left < 0 ? 'over' : left === 0 ? 'done' : '' }, h('strong', fmt(left)), ' ', t('creation.pointsToSpend', { n: left })),
       h('div.attr-rows', Object.values(rules.attributes).map(a => {
         const v = c.values[a.id];
-        const d = a.default ?? a.min ?? 0;
+        const d = levelUp ? base.attributes?.[a.id] ?? a.default ?? a.min ?? 0 : a.default ?? a.min ?? 0;
         const set = n => { c.values[a.id] = n; redraw(); };
         const eff = calcAfter.value(a.id);
         return h('div.attr-row', { title: a.description || '' },
           h('div.attr-name', h('strong', a.abbr || a.id), h('span.muted.small', a.name)),
           h('div.stepper',
-            h('button', { type: 'button', 'aria-label': `${a.name} −1`, disabled: v <= (a.min ?? -Infinity) || (!allowDecrease && v <= d), onclick: () => set(v - 1) }, '−'),
+            h('button', { type: 'button', 'aria-label': `${a.name} −1`, disabled: v <= (a.min ?? -Infinity) || ((!allowDecrease || levelUp) && v <= d), onclick: () => set(v - 1) }, '−'),
             h('output', { 'aria-label': a.name }, fmt(v)),
             h('button', { type: 'button', 'aria-label': `${a.name} +1`, disabled: v >= (a.max ?? Infinity) || left <= 0, onclick: () => set(v + 1) }, '+')),
           h('div.attr-result',
@@ -412,6 +439,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
 
   // ---------- Review ----------
   function review() {
+    if (levelUp) return levelReview();
     const sheet = build();
     const calc = compute(rules, sheet);
     const vis = visibleSteps();
@@ -436,6 +464,31 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
       h('div.wizard-footer', h('div.row.spread',
         h('button', { type: 'button', onclick: () => { index = firstFrom(steps.length - 1, -1); draw(); } }, `← ${t('common.back')}`),
         h('button.primary', { type: 'button', onclick: () => onDone({ ...build(), name: base.name.trim() }) }, t('new.create'))))));
+    window.scrollTo(0, 0);
+  }
+
+  /** Level up: what changes, then confirm. */
+  function levelReview() {
+    const sheet = build();
+    const calc = compute(rules, sheet);
+    const vis = visibleSteps();
+    const oldUids = new Set((levelUp.items || []).map(i => i.uid));
+    const added = sheet.items.filter(i => !oldUids.has(i.uid)).map(i => rules.entities[i.collection]?.[i.ref]?.name || i.ref);
+    const attrs = Object.values(rules.attributes).filter(a => (sheet.attributes?.[a.id] ?? 0) !== (levelUp.attributes?.[a.id] ?? 0))
+      .map(a => `${a.abbr || a.id} ${fmt(levelUp.attributes?.[a.id] ?? 0)} → ${fmt(sheet.attributes[a.id])}`);
+    const skills = Object.values(rules.skills).filter(sk => (sheet.skills[sk.id] || 0) !== (levelUp.skills?.[sk.id] || 0))
+      .map(sk => `${sk.name} ${signed((sheet.skills[sk.id] || 0) - (levelUp.skills?.[sk.id] || 0))}`);
+    const rows = [[t('level.added'), added], [t('sheet.attributes'), attrs], [t('sheet.skills'), skills]].filter(([, v]) => v.length);
+    app.replaceChildren(h('div.wizard',
+      progress(vis.length + 1, vis.length + 1, t('creation.review')),
+      h('section.card.wizard-step',
+        h('h2', t('level.title', { n: sheet.level })),
+        h('p.muted', t('level.reviewIntro')),
+        summary(calc),
+        rows.length ? h('table.table', { style: { marginTop: '.75rem' } }, h('tbody', rows.map(([k, v]) => h('tr', h('td.muted', k), h('td', v.join(', ')))))) : null),
+      h('div.wizard-footer', h('div.row.spread',
+        vis.length ? h('button', { type: 'button', onclick: () => { index = firstFrom(steps.length - 1, -1); draw(); } }, `← ${t('common.back')}`) : h('button', { type: 'button', onclick: onSkip }, t('common.cancel')),
+        h('button.primary', { type: 'button', onclick: () => onDone(build()) }, t('level.confirm', { n: sheet.level }))))));
     window.scrollTo(0, 0);
   }
 

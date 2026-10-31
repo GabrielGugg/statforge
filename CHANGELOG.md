@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.2.6 — 2026-10-31
+
+- **Level up**: a Level up button in the sheet header (highlighted when there is enough XP) opens an assistant defined by the package (`progression.level_up`), with the same steps as character creation: choose a perk or an attribute, spend skill points and so on. The top shows what changes (PV 15 → 20), and a review lists everything before confirming. Spent resources keep their gap to the new maximum. Packages without it just add one level.
+- New `choice` step: one option out of a few, read by later steps in their `if`.
+
 ## 0.2.5 — 2026-10-31
 
 - **Custom items**: the Add item dialog has "Create custom item". Pick the category and fill in the fields the package allows for it (`custom` in the collection); weapons can also get a magazine with the ammo they take, and property-like fields have a picker. Custom items are saved in the sheet, work like any other item (weight, wear, equipping, mods) and can be edited or deleted from their details.

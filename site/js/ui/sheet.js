@@ -6,6 +6,7 @@ import * as pk from '../packages.js';
 import { checkSet } from '../engine/package.js';
 import { compute, roll, isBroken, effectiveWear } from '../engine/calc.js';
 import { t } from '../i18n.js';
+import { creationWizard } from './creation.js';
 import { h, toast, dialog, confirm, ask, downloadJSON, uid, fmt, signed, byName, normalize } from './util.js';
 
 const rollHistory = [];
@@ -20,7 +21,7 @@ export async function sheetScreen(app, id) {
     return;
   }
   const inst = await pk.installed();
-  const state = { sheet, ...built, inst, tab: sessionStorage.getItem(`tab:${id}`) || null, editing: false };
+  const state = { app, sheet, ...built, inst, tab: sessionStorage.getItem(`tab:${id}`) || null, editing: false };
   // The player's own arrangement of the blocks, shared by every sheet of the same system.
   const layoutKey = `layout:${sheet.system}`;
   state.custom = (await db.getConfig(layoutKey, {})) || {};
@@ -89,6 +90,35 @@ function showPrompt(st, key, title, text, action, onApply) {
   start();
 }
 
+// ---------- Level up: the package's steps, or just +1 level ----------
+async function levelUp(st) {
+  const { sheet, rules, app } = st;
+  const next = (sheet.level || 1) + 1;
+  const steps = rules.progression?.level_up?.steps;
+  const finish = s => {
+    const oldCalc = compute(rules, sheet), newCalc = compute(rules, s);
+    // Resources the player already spent keep the same gap to the new maximum.
+    for (const id of Object.keys(rules.resources)) {
+      const gain = newCalc.value(id) - oldCalc.value(id);
+      if (gain > 0 && s.resources?.[id] !== undefined) s.resources[id] = Number(s.resources[id]) + gain;
+    }
+    for (const k of Object.keys(sheet)) delete sheet[k];
+    Object.assign(sheet, s);
+    toast(t('level.done', { n: next }));
+    st.change();
+    window.scrollTo(0, 0);
+  };
+  if (!steps?.length) {
+    if (await confirm(t('level.up'), t('level.simple', { n: next }))) finish({ ...structuredClone(sheet), level: next });
+    return;
+  }
+  const base = { ...structuredClone(sheet), level: next };
+  promptBox?.remove(); promptBox = null;
+  app.replaceChildren();
+  creationWizard(app, { rules, inst: st.inst, base, steps, summaryIds: rules.progression.level_up.summary, levelUp: sheet,
+    onDone: finish, onSkip: () => { st.redraw(); window.scrollTo(0, 0); } });
+}
+
 // ---------- Header ----------
 function header(st) {
   const { sheet, rules, calc } = st;
@@ -97,11 +127,14 @@ function header(st) {
   const numField = (label, field) => h('label.field', h('span', label),
     h('input.num', { type: 'number', value: sheet[field] ?? 0, inputmode: 'numeric',
       onchange: e => { sheet[field] = Number(e.target.value) || 0; st.change(); } }));
-  let next = null;
+  let next = null, ready = false;
   if (rules.progression?.xp_per_level) {
     const target = calc.formula(rules.progression.xp_per_level);
-    if (target > 0) next = h('div.muted.small', `${t('sheet.nextLevel', { xp: fmt(target) })}${sheet.xp >= target ? ` — ${t('sheet.canLevel')}` : ''}`);
+    ready = target > 0 && sheet.xp >= target;
+    if (target > 0) next = h('div.muted.small', `${t('sheet.nextLevel', { xp: fmt(target) })}${ready ? ` — ${t('sheet.canLevel')}` : ''}`);
   }
+  const atMax = rules.progression?.max_level && (sheet.level || 1) >= rules.progression.max_level;
+  const levelBtn = atMax ? null : h(`button.mini${ready ? '.primary' : ''}`, { onclick: () => levelUp(st) }, t('level.up'));
   return h('div',
     h('div.sheet-header',
       h('label.field.field-name', h('span', st.system.name), name),
@@ -110,6 +143,7 @@ function header(st) {
     h('div.row.spread', { style: { marginBottom: '1rem' } },
       next || h('span'),
       h('div.row',
+        levelBtn,
         h(`button.mini${st.editing ? '.primary' : ''}`, { 'aria-pressed': String(st.editing), onclick: () => { st.editing = !st.editing; st.redraw(); } },
           st.editing ? t('sheet.doneArranging') : t('sheet.arrange')),
         h('button.mini', { onclick: () => packagesDialog(st) }, t('sheet.packages', { n: st.active.length + 1 })),
