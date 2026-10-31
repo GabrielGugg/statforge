@@ -267,6 +267,8 @@ export default {
   'sheet.resources': 'Recursos',
   'sheet.current': '{name}, atual',
   'sheet.restoreMax': 'Restaurar ao máximo',
+  'sheet.toggleOf': '{name} {n}',
+  'sheet.grantedBy': 'Vem com {name}',
   'sheet.counters': 'Contadores',
   'sheet.counterLevel': '{name} nível {n}',
   'sheet.activeEffects': 'Efeitos ativos',

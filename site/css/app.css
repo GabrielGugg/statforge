@@ -331,3 +331,11 @@ details.rule { margin-top: .25rem; } details.rule summary { cursor: pointer; }
 .hub-desc { margin: 0; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; color: var(--text-muted); }
 .wear-value { min-width: 3.2em; text-align: center; display: inline-block; }
 .topbar .back { flex: none; }
+
+/* Resources shown as toggles (karma caps, spell slots...) */
+.toggles { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.toggles input[type=checkbox] { width: 1.6rem; height: 1.6rem; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.res-tile .toggles { min-height: 2.4rem; }
+.res-tile .res-buttons:has(> span) { grid-template-columns: 1fr auto; align-items: center; }
+/* Entities granted by another one (shown, not removable) */
+tr.granted td:first-child button, tr.granted .link { font-style: italic; }

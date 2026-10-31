@@ -2,6 +2,14 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.1.8 — 31/10/2026
+
+- **Recursos em caixinhas**: um recurso com `"display": "toggles"` mostra uma caixinha por ponto (tampas de karma, espaços de magia, usos por dia) em vez de número e barra.
+- **Imunidades escondem o que não pode acontecer**: uma `immunity` pode dizer quais condições ou contadores cobre (`ref` ou `tag`), e eles deixam de aparecer nas listas de adicionar da ficha.
+- Efeitos como imunidades e vantagens agora também respeitam `"if"`.
+- **Entidades concedidas aparecem na lista** (por exemplo, o traço que vem com o antecedente), com o nome da origem, e saem junto com ela.
+- Assistente de criação: um passo `pick` pode listar só entidades com uma `tag`.
+
 ## 0.1.7 — 31/10/2026
 
 - **Botão voltar** na barra do topo: volta para onde você estava (por exemplo, de Configurações para a ficha aberta).

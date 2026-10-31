@@ -255,7 +255,8 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip }) {
     c.picks ||= [];
     const max = num(step.max, calc, Infinity), min = num(step.min, calc, 0);
     const single = max === 1;
-    const all = Object.values(rules.entities[step.collection] || {}).sort((a, b) => byName(a.name, b.name));
+    const all = Object.values(rules.entities[step.collection] || {})
+      .filter(e => !step.tag || (e.tags || []).includes(step.tag)).sort((a, b) => byName(a.name, b.name));
     const okAll = all.filter(e => available(step, e, calc));
     const hidden = all.length - okAll.length;
     let list = showAll ? all : okAll;

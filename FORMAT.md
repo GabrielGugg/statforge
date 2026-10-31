@@ -70,6 +70,7 @@ Formulas are code, so their functions and keywords (`floor`, `sum`, `and`...) ar
 - **`rolls.modifier`**: how the modifier comes from the attribute value. In Fallout, `value - 5`; in D&D, `floor((value - 10) / 2)`. Without it, no modifier is shown.
 - **Skill**: the default total is `points + mod(attribute)`. For another rule, use `"total": "points * 2 + mod(INT)"`.
 - **Derived**: a computed number. `"if": "has('human')"` shows the value only when the condition holds. `"unit": "lb"` appears next to it.
+- **Resource**: `"display": "toggles"` shows one checkbox per point instead of a number and a bar (karma caps, spell slots, uses per day). A higher maximum means more checkboxes.
 - **Resource**: has a current value (the player changes it) and a maximum (formula).
 - **Counter**: goes from 0 to `max`. Its effects apply while it is above 0, with `n` = current level.
 - **`progression.xp_per_level`**: total XP for the next level. The app shows a notice, but the player levels up by hand.
@@ -120,10 +121,10 @@ Any entity, attribute, skill, derived value, resource or counter can have `effec
 | --- | --- | --- |
 | `add` | `target`, `value` | Adds the value (formula) to the target. |
 | `set` | `target`, `value` | Replaces the target's base value. If there are several, the highest wins. `add` effects go on top (e.g. armor sets AC and a shield adds +2). |
-| `grant` | `ref` (`collection/id`) | The sheet also has this entity, while the source is active. |
+| `grant` | `ref` (`collection/id`) | The sheet also has this entity, while the source is active. It shows in its collection's list with the source's name and leaves with it. |
 | `block` | `collection` or `tag` | Cancels the effects of entities in that collection or with that tag (e.g. a robot gets no effect from chems). |
 | `advantage`, `disadvantage` | `target`, `text` | Listed under active effects. |
-| `immunity`, `resistance`, `vulnerability` | `text` | Listed under active effects. |
+| `immunity`, `resistance`, `vulnerability` | `text` | Listed under active effects. An `immunity` can also name what it covers with `ref` (`collection/id`, a counter id, or a list of them) and/or `tag`: those conditions and counters are no longer offered in the sheet's add lists (e.g. a robot is never offered Bleeding). |
 | `note` | `text` | Reminder on the sheet, for rules the app does not automate. |
 
 Every effect accepts `"if": "formula"`; it only applies when the formula is true. Inside an entity's effects, `qty` and `wear` are that item's values on the sheet.
@@ -198,7 +199,7 @@ Each tab is a 12-column grid. `"w"` is the block's width in columns (3, 4, 6, 8 
 
 | Step | What it does |
 | --- | --- |
-| `pick` | Choose entities from `collection`, between `min` and `max` (numbers or formulas). With `max: 1` it is a single choice. `match_field` hides entities whose field names something the character does not have (by name or id; e.g. a variant with `"race": "Elf"` only shows for elves); the player can still show them all. |
+| `pick` | Choose entities from `collection`, between `min` and `max` (numbers or formulas). With `max: 1` it is a single choice. `match_field` hides entities whose field names something the character does not have (by name or id; e.g. a variant with `"race": "Elf"` only shows for elves); the player can still show them all. `tag` lists only entities with that tag (e.g. only the spells of one school). |
 | `attributes` | Point-buy from each attribute's `default`, inside `min` and `max`. `points` is the budget; lowering an attribute gives points back unless `"decrease": false`. |
 | `skills` | With `choose` and `bonus`: pick that many skills, each gets `bonus` points. `from` limits the list to the skills named in a field of the chosen entity (comma-separated names or ids). With `points`: spend that many points freely, up to `max_per_skill` each. |
 | `items` | Starting equipment. Reads `starting_items` (or the field named in `field`) from what was picked in collection `from` and adds it to the sheet. `alternative: { label, text }` offers another option instead (e.g. gold to buy gear), whose text goes to the notes block `note`. |

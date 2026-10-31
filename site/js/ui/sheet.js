@@ -293,6 +293,11 @@ function resourcesBlock(st, def) {
     const current = sheet.resources?.[r.id] ?? max;
     const set = v => { (sheet.resources ||= {})[r.id] = v; st.change(); };
     const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
+    if (r.display === 'toggles') {
+      return h('div.resource', { title: r.recovery || '' },
+        h('div.row', h('strong', r.name), resourceToggles(st, r, max, current)),
+        r.recovery ? h('div.muted.small', r.recovery) : null);
+    }
     return h('div.resource', { title: r.recovery || '' },
       h('div.row',
         h('strong', r.name),
@@ -314,6 +319,13 @@ function resourceTile(st, r, def) {
   const current = sheet.resources?.[r.id] ?? max;
   const set = v => { (sheet.resources ||= {})[r.id] = v; st.change(); };
   const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
+  if (r.display === 'toggles') {
+    return [h('div.res-tile', { title: r.recovery || '' },
+      h('div.res-name', h('strong', def.title || r.abbr || r.name), r.abbr && !def.title ? h('span.muted.small', r.name) : null),
+      resourceToggles(st, r, max, current),
+      h('div.res-buttons', h('span.muted.small', `${fmt(Math.min(current, max))} / ${fmt(max)}`),
+        h('button.mini', { title: t('sheet.restoreMax'), 'aria-label': t('sheet.restoreMax'), onclick: () => set(max) }, '↺')))];
+  }
   return [h('div.res-tile', { title: r.recovery || '' },
     h('div.res-name', h('strong', def.title || r.abbr || r.name), r.abbr && !def.title ? h('span.muted.small', r.name) : null),
     h('div.res-value',
@@ -326,13 +338,23 @@ function resourceTile(st, r, def) {
       h('button.mini', { title: t('sheet.restoreMax'), 'aria-label': t('sheet.restoreMax'), onclick: () => set(max) }, '↺')))];
 }
 
+/** A resource with display "toggles": one checkbox per point (karma caps, spell slots...). */
+function resourceToggles(st, r, max, current) {
+  const set = v => { (st.sheet.resources ||= {})[r.id] = Math.max(0, Math.min(max, v)); st.change(); };
+  const have = Math.max(0, Math.min(max, current));
+  return h('div.toggles', Array.from({ length: Math.max(0, max) }, (_, i) => h('input', {
+    type: 'checkbox', checked: i < have, 'aria-label': t('sheet.toggleOf', { name: r.name, n: i + 1 }),
+    onchange: e => set(have + (e.target.checked ? 1 : -1)),
+  })));
+}
+
 function countersBlock(st, def) {
   const { rules, sheet } = st;
   const all = pick(rules.counters, def.items);
   if (!all.length) return null;
   const level = c => Number(sheet.counters?.[c.id] || 0);
   const list = def.only_active ? all.filter(c => level(c) > 0) : all;
-  const idle = def.only_active ? all.filter(c => level(c) === 0) : [];
+  const idle = def.only_active ? all.filter(c => level(c) === 0 && !st.calc.immune('counters', c.id)) : [];
   const adder = idle.length ? h('select.mini-select', { 'aria-label': t('sheet.addCounter'), onchange: e => {
     if (!e.target.value) return;
     (sheet.counters ||= {})[e.target.value] = 1; st.change();
@@ -422,11 +444,22 @@ function listBlock(st, def) {
       h('td.num', h('button.mini.danger', { 'aria-label': t('sheet.removeName', { name }), onclick: removeItem }, '✕')));
   });
 
+  // Entities granted by something else (a background's trait...): shown, removed with their source.
+  const owned = new Set(items.map(i => i.ref));
+  const granted = st.calc.active.filter(f => f.col === colId && !f.item && f.from && !owned.has(f.ent.id)).map(f => h('tr.granted',
+    col?.equippable ? h('td') : null,
+    h('td', h('button.mini.link', { onclick: () => entityDetails(st, colId, f.ent.id) }, f.ent.name)),
+    columns.map(c => h('td.small', fmtField(f.ent[c], fields[c]))),
+    usesQty ? h('td') : null,
+    wearMax ? h('td') : null,
+    h('td.num', h('span.badge', { title: t('sheet.grantedBy', { name: f.from }) }, f.from))));
+  rows.push(...granted);
+
   const full = max !== undefined && items.length >= max;
   return [
     h('h3', h('span', title, max !== undefined ? h('span.muted.small', ` (${items.length}/${max})`) : null),
       h('button.mini', { disabled: full, onclick: () => search(st, colId) }, t('sheet.add'))),
-    items.length ? h('div.scroll-table', h('table.table',
+    rows.length ? h('div.scroll-table', h('table.table',
       h('thead', h('tr',
         col?.equippable ? h('th', { title: t('sheet.equipped') }, t('sheet.equippedShort')) : null,
         h('th', t('sheet.name')),
@@ -449,7 +482,8 @@ function fmtField(v, field) {
 function search(st, colId) {
   const { rules, sheet } = st;
   const col = rules.collections[colId] || {};
-  const all = Object.values(rules.entities[colId] || {}).sort((a, b) => byName(a.name, b.name));
+  // What the character is immune to (e.g. a robot and "Bleeding") is not offered.
+  const all = Object.values(rules.entities[colId] || {}).filter(e => !st.calc.immune(colId, e.id)).sort((a, b) => byName(a.name, b.name));
   const input = h('input', { type: 'search', placeholder: t('sheet.searchIn', { name: col.name || colId }), 'aria-label': t('sheet.search') });
   const list = h('div.search-list');
   let dlg;
