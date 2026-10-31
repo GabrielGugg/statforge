@@ -2,6 +2,14 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.1.8 — 2026-10-31
+
+- **Resources as toggles**: a resource with `"display": "toggles"` shows one checkbox per point (karma caps, spell slots, uses per day) instead of a number and a bar.
+- **Immunities hide what cannot happen**: an `immunity` can name the conditions or counters it covers (`ref` or `tag`), and those are no longer offered in the sheet's add lists.
+- Effects such as immunities and advantages now honor `"if"` too.
+- **Granted entities show in their list** (for example, the trait that comes with a background), with the source's name, and leave with it.
+- Creation assistant: a `pick` step can list only entities with a given `tag`.
+
 ## 0.1.7 — 2026-10-31
 
 - **Back button** in the top bar: returns to where you were (for example, from Settings back to the open sheet).

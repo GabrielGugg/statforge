@@ -168,6 +168,27 @@ export function compute(rules, sheet) {
     try { return run(f, vars); } catch (e) { warn(e.message); return 0; }
   }
 
+  // List effects (immunity, advantage...) also honor "if".
+  for (const type of LIST_TYPES) {
+    lists[type] = lists[type].filter(({ ef, f }) => {
+      if (!ef.if) return true;
+      try { return !!run(ef.if, f.vars); } catch (e) { warn(t('calc.effectError', { source: f.ent.name || f.k, target: type, error: e.message })); return true; }
+    });
+  }
+
+  // Immunities with "ref" (an entity "collection/id" or a counter id) or "tag"
+  // keep those conditions out of the sheet's add lists.
+  const immuneRefs = new Set(), immuneTags = new Set();
+  for (const { ef } of lists.immunity) {
+    for (const r of [].concat(ef.ref ?? [])) immuneRefs.add(String(r));
+    for (const x of [].concat(ef.tag ?? [])) immuneTags.add(String(x));
+  }
+  function immune(col, id) {
+    if (col === 'counters') return immuneRefs.has(id) || immuneRefs.has(key('counters', id));
+    const ent = rules.entities[col]?.[id];
+    return immuneRefs.has(key(col, id)) || (ent?.tags || []).some(x => immuneTags.has(x));
+  }
+
   /** Is a derived value visible? ("if" field) */
   function visible(def) {
     if (!def.if) return true;
@@ -175,7 +196,7 @@ export function compute(rules, sheet) {
   }
 
   return {
-    value, formula, visible, errors, lists, sources, active,
+    value, formula, visible, immune, errors, lists, sources, active,
     mod: v => functions.mod(v),
     blocked: sources.filter(blocked),
   };

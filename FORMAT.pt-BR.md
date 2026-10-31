@@ -70,6 +70,7 @@ Fórmulas são código, então as funções e palavras-chave delas (`floor`, `su
 - **`rolls.modifier`**: como o modificador sai do valor do atributo. No Fallout, `value - 5`; no D&D, `floor((value - 10) / 2)`. Sem isso, o modificador não aparece.
 - **Perícia** (`skills`): o total padrão é `pontos + mod(atributo)`. Para outra regra, use `"total": "points * 2 + mod(INT)"`.
 - **Valor calculado** (`derived`): um número calculado. `"if": "has('humano')"` mostra o valor só quando a condição vale. `"unit": "kg"` aparece ao lado.
+- **Recurso** (`resources`): `"display": "toggles"` mostra uma caixinha por ponto em vez de número e barra (tampas de karma, espaços de magia, usos por dia). Máximo maior, mais caixinhas.
 - **Recurso** (`resources`): tem valor atual (o jogador mexe) e máximo (fórmula).
 - **Contador** (`counters`): vai de 0 a `max`. Os efeitos dele valem enquanto for maior que 0, com `n` = nível atual.
 - **`progression.xp_per_level`**: XP total para o próximo nível. O app mostra o aviso, mas o jogador sobe o nível na mão.
@@ -120,10 +121,10 @@ Qualquer entidade, atributo, perícia, valor calculado, recurso ou contador pode
 | --- | --- | --- |
 | `add` | `target`, `value` | Soma o valor (fórmula) no alvo. |
 | `set` | `target`, `value` | Troca o valor base do alvo. Se houver vários, vale o maior. Os `add` entram por cima (ex.: armadura define a CA e o escudo soma +2). |
-| `grant` | `ref` (`colecao/id`) | A ficha passa a ter também essa entidade, enquanto a origem estiver ativa. |
+| `grant` | `ref` (`colecao/id`) | A ficha passa a ter também essa entidade, enquanto a origem estiver ativa. Ela aparece na lista da coleção com o nome da origem e sai junto com ela. |
 | `block` | `collection` ou `tag` | Anula os efeitos das entidades dessa coleção ou com essa tag (ex.: robô não recebe efeito de químicos). |
 | `advantage`, `disadvantage` | `target`, `text` | Aparece na lista de efeitos ativos (vantagem, desvantagem). |
-| `immunity`, `resistance`, `vulnerability` | `text` | Aparece na lista de efeitos ativos (imunidade, resistência, vulnerabilidade). |
+| `immunity`, `resistance`, `vulnerability` | `text` | Aparece na lista de efeitos ativos (imunidade, resistência, vulnerabilidade). Uma `immunity` pode dizer o que cobre com `ref` (`colecao/id`, id de contador, ou uma lista deles) e/ou `tag`: essas condições e contadores deixam de ser oferecidos nas listas de adicionar da ficha (ex.: robô nunca vê Sangramento). |
 | `note` | `text` | Lembrete na ficha, para regras que o app não automatiza. |
 
 Todo efeito aceita `"if": "fórmula"`; ele só vale quando a fórmula der verdadeiro. Dentro dos efeitos de uma entidade, `qty` e `wear` são a quantidade e o desgaste daquele item na ficha.
@@ -198,7 +199,7 @@ Cada aba é uma grade de 12 colunas. `"w"` é a largura do bloco em colunas (3, 
 
 | Passo | O que faz |
 | --- | --- |
-| `pick` | Escolher entidades de `collection`, entre `min` e `max` (números ou fórmulas). Com `max: 1` é escolha única. `match_field` esconde entidades cujo campo cita algo que o personagem não tem (por nome ou id; por exemplo, uma variante com `"raca": "Humano"` só aparece para humanos); o jogador ainda pode mostrar todas. |
+| `pick` | Escolher entidades de `collection`, entre `min` e `max` (números ou fórmulas). Com `max: 1` é escolha única. `match_field` esconde entidades cujo campo cita algo que o personagem não tem (por nome ou id; por exemplo, uma variante com `"raca": "Humano"` só aparece para humanos); o jogador ainda pode mostrar todas. `tag` lista só as entidades com essa tag (ex.: só as magias de uma escola). |
 | `attributes` | Compra de pontos a partir do `default` de cada atributo, dentro de `min` e `max`. `points` é o orçamento; diminuir um atributo devolve pontos, a menos que `"decrease": false`. |
 | `skills` | Com `choose` e `bonus`: escolher essa quantidade de perícias, cada uma ganha `bonus` pontos. `from` limita a lista às perícias citadas num campo da entidade escolhida (nomes ou ids separados por vírgula). Com `points`: gastar essa quantidade de pontos livremente, até `max_per_skill` em cada. |
 | `items` | Equipamento inicial. Lê `starting_items` (ou o campo indicado em `field`) do que foi escolhido na coleção `from` e põe na ficha. `alternative: { label, text }` oferece outra opção no lugar (por exemplo, dinheiro para comprar), cujo texto vai para o bloco de notas `note`. |

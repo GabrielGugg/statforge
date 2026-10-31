@@ -267,6 +267,8 @@ export default {
   'sheet.resources': 'Resources',
   'sheet.current': '{name}, current',
   'sheet.restoreMax': 'Restore to maximum',
+  'sheet.toggleOf': '{name} {n}',
+  'sheet.grantedBy': 'Comes with {name}',
   'sheet.counters': 'Counters',
   'sheet.counterLevel': '{name} level {n}',
   'sheet.activeEffects': 'Active effects',
