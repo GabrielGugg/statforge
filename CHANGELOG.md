@@ -2,6 +2,10 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.2.1 — 2026-10-31
+
+- Fixed: ranges written as text (such as "20 ft. cone" or "Cone de 6 m") showed the unit glued at the end ("20 ft. cone m"). Now each distance inside the text is converted to the unit chosen in Settings and the words stay.
+
 ## 1.2.0 — 2026-10-31
 
 - **Google sync remembers your account**: Google no longer asks which account to use every time. The app keeps the account's email and the access token on this device only (never in the cloud or in backups), so reopening the app within the hour syncs by itself, and after that one tap reconnects the same account. Settings shows the connected account. Disconnecting deletes both. The Privacy Policy says so.

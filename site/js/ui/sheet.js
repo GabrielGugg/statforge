@@ -603,20 +603,26 @@ const TO_FT = { ft: 1, m: 1 / 0.3, sq: 5 };
 function fmtRange(v, field, st) {
   const unit = st?.unit || 'm';
   const from = field.unit || 'ft';
+  const conv = (n, src = from) => {
+    const ft = n * TO_FT[src];
+    return fmt(unit === 'sq' ? Math.floor(ft / 5) : unit === 'm' ? Math.round(ft * 0.3 * 10) / 10 : Math.round(ft));
+  };
   const parts = String(v).split('/').map(x => x.trim());
+  let numeric = true;
   const out = parts.map(p => {
     const m = p.match(/^x\s*(\d+(?:[.,]\d+)?)$/i);
     let n = m ? Number(m[1].replace(',', '.')) : Number(p.replace(',', '.'));
     if (m) {
-      if (!field.per || !st?.calc) return p;
+      if (!field.per || !st?.calc) { numeric = false; return p; }
       n *= st.calc.value(field.per);
     }
-    if (!Number.isFinite(n)) return p;
-    const ft = n * TO_FT[from];
-    const r = unit === 'sq' ? Math.floor(ft / 5) : unit === 'm' ? Math.round(ft * 0.3 * 10) / 10 : Math.round(ft);
-    return fmt(r);
+    if (Number.isFinite(n)) return conv(n);
+    numeric = false;
+    // Text such as "20 ft. cone" or "Cone de 6 m": convert each distance inside it, keep the words.
+    return p.replace(/(\d+(?:[.,]\d+)?)\s*(ft\.?|feet|foot|m)(?![a-zà-ú])/gi, (_, num, u) =>
+      `${conv(Number(num.replace(',', '.')), /^m$/i.test(u) ? 'm' : 'ft')} ${t(`unit.${unit}`)}`);
   });
-  return `${out.join(' / ')} ${t(`unit.${unit}`)}`;
+  return numeric ? `${out.join(' / ')} ${t(`unit.${unit}`)}` : out.join(' / ');
 }
 
 // ---------- Magazines: rounds loaded, reload from the inventory ----------
