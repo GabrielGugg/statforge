@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.2.6 — 31/10/2026
+
+- **Subir de nível**: um botão Subir de nível no topo da ficha (destacado quando há XP suficiente) abre um assistente definido pelo pacote (`progression.level_up`), com os mesmos passos da criação: escolher talento ou atributo, distribuir pontos de perícia e assim por diante. O topo mostra o que muda (PV 15 → 20), e uma revisão lista tudo antes de confirmar. Recursos gastos mantêm a mesma diferença para o novo máximo. Pacotes sem isso só somam um nível.
+- Novo passo `choice`: uma opção entre algumas, lida pelos passos seguintes no `if`.
+
 ## 0.2.5 — 31/10/2026
 
 - **Itens personalizados**: a janela de Adicionar item tem "Criar item personalizado". Escolha a categoria e preencha os campos que o pacote permite para ela (`custom` na coleção); armas também podem ganhar pente com as munições que aceitam, e campos de propriedades têm um seletor. Os itens personalizados ficam salvos na ficha, funcionam como qualquer outro (carga, desgaste, equipar, mods) e podem ser editados ou excluídos nos detalhes.

@@ -97,6 +97,7 @@ export function validatePackage(p) {
     checkFormula(p.progression?.xp_per_level, 'progression.xp_per_level', errors);
     if (!p.layout?.tabs?.length) warnings.push(t('val.noLayout'));
     checkCreation(p.creation, errors);
+    checkCreation(p.progression?.level_up, errors, 'progression.level_up');
     (p.auto_conditions || []).forEach((a, i) => { checkFormula(a?.when, `auto_conditions[${i}].when`, errors); if (!a?.ref?.includes('/')) errors.push(t('val.needs', { where: `auto_conditions[${i}]`, op: 'auto', field: 'ref' })); });
   }
 
@@ -131,16 +132,17 @@ export function validatePackage(p) {
   return { errors, warnings };
 }
 
-export const STEP_TYPES = ['pick', 'attributes', 'skills', 'items', 'info', 'notes'];
+export const STEP_TYPES = ['pick', 'attributes', 'skills', 'items', 'info', 'notes', 'choice'];
 
-function checkCreation(c, errors) {
+function checkCreation(c, errors, name = 'creation') {
   if (c === undefined) return;
-  if (!Array.isArray(c?.steps)) { errors.push(t('val.notList', { what: 'creation.steps' })); return; }
+  if (!Array.isArray(c?.steps)) { errors.push(t('val.notList', { what: `${name}.steps` })); return; }
   c.steps.forEach((st, i) => {
-    const where = `creation.steps[${i}]`;
+    const where = `${name}.steps[${i}]`;
     if (!STEP_TYPES.includes(st?.type)) { errors.push(t('val.stepType', { where, types: STEP_TYPES.join(', ') })); return; }
     if (st.type === 'pick' && !st.collection) errors.push(t('val.needs', { where, op: 'pick', field: 'collection' }));
     if (st.type === 'items' && !st.from) errors.push(t('val.needs', { where, op: 'items', field: 'from' }));
+    if (st.type === 'choice' && !st.options?.length) errors.push(t('val.needs', { where, op: 'choice', field: 'options' }));
     for (const k of ['if', 'min', 'max', 'points', 'choose', 'bonus', 'max_per_skill']) checkFormula(st[k], `${where}.${k}`, errors);
   });
 }

@@ -74,7 +74,8 @@ Fórmulas são código, então as funções e palavras-chave delas (`floor`, `su
 - **Recurso** (`resources`): `"display": "toggles"` mostra uma caixinha por ponto em vez de número e barra (tampas de karma, espaços de magia, usos por dia). Máximo maior, mais caixinhas.
 - **Recurso** (`resources`): tem valor atual (o jogador mexe) e máximo (fórmula).
 - **Contador** (`counters`): vai de 0 a `max`. Os efeitos dele valem enquanto for maior que 0, com `n` = nível atual.
-- **`progression.xp_per_level`**: XP total para o próximo nível. O app mostra o aviso, mas o jogador sobe o nível na mão.
+- **`progression.xp_per_level`**: XP total para o próximo nível. Quando a ficha tem esse XP, o botão Subir de nível fica destacado. `max_level` esconde o botão no topo.
+- **`progression.level_up`**: `{ "steps": [...], "summary": [...] }`, um assistente para subir de nível com os mesmos tipos de passo da criação de personagem (veja abaixo). Os passos rodam na ficha já um nível acima, então as fórmulas veem o `level` novo; eles somam ao que a ficha tem (um passo `pick` esconde o que o personagem já tem, a não ser com `"repeat": true`; um passo `attributes` conta os pontos a partir dos valores atuais e não deixa baixar deles). O resumo mostra o que muda como "antigo → novo". Sem isso, Subir de nível só soma um nível.
 
 Use ids sem hífen nos atributos, perícias e valores, porque eles aparecem nas fórmulas (`carga_max`, e não `carga-max`).
 
@@ -227,6 +228,7 @@ Cada aba é uma grade de 12 colunas. `"w"` é a largura do bloco em colunas (3, 
 | `items` | Equipamento inicial. Lê `starting_items` (ou o campo indicado em `field`) do que foi escolhido na coleção `from` e põe na ficha. `alternative: { label, text }` oferece outra opção no lugar (por exemplo, dinheiro para comprar), cujo texto vai para o bloco de notas `note`. |
 | `info` | Mostra `text` e a descrição completa do que foi escolhido na coleção `show`. |
 | `notes` | Caixas de texto que preenchem os blocos `notes` da ficha com o mesmo `id`. |
+| `choice` | Uma opção entre algumas: `"id": "uso", "options": [{ "label": "Um talento", "text": "…" }, { "label": "+1 atributo" }]`. Os passos seguintes leem a resposta pelo id no `if` (`"uso == 2"`; 1 é a primeira opção). |
 
 Todo passo aceita `title`, `description` e `if` (uma fórmula: o passo só aparece quando ela é verdadeira, por exemplo `"has('robo')"`). `summary` lista os valores mostrados no topo de cada passo (padrão: todos os recursos). Recursos, atributos e valores derivados podem ter `abbr`, usado ali.
 
