@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.2.9 — 2026-10-31
+
+- **Requirements**: entities can have `requires` (a formula). Searches and pick steps (creation and level up) show "requirement not met" and do not let them be chosen.
+- Collections can be `unique`: each entity is added once, or up to its `repeat`. Level up offers again what can still be repeated.
+
 ## 0.2.8 — 2026-10-31
 
 - **Money**: a collection can be the character's money (`currency`), with as many coins as the system has and what each is worth. The new `money` block lists them with a ± box (type +50 or -20 and press Enter) and, with more than one coin, the total converted to the base coin (10 gold, 3 silver and 2 copper = 103.2 silver). Coins are inventory items, so their weight can count.

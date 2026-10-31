@@ -104,12 +104,15 @@ A collection is a kind of thing (weapons, traits, conditions). Entities are the 
 }
 ```
 
+An entity may also have `requires`, a formula that must hold to add it (for example `"STR >= 5 and level >= 3"`): search and pick steps show it as "requirement not met" and do not let it be chosen. `repeat` says how many times it can be taken.
+
 | Collection option | Effect |
 | --- | --- |
 | `equippable` | Items get an "equipped" box, and their effects only apply when it is ticked. |
 | `quantity` | Shows the quantity column. Adding a repeated item adds 1. |
 | `wear.max` | Shows wear (−/+) up to this maximum. |
 | `max` | How many items the sheet can have in this collection (e.g. 1 class). |
+| `unique` | Each entity can be added only once (perks, traits), or as many times as its `repeat` says. |
 | `quick_remove` | Removing an item does not ask for confirmation (good for conditions). |
 | `wear` | `{ "max": 10 }` gives items a wear counter. `"breaks": true`: at the maximum the item is broken and its effects stop. `"fields": { "df": "max(10, value - floor(wear / 2))" }` shows a field as it is after wear (`value` is the base, `wear` the levels). `"stats": [{ "label": "Attack", "value": "-wear" }]` adds numbers that only exist while worn. `"text"` explains the rule. Inside the item's own effects, `wear` is already the wear that counts; an entity with `"wear_ignore": 2` ignores its first 2 levels. |
 | `mods` | Id of another collection whose items can be installed inside these (weapon mods). Only mods that are in the inventory can be installed; an entity's `magazine_bonus` adds to the magazine of the item it is installed in. |
