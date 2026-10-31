@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.1.0 — 31/10/2026
+
+- **Efeitos nos itens**: itens equipados (e traços, talentos e antecedentes) mostram abaixo do nome o que fazem, com o valor já calculado, por exemplo "+50 em Capacidade de Carga" na Mochila. Lembretes continuam em Efeitos ativos.
+- **Modo debug** (Configurações › Aparência): cada valor calculado ganha, por último no tooltip, a fórmula, a mesma fórmula com os números que ela leu e cada efeito somado com a sua origem. Em telas de toque, o botão **ƒ** ao lado do valor abre o mesmo texto.
+
 ## 1.0.0 — 31/10/2026
 
 Primeira versão oficial.

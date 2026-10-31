@@ -42,6 +42,8 @@ export async function settingsScreen(app) {
   const selUnit = h('select', { onchange: async e => { await db.setConfig('unit', e.target.value); toast(t('settings.saved')); } },
     h('option', { value: 'm' }, t('settings.unitM')), h('option', { value: 'ft' }, t('settings.unitFt')), h('option', { value: 'sq' }, t('settings.unitSq')));
   selUnit.value = await db.getConfig('unit', 'm');
+  const debugBox = h('input', { type: 'checkbox', checked: !!(await db.getConfig('debug', false)),
+    onchange: async e => { await db.setConfig('debug', e.target.checked); toast(t('settings.saved')); } });
 
   const changelog = h('div.markdown.small', h('p.muted', t('common.loading')));
   const file = getLanguage() === 'en' ? 'CHANGELOG.md' : `CHANGELOG.${getLanguage()}.md`;
@@ -87,7 +89,9 @@ export async function settingsScreen(app) {
       h('label.field', h('span', t('settings.theme')), selTheme),
       h('p.muted.small', t('settings.themeHint')),
       h('label.field', h('span', t('settings.units')), selUnit),
-      h('p.muted.small', t('settings.unitsHint'))),
+      h('p.muted.small', t('settings.unitsHint')),
+      h('label.check', debugBox, h('span', t('settings.debug'))),
+      h('p.muted.small', t('settings.debugHint'))),
     h('section.card.section',
       h('h2', t('hub.title')),
       h('label.field', h('span', t('settings.hubUrl')), hubInput),

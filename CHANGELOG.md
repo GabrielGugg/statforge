@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.1.0 — 2026-10-31
+
+- **Item effects**: equipped items (and traits, perks and backgrounds) show what they do under their name, with the value already computed, for example "+50 to Carry Capacity" on a backpack. Reminders stay in Active effects.
+- **Debug mode** (Settings › Appearance): every computed value gets, last in its tooltip, the formula, the same formula with the numbers it read, and each effect added on top with its source. On touch screens the **ƒ** button next to the value opens the same text.
+
 ## 1.0.0 — 2026-10-31
 
 First official release.
