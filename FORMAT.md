@@ -114,9 +114,22 @@ A collection is a kind of thing (weapons, traits, conditions). Entities are the 
 | `wear` | `{ "max": 10 }` gives items a wear counter. `"breaks": true`: at the maximum the item is broken and its effects stop. `"fields": { "df": "max(10, value - floor(wear / 2))" }` shows a field as it is after wear (`value` is the base, `wear` the levels). `"stats": [{ "label": "Attack", "value": "-wear" }]` adds numbers that only exist while worn. `"text"` explains the rule. Inside the item's own effects, `wear` is already the wear that counts; an entity with `"wear_ignore": 2` ignores its first 2 levels. |
 | `mods` | Id of another collection whose items can be installed inside these (weapon mods). Only mods that are in the inventory can be installed; an entity's `magazine_bonus` adds to the magazine of the item it is installed in. |
 | `custom` | Lets players create their own items in this collection ("Create custom item" in the Add dialog). `true` offers every field; a list (`["damage", "weight"]`) offers only those; `{ "fields": [...], "magazine": "ammo" }` also asks for a magazine capacity and which entities of that collection it accepts. Custom items live in the sheet, show in searches with a Custom badge, and can be edited or deleted from their details. |
+| `currency` | Makes the collection the character's money: `{ "value": "value", "base": "sp" }` names the field with each coin's worth and the coin totals are shown in. A `money` block (`{ "block": "money", "collection": "coins" }`) lists the coins with their amount, a ± box (type +50 or -20 and press Enter) and the total converted to the base coin. Coins are inventory items with quantity, so a `weight` field counts in `sum()` like any item. |
 | `fields` | Data shown in the details and columns. Types: `text`, `number`, `dice`, `boolean`, `list`. | `"links": "collection"` on a text field turns the terms that name entities of that collection (weapon properties…) into links with a tooltip. `range` is a distance shown in the unit the player picks in Settings (meters, feet or squares of 1.5 m / 5 ft): `"unit": "ft"` says the unit of the data, and with `"per": "PER"` a value like `"x10/x20"` means 10× and 20× that value. |
 
 Collections without `equippable` (traits, perks, conditions) always apply while they are on the sheet.
+
+Example with three coins, totals in silver (10 gold, 3 silver and 2 copper show as 103.2 sp):
+
+```json
+"collections": { "coins": { "name": "Money", "quantity": true, "currency": { "value": "value", "base": "sp" },
+  "fields": { "value": { "type": "number", "label": "Worth (sp)" }, "weight": { "type": "number", "label": "Weight" } } } },
+"entities": { "coins": [
+  { "id": "gp", "name": "Gold pieces", "abbr": "gp", "value": 10, "weight": 0.02 },
+  { "id": "sp", "name": "Silver pieces", "abbr": "sp", "value": 1, "weight": 0.02 },
+  { "id": "cp", "name": "Copper pieces", "abbr": "cp", "value": 0.1, "weight": 0.02 }
+] }
+```
 
 ### Effects
 
@@ -186,7 +199,7 @@ A formula that refers to itself (directly or indirectly) becomes a warning on th
 }
 ```
 
-Blocks: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `list`, `notes` and `roller`. `items` filters and orders; `title` changes the title; `points_label` renames the "Points" column of `skills`. Without `layout`, the app builds an automatic one.
+Blocks: `attributes`, `skills`, `derived`, `resources`, `counters`, `effects`, `list`, `notes`, `money` and `roller`. `items` filters and orders; `title` changes the title; `points_label` renames the "Points" column of `skills`. Without `layout`, the app builds an automatic one.
 
 Each tab is a 12-column grid. `"w"` is the block's width in columns (3, 4, 6, 8 or 12; default 6, and `"wide": true` is 12). On tablets and phones the widths shrink in proportion; blocks of width 3 sit two side by side on a phone. Give each block an `"id"`: the player can drag, resize and hide blocks with "Arrange", and the id keeps their arrangement when you update the package.
 
@@ -225,7 +238,7 @@ Each tab is a 12-column grid. `"w"` is the block's width in columns (3, 4, 6, 8 
 | `pick` | Choose entities from `collection`, between `min` and `max` (numbers or formulas). With `max: 1` it is a single choice. `match_field` hides entities whose field names something the character does not have (by name or id; e.g. a variant with `"race": "Elf"` only shows for elves); the player can still show them all. `tag` lists only entities with that tag (e.g. only the spells of one school). |
 | `attributes` | Point-buy from each attribute's `default`, inside `min` and `max`. `points` is the budget; lowering an attribute gives points back unless `"decrease": false`. |
 | `skills` | With `choose` and `bonus`: pick that many skills, each gets `bonus` points. `from` limits the list to the skills named in a field of the chosen entity (comma-separated names or ids). With `points`: spend that many points freely, up to `max_per_skill` each. |
-| `items` | Starting equipment. Reads `starting_items` (or the field named in `field`) from what was picked in collection `from` and adds it to the sheet. `alternative: { label, text }` offers another option instead (e.g. gold to buy gear), whose text goes to the notes block `note`. |
+| `items` | Starting equipment. Reads `starting_items` (or the field named in `field`) from what was picked in collection `from` and adds it to the sheet. `alternative: { label, text }` offers another option instead (e.g. gold to buy gear), whose text goes to the notes block `note`; `items: [{ "ref": "coins/gp", "qty": 100 }]` gives items instead. |
 | `info` | Shows `text`, plus the full description of what was picked in the `show` collection. |
 | `notes` | Text boxes that fill the sheet's `notes` blocks with the same `id`. |
 | `choice` | One option out of a few: `"id": "use", "options": [{ "label": "A perk", "text": "…" }, { "label": "+1 attribute" }]`. Later steps read the answer by the id in their `if` (`"use == 2"`; 1 is the first option). |

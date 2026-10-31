@@ -84,6 +84,11 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       const addNote = text => { s.notes[note] = [s.notes[note], text].filter(Boolean).join('\n'); };
       if (choice.take === false && step.alternative) {
         if (step.alternative.text) addNote(step.alternative.text);
+        // The alternative can give items too (e.g. coins instead of the kit).
+        for (const it of step.alternative.items || []) {
+          const [collection, ref] = String(it.ref || '').split('/');
+          if (rules.entities[collection]?.[ref]) s.items.push({ uid: uid(), collection, ref, qty: Number(it.qty) || 1 });
+        }
         return;
       }
       const kit = startingKit(step, s);

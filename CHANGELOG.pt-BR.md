@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.2.8 — 31/10/2026
+
+- **Dinheiro**: uma coleção pode ser o dinheiro do personagem (`currency`), com quantas moedas o sistema tiver e o valor de cada uma. O novo bloco `money` lista as moedas com uma caixa ± (digite +50 ou -20 e Enter) e, com mais de uma moeda, o total convertido para a moeda base (10 de ouro, 3 de prata e 2 de cobre = 103,2 de prata). As moedas são itens do inventário, então o peso delas pode contar.
+- A alternativa do equipamento inicial pode dar itens (`alternative.items`), como moedas.
+- Corrigido: os blocos de anotações apareciam vazios ao reabrir a ficha, mesmo com o texto salvo.
+
 ## 0.2.7 — 31/10/2026
 
 - Recursos podem mostrar só o total, em cartão (`"display": "card"`), para pontos gastos e recuperados todo turno.

@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.2.8 — 2026-10-31
+
+- **Money**: a collection can be the character's money (`currency`), with as many coins as the system has and what each is worth. The new `money` block lists them with a ± box (type +50 or -20 and press Enter) and, with more than one coin, the total converted to the base coin (10 gold, 3 silver and 2 copper = 103.2 silver). Coins are inventory items, so their weight can count.
+- The starting-equipment alternative can give items (`alternative.items`), such as coins.
+- Fixed: notes blocks showed empty after reloading the sheet, even though the text was saved.
+
 ## 0.2.7 — 2026-10-31
 
 - Resources can show only their total as a card (`"display": "card"`), for points spent and refilled every turn.
