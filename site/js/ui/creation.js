@@ -146,7 +146,11 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     return wanted.some(w => have.some(n => n === w || n.startsWith(`${w} `) || w.startsWith(`${n} `)));
   }
 
+  // "requires" is a hard rule (a formula); match_field only suggests.
+  const meets = (ent, calc) => !ent.requires || !!calc.formula(ent.requires);
+
   function available(step, ent, calc) {
+    if (!meets(ent, calc)) return false;
     if (!step.match_field) return true;
     const v = ent[step.match_field];
     if (v === undefined || v === null || v === '') return true;
@@ -286,9 +290,11 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     c.picks ||= [];
     const max = num(step.max, calc, Infinity), min = num(step.min, calc, 0);
     const single = max === 1;
-    const owned = new Set(levelUp && !step.repeat ? (levelUp.items || []).filter(i => i.collection === step.collection).map(i => i.ref) : []);
+    // When leveling up, what the character already has is not offered again, unless the entity can be taken more times ("repeat").
+    const ownedCount = id => (levelUp?.items || []).filter(i => i.collection === step.collection && i.ref === id).length;
     const all = Object.values(rules.entities[step.collection] || {})
-      .filter(e => (!step.tag || (e.tags || []).includes(step.tag)) && !owned.has(e.id)).sort((a, b) => byName(a.name, b.name));
+      .filter(e => (!step.tag || (e.tags || []).includes(step.tag)) && (!levelUp || step.repeat || ownedCount(e.id) < (Number(e.repeat) || 1)))
+      .sort((a, b) => byName(a.name, b.name));
     const okAll = all.filter(e => available(step, e, calc));
     const hidden = all.length - okAll.length;
     let list = showAll ? all : okAll;
@@ -316,7 +322,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       const fx = (e.effects || []).filter(ef => ef.type !== 'note').slice(0, 4).map(ef => h('span.badge.ok', describeEffect(rules, ef)));
       return h('div.choice', { class: on ? 'selected' : '' },
         h('label.choice-main',
-          h('input', { type: single ? 'radio' : 'checkbox', name: `step${index}`, checked: on, disabled: !on && !single && c.picks.length >= max, onchange: () => toggle(e.id) }),
+          h('input', { type: single ? 'radio' : 'checkbox', name: `step${index}`, checked: on, disabled: !on && ((!single && c.picks.length >= max) || !meets(e, calc)), onchange: () => toggle(e.id) }),
           h('span.choice-text',
             h('strong', e.name), ok ? null : h('span.badge.warning', { style: { marginLeft: '.4rem' } }, t('creation.unmet')),
             desc ? h('span.choice-desc', desc.length > 180 ? `${desc.slice(0, 180)}…` : desc) : null,

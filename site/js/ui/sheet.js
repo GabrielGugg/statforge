@@ -886,6 +886,12 @@ function search(st, colIds) {
     if (!many && col.max !== undefined && sheet.items.filter(i => i.collection === c).length >= col.max) dlg.close();
     st.change();
   };
+  // Requirements ("requires") must be met, and a "unique" collection takes each entity only "repeat" times (default once).
+  const blocked = ({ c, e }) => {
+    if (e.requires && !st.calc.formula(e.requires)) return t('creation.unmet');
+    if (rules.collections[c]?.unique && (sheet.items || []).filter(i => i.collection === c && i.ref === e.id).length >= (Number(e.repeat) || 1)) return t('sheet.alreadyHave');
+    return null;
+  };
   const draw = () => {
     const q = normalize(input.value);
     const found = all.filter(({ c, e }) => (!filter?.value || c === filter.value) &&
@@ -898,7 +904,7 @@ function search(st, colIds) {
         x.e.description ? h('div.desc', String(x.e.description).slice(0, 140) + (String(x.e.description).length > 140 ? '…' : '')) : null),
       h('div.row', { style: { flexWrap: 'nowrap' } },
         h('button.mini', { onclick: () => entityDetails(st, x.c, x.e.id) }, t('sheet.view')),
-        h('button.mini.primary', { onclick: () => add(x) }, t('sheet.addShort'))))) : [h('p.muted', t('sheet.nothingFound'))]));
+        blocked(x) ? h('span.badge.warning', blocked(x)) : h('button.mini.primary', { onclick: () => add(x) }, t('sheet.addShort'))))) : [h('p.muted', t('sheet.nothingFound'))]));
   };
   input.addEventListener('input', draw);
   filter?.addEventListener('change', draw);

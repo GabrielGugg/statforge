@@ -356,6 +356,7 @@ export default {
   'level.added': 'Adicionados',
   'level.done': 'Agora no nível {n}.',
   'level.simple': 'Subir este personagem para o nível {n}?',
+  'sheet.alreadyHave': 'Já tem',
   'money.total': 'Total',
   'money.change': 'Ganhar ou gastar {name} (ex.: +50, -20, Enter)',
   'creation.chooseOne': 'Escolha uma opção.',

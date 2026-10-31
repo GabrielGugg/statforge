@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.2.9 — 31/10/2026
+
+- **Requisitos**: as entidades podem ter `requires` (uma fórmula). As buscas e os passos de escolha (criação e subir de nível) mostram "requisito não atendido" e não deixam escolher.
+- Coleções podem ser `unique`: cada entidade entra uma vez, ou até o `repeat` dela. Subir de nível oferece de novo o que ainda pode ser repetido.
+
 ## 0.2.8 — 31/10/2026
 
 - **Dinheiro**: uma coleção pode ser o dinheiro do personagem (`currency`), com quantas moedas o sistema tiver e o valor de cada uma. O novo bloco `money` lista as moedas com uma caixa ± (digite +50 ou -20 e Enter) e, com mais de uma moeda, o total convertido para a moeda base (10 de ouro, 3 de prata e 2 de cobre = 103,2 de prata). As moedas são itens do inventário, então o peso delas pode contar.

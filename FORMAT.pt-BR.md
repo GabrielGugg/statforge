@@ -104,6 +104,8 @@ Uma coleção (`collections`) é um tipo de coisa (armas, traços, condições).
 }
 ```
 
+Uma entidade também pode ter `requires`, uma fórmula que precisa valer para ela ser adicionada (por exemplo `"FOR >= 5 and level >= 3"`): a busca e os passos de escolha mostram "requisito não atendido" e não deixam escolher. `repeat` diz quantas vezes ela pode ser pega.
+
 | Opção da coleção | Efeito |
 | --- | --- |
 | `equippable` | Os itens têm uma caixa "equipado", e os efeitos só valem quando ela está marcada. |
@@ -115,6 +117,7 @@ Uma coleção (`collections`) é um tipo de coisa (armas, traços, condições).
 | `custom` | Deixa o jogador criar os próprios itens nesta coleção ("Criar item personalizado" na janela de Adicionar). `true` oferece todos os campos; uma lista (`["dano", "carga"]`) oferece só esses; `{ "fields": [...], "magazine": "municao" }` também pede a capacidade do pente e quais entidades dessa coleção ele aceita. Os itens personalizados ficam na ficha, aparecem nas buscas com o selo Personalizado e podem ser editados ou excluídos nos detalhes. |
 | `currency` | Faz da coleção o dinheiro do personagem: `{ "value": "valor", "base": "pp" }` diz o campo com o valor de cada moeda e em qual moeda o total aparece. Um bloco `money` (`{ "block": "money", "collection": "moedas" }`) lista as moedas com a quantidade, uma caixa ± (digite +50 ou -20 e Enter) e o total convertido para a moeda base. As moedas são itens do inventário com quantidade, então um campo de peso entra no `sum()` como qualquer item. |
 | `max` | Quantos itens a ficha pode ter nessa coleção (ex.: 1 raça). |
+| `unique` | Cada entidade só pode ser adicionada uma vez (talentos, traços), ou quantas vezes o `repeat` dela disser. |
 | `fields` | Dados mostrados nos detalhes e nas colunas. Tipos: `text`, `number`, `dice`, `boolean`, `list`. | `"links": "colecao"` num campo de texto transforma os termos que são entidades daquela coleção (propriedades de arma…) em links com dica. `range` é uma distância mostrada na unidade que o jogador escolhe em Configurações (metros, pés ou quadrados de 1,5 m / 5 pés): `"unit": "ft"` diz a unidade do dado, e com `"per": "PER"` um valor como `"x10/x20"` vale 10× e 20× esse valor. |
 
 Coleções sem `equippable` (traços, talentos, condições) valem sempre que estão na ficha.

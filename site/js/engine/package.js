@@ -91,6 +91,7 @@ export function validatePackage(p) {
         else if (seen.has(e.id)) errors.push(t('val.dupId', { what: `entities.${col}`, id: e.id }));
         else seen.add(e.id);
         checkEffects(e?.effects, `${col}/${e?.id}`, errors);
+        checkFormula(e?.requires, `${col}/${e?.id}.requires`, errors);
       });
     }
     checkFormula(p.rolls?.modifier, 'rolls.modifier', errors);
