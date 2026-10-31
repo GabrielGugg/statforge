@@ -416,6 +416,7 @@ function resourcesBlock(st, def) {
     const current = sheet.resources?.[r.id] ?? max;
     const set = v => { (sheet.resources ||= {})[r.id] = v; st.change(); };
     const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
+    if (r.display === 'card') return h('div.resource', { title: r.recovery || '' }, h('div.row.spread', h('strong', r.name), h('strong', fmt(max))));
     if (r.display === 'toggles') {
       return h('div.resource', { title: r.recovery || '' },
         h('div.row', h('strong', r.name), resourceToggles(st, r, max, current)),
@@ -442,6 +443,13 @@ function resourceTile(st, r, def) {
   const current = sheet.resources?.[r.id] ?? max;
   const set = v => { (sheet.resources ||= {})[r.id] = v; st.change(); };
   const pct = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
+  // "card": only the total, for points spent and refilled every turn (counted in your head).
+  if (r.display === 'card') {
+    return [h('div.res-tile', { title: r.recovery || '' },
+      h('div.res-name', h('strong', def.title || r.abbr || r.name), r.abbr && !def.title ? h('span.muted.small', r.name) : null),
+      h('div.res-value.res-total', h('strong', fmt(max))),
+      r.recovery ? h('div.muted.small', r.recovery) : null)];
+  }
   if (r.display === 'toggles') {
     return [h('div.res-tile', { title: r.recovery || '' },
       h('div.res-name', h('strong', def.title || r.abbr || r.name), r.abbr && !def.title ? h('span.muted.small', r.name) : null),

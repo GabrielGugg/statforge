@@ -315,6 +315,7 @@ button.mini.link:hover { text-decoration: underline; }
 .res-value input { width: 4.2ch; min-width: 64px; font-size: 1.6rem; font-weight: 700; text-align: center; padding: .1rem .2rem; min-height: 44px; background: transparent; border-color: transparent; }
 .res-value input:hover, .res-value input:focus { border-color: var(--border); }
 .res-value .muted { font-size: 1.1rem; }
+.res-total strong { font-size: 2rem; line-height: 44px; }
 .res-buttons { display: grid; grid-template-columns: 1fr 1fr auto; gap: 4px; }
 .bar.low > div { background: var(--danger); }
 .toast:not(.visible) { visibility: hidden; transition: transform .25s, visibility 0s .25s; }

@@ -2,6 +2,10 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.2.7 — 31/10/2026
+
+- Recursos podem mostrar só o total, em cartão (`"display": "card"`), para pontos gastos e recuperados todo turno.
+
 ## 0.2.6 — 31/10/2026
 
 - **Subir de nível**: um botão Subir de nível no topo da ficha (destacado quando há XP suficiente) abre um assistente definido pelo pacote (`progression.level_up`), com os mesmos passos da criação: escolher talento ou atributo, distribuir pontos de perícia e assim por diante. O topo mostra o que muda (PV 15 → 20), e uma revisão lista tudo antes de confirmar. Recursos gastos mantêm a mesma diferença para o novo máximo. Pacotes sem isso só somam um nível.
