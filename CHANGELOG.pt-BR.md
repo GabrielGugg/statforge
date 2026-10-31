@@ -2,6 +2,10 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.2.1 — 31/10/2026
+
+- Corrigido: alcances escritos como texto (por exemplo "20 ft. cone" ou "Cone de 6 m") apareciam com a unidade grudada no fim ("20 ft. cone m"). Agora cada distância dentro do texto é convertida para a unidade escolhida em Configurações e as palavras ficam.
+
 ## 1.2.0 — 31/10/2026
 
 - **A sincronização com o Google lembra a sua conta**: o Google não pergunta mais qual conta usar toda vez. O app guarda o e-mail da conta e o token de acesso só neste aparelho (nunca na nuvem nem em backups), então reabrir o app dentro de uma hora sincroniza sozinho e, depois disso, um toque reconecta a mesma conta. Configurações mostra a conta conectada. Desconectar apaga os dois. A Política de Privacidade foi atualizada.
