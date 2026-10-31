@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.1.9 — 31/10/2026
+
+- **Editor de perícias**: as perícias ficam só para leitura até você tocar em **Editar**. Aí cada perícia tem − / +, o total muda na hora, e **Aplicar** salva (ou **Cancelar** desfaz).
+- O bloco de perícias pode ter um `budget`: o editor mostra os pontos gastos contra ele e avisa quando você gasta a mais ou a menos; o Aplicar pergunta antes de salvar um total diferente.
+
 ## 0.1.8 — 31/10/2026
 
 - **Recursos em caixinhas**: um recurso com `"display": "toggles"` mostra uma caixinha por ponto (tampas de karma, espaços de magia, usos por dia) em vez de número e barra.

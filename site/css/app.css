@@ -339,3 +339,11 @@ details.rule { margin-top: .25rem; } details.rule summary { cursor: pointer; }
 .res-tile .res-buttons:has(> span) { grid-template-columns: 1fr auto; align-items: center; }
 /* Entities granted by another one (shown, not removable) */
 tr.granted td:first-child button, tr.granted .link { font-style: italic; }
+
+/* Skills editor */
+.small-stepper { justify-content: flex-end; }
+.small-stepper button { min-width: 34px; min-height: 34px; font-size: 1rem; }
+.small-stepper output { min-width: 1.8em; font-size: 1.05rem; }
+.skill-budget.warn { color: var(--warning); margin-bottom: .4rem; }
+tr.changed td { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.skill-actions { justify-content: flex-end; margin-top: .6rem; }

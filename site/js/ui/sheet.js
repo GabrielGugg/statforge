@@ -265,13 +265,54 @@ function skillsBlock(st, def) {
   const { rules, sheet, calc } = st;
   const list = pick(rules.skills, def.items).sort((a, b) => byName(a.name, b.name));
   if (!list.length) return null;
-  return [h('h3', def.title || t('sheet.skills')), h('div.scroll-table', h('table.table',
-    h('thead', h('tr', h('th', t('sheet.skill')), h('th.num', def.points_label || t('sheet.points')), h('th.num', t('sheet.total')))),
-    h('tbody', list.map(p => h('tr',
-      h('td', h('span', { title: p.description || '' }, p.name), p.attribute ? h('span.muted.small', ` (${rules.attributes[p.attribute]?.abbr || p.attribute})`) : null),
-      h('td.num', h('input', { type: 'number', value: sheet.skills?.[p.id] ?? 0, inputmode: 'numeric', 'aria-label': `${p.name}: ${t('sheet.points')}`,
-        onchange: e => { (sheet.skills ||= {})[p.id] = Number(e.target.value) || 0; st.change(); } })),
-      h('td.num', h('strong', signed(calc.value(p.id)))))))))];
+  const saved = id => Number(sheet.skills?.[id] || 0);
+  const budget = def.budget !== undefined ? Number(calc.formula(def.budget)) || 0 : null;
+  const spentOf = pts => list.reduce((n, p) => n + Number(pts[p.id] || 0), 0);
+  const attr = p => (p.attribute ? h('span.muted.small', ` (${rules.attributes[p.attribute]?.abbr || p.attribute})`) : null);
+  const name = p => h('td', h('span', { title: p.description || '' }, p.name), attr(p));
+  const head = h('thead', h('tr', h('th', t('sheet.skill')), h('th.num', def.points_label || t('sheet.points')), h('th.num', t('sheet.total'))));
+
+  // Reading mode: points and totals; "Edit" opens the editor.
+  if (!st.skillDraft) {
+    const spent = spentOf(sheet.skills || {});
+    return [h('h3', h('span', def.title || t('sheet.skills')),
+      h('button.mini', { onclick: () => { st.skillDraft = Object.fromEntries(list.map(p => [p.id, saved(p.id)])); st.redraw(); } }, t('sheet.editSkills'))),
+      budget !== null && spent !== budget ? h('div.small.skill-budget.warn', t(spent > budget ? 'sheet.skillsOver' : 'sheet.skillsLeft', { n: Math.abs(budget - spent), spent, budget })) : null,
+      h('div.scroll-table', h('table.table', head, h('tbody', list.map(p => h('tr', name(p),
+        h('td.num', fmt(saved(p.id))),
+        h('td.num', h('strong', signed(calc.value(p.id)))))))))];
+  }
+
+  // Editing: − / + change a draft; Apply saves it, Cancel drops it.
+  const draft = st.skillDraft;
+  const spent = spentOf(draft);
+  const off = budget !== null && spent !== budget;
+  const set = (id, v) => { draft[id] = v; st.redraw(); };
+  const apply = async () => {
+    if (off && !(await confirm(t('sheet.skillsCheckTitle'), t(spent > budget ? 'sheet.skillsOverAsk' : 'sheet.skillsLeftAsk', { n: Math.abs(budget - spent), spent, budget }), { yes: t('sheet.apply') }))) return;
+    const next = {};
+    for (const [id, v] of Object.entries(sheet.skills || {})) if (!list.some(p => p.id === id)) next[id] = v;
+    for (const p of list) if (draft[p.id]) next[p.id] = draft[p.id];
+    sheet.skills = next;
+    st.skillDraft = null;
+    st.change();
+  };
+  return [h('h3', def.title || t('sheet.skills')),
+    budget !== null ? h('div.points-left.skill-budget', { class: spent > budget ? 'over' : spent === budget ? 'done' : '' },
+      h('strong', `${fmt(spent)} / ${fmt(budget)}`), ' ', t('sheet.skillsSpent'),
+      off ? h('div.small', t(spent > budget ? 'sheet.skillsOver' : 'sheet.skillsLeft', { n: Math.abs(budget - spent), spent, budget })) : null) : null,
+    h('div.scroll-table', h('table.table', head, h('tbody', list.map(p => {
+      const v = Number(draft[p.id] || 0);
+      return h('tr', { class: v !== saved(p.id) ? 'changed' : '' }, name(p),
+        h('td.num', h('div.stepper.small-stepper',
+          h('button', { type: 'button', 'aria-label': `${p.name} −1`, onclick: () => set(p.id, v - 1) }, '−'),
+          h('output', fmt(v)),
+          h('button', { type: 'button', 'aria-label': `${p.name} +1`, onclick: () => set(p.id, v + 1) }, '+'))),
+        h('td.num', h('strong', signed(calc.value(p.id) + v - saved(p.id)))));
+    })))),
+    h('div.row.skill-actions',
+      h('button', { onclick: () => { st.skillDraft = null; st.redraw(); } }, t('common.cancel')),
+      h('button.primary', { onclick: apply }, t('sheet.apply')))];
 }
 
 function derivedBlock(st, def) {

@@ -70,6 +70,7 @@ Fórmulas são código, então as funções e palavras-chave delas (`floor`, `su
 - **`rolls.modifier`**: como o modificador sai do valor do atributo. No Fallout, `value - 5`; no D&D, `floor((value - 10) / 2)`. Sem isso, o modificador não aparece.
 - **Perícia** (`skills`): o total padrão é `pontos + mod(atributo)`. Para outra regra, use `"total": "points * 2 + mod(INT)"`.
 - **Valor calculado** (`derived`): um número calculado. `"if": "has('humano')"` mostra o valor só quando a condição vale. `"unit": "kg"` aparece ao lado.
+- **Bloco de perícias** (`skills`): a ficha mostra pontos e totais com um botão **Editar**; na edição você usa − / + e depois **Aplicar** ou **Cancelar**. `"budget": "fórmula"` diz quantos pontos as perícias devem somar (contando todos os pontos da ficha, inclusive os bônus da criação); gastar a mais ou a menos mostra um aviso e o Aplicar pergunta antes.
 - **Recurso** (`resources`): `"display": "toggles"` mostra uma caixinha por ponto em vez de número e barra (tampas de karma, espaços de magia, usos por dia). Máximo maior, mais caixinhas.
 - **Recurso** (`resources`): tem valor atual (o jogador mexe) e máximo (fórmula).
 - **Contador** (`counters`): vai de 0 a `max`. Os efeitos dele valem enquanto for maior que 0, com `n` = nível atual.
