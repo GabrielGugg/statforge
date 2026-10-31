@@ -403,7 +403,11 @@ function listBlock(st, def) {
   const rows = items.map(item => {
     const ent = rules.entities[colId]?.[item.ref];
     const name = item.name || ent?.name || item.ref;
-    const removeItem = () => { sheet.items = sheet.items.filter(x => x !== item); st.change(); };
+    const removeItem = async () => {
+      if (!col?.quick_remove && !(await confirm(t('sheet.removeTitle'), t('sheet.removeAsk', { name }), { yes: t('sheet.remove'), danger: true }))) return;
+      sheet.items = sheet.items.filter(x => x !== item);
+      st.change();
+    };
     return h('tr', { class: ent ? '' : 'muted' },
       col?.equippable ? h('td', h('input', { type: 'checkbox', checked: !!item.equipped, 'aria-label': t('sheet.equipName', { name }), onchange: e => { item.equipped = e.target.checked; st.change(); } })) : null,
       h('td', h('button.mini.link', { onclick: () => entityDetails(st, colId, item.ref, item) }, name),
@@ -411,9 +415,9 @@ function listBlock(st, def) {
       columns.map(c => h('td.small', fmtField(ent?.[c], fields[c]))),
       usesQty ? h('td.num', h('input', { type: 'number', value: item.qty ?? 1, min: 0, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name }),
         onchange: e => { item.qty = Math.max(0, Number(e.target.value) || 0); st.change(); } })) : null,
-      wearMax ? h('td.num', h('div.row', { style: { flexWrap: 'nowrap', gap: '2px' } },
+      wearMax ? h('td.num', h('div.row', { style: { flexWrap: 'nowrap', gap: '2px', justifyContent: 'flex-end' } },
         h('button.mini', { 'aria-label': t('sheet.lessWear'), onclick: () => { item.wear = Math.max(0, (item.wear || 0) - 1); st.change(); } }, '−'),
-        h('span', { title: t('sheet.wear') }, `${item.wear || 0}/${wearMax}`),
+        h('span.wear-value', { title: t('sheet.wear') }, `${item.wear || 0}/${wearMax}`),
         h('button.mini', { 'aria-label': t('sheet.moreWear'), onclick: () => { item.wear = Math.min(wearMax, (item.wear || 0) + 1); st.change(); } }, '+'))) : null,
       h('td.num', h('button.mini.danger', { 'aria-label': t('sheet.removeName', { name }), onclick: removeItem }, '✕')));
   });

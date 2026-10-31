@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.1.7 — 2026-10-31
+
+- **Back button** in the top bar: returns to where you were (for example, from Settings back to the open sheet).
+- Removing something from a sheet (race, background, item…) asks first. Collections marked `quick_remove` (like conditions) skip the question.
+- Fix: the wear counter now lines up with its column.
+
 ## 0.1.6 — 2026-10-30
 
 - **Hub**: Packages › Browse the Hub lists the packages shared in the official [StatForge Hub](https://github.com/GabrielGugg/statforge-hub). Search, filter by type and language, install with one tap, and see when a package you have has a new version ("Update all"). The Hub address can be changed in Settings, so groups can run their own.
