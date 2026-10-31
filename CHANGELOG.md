@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 0.2.4 — 2026-10-31
+
+- **Automatic condition warnings**: packages can list conditions the app notices by itself (`auto_conditions`). A subtle popup at the top of the sheet offers to apply the condition, or to remove it when it no longer holds, and disappears after 10 seconds. Dismissed warnings stay quiet until the situation changes, and immunities (such as a perk) stop them.
+- New formula functions: `current('id')` for a resource's current value and `maxof('collection', 'field')` for the largest value among the sheet's items.
+
 ## 0.2.3 — 2026-10-31
 
 - **Wear has effects**: collections can say how wear changes an item's numbers (`wear.fields`, e.g. armor DF and TD drop), add penalties that only exist while worn (`wear.stats`, e.g. attack −2), and break the item at the maximum (`wear.breaks`: its effects stop and it shows as Broken). Worn values show in the equipped cards and lists, with the base value in the tooltip. `wear_ignore` lets sturdy items ignore the first levels.

@@ -151,8 +151,21 @@ Operators: `+ - * / %`, comparisons `< <= > >= == !=`, `and`, `or`, `not`, paren
 | `count('collection')` | How many items the sheet has in the collection. |
 | `sum('collection', 'field')` | Sum of field × quantity for every item in the collection. With a third argument `true`, only equipped ones. |
 | `tag('name')` | Some active entity has this tag. |
+| `current('id')` | The current value of a resource (what is left, not the maximum). |
+| `maxof('collection', 'field')` | The largest value of the field among the sheet's items in the collection. With a third argument `true`, only equipped ones. |
 
 A formula that refers to itself (directly or indirectly) becomes a warning on the sheet, and its value is 0.
+
+### Automatic conditions
+
+`auto_conditions` lists conditions the app can notice by itself. When `when` becomes true, a small popup at the top of the sheet offers to add the entity (`ref`, as `collection/id`); when it stops being true while the entity is on the sheet, it offers to remove it. The popup has Apply and Dismiss buttons and goes away by itself after 10 seconds. A dismissed warning only comes back after the situation changes. An active `immunity` effect for the entity (for example a perk) stops the warning.
+
+```json
+"auto_conditions": [
+  { "ref": "conditions/encumbered", "when": "load > load_max", "text": "Your load is above your capacity." },
+  { "ref": "conditions/dying", "when": "current('hp') <= 0" }
+]
+```
 
 ### Layout
 

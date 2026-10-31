@@ -42,8 +42,51 @@ export async function sheetScreen(app, id) {
   function draw() {
     state.calc = compute(state.rules, sheet);
     app.replaceChildren(header(state), alerts(state), body(state));
+    autoConditions(state);
   }
   draw();
+}
+
+// ---------- Automatic conditions: a quiet prompt when a rule says one starts or ends ----------
+let promptBox = null;
+window.addEventListener('hashchange', () => { promptBox?.remove(); promptBox = null; });
+
+function autoConditions(st) {
+  const { rules, sheet, calc } = st;
+  st.autoDismissed ||= {};
+  for (const rule of rules.auto_conditions || []) {
+    const [col, ref] = String(rule.ref).split('/');
+    const ent = rules.entities[col]?.[ref];
+    if (!ent) continue;
+    const want = !!calc.formula(rule.when) && !calc.immune(col, ref);
+    const have = (sheet.items || []).some(i => i.collection === col && i.ref === ref);
+    const key = `${rule.ref}:${want}`;
+    if (want === have) { delete st.autoDismissed[`${rule.ref}:true`]; delete st.autoDismissed[`${rule.ref}:false`]; continue; }
+    if (st.autoDismissed[key] || promptBox?.querySelector(`[data-key="${CSS.escape(key)}"]`)) continue;
+    showPrompt(st, key, want ? t('auto.gain', { name: ent.name }) : t('auto.lose', { name: ent.name }), want ? rule.text : null, want ? t('auto.apply') : t('auto.remove'), () => {
+      if (want) (sheet.items ||= []).push({ uid: uid(), collection: col, ref, ...(rules.collections[col]?.equippable ? { equipped: true } : {}) });
+      else sheet.items = sheet.items.filter(i => !(i.collection === col && i.ref === ref));
+      st.change();
+    });
+  }
+}
+
+function showPrompt(st, key, title, text, action, onApply) {
+  if (!promptBox?.isConnected) { promptBox = h('div.auto-prompts', { role: 'status', 'aria-live': 'polite' }); document.body.append(promptBox); }
+  let timer;
+  const close = () => { clearTimeout(timer); st.autoDismissed[key] = true; el.classList.add('leaving'); setTimeout(() => el.remove(), 250); };
+  const el = h('div.auto-prompt', { 'data-key': key },
+    h('div.auto-text', h('strong', title), text ? h('span.small.muted', text) : null),
+    h('div.row.auto-buttons',
+      h('button.mini.primary', { onclick: () => { close(); onApply(); } }, action),
+      h('button.mini', { onclick: close }, t('auto.dismiss'))),
+    h('div.auto-timer'));
+  // Gone by itself after 10 seconds, unless the pointer is over it.
+  const start = () => { timer = setTimeout(close, 10000); el.style.setProperty('--run', 'running'); };
+  el.addEventListener('pointerenter', () => { clearTimeout(timer); el.style.setProperty('--run', 'paused'); });
+  el.addEventListener('pointerleave', start);
+  promptBox.append(el);
+  start();
 }
 
 // ---------- Header ----------

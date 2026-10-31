@@ -409,3 +409,14 @@ mark { background: color-mix(in srgb, var(--warning) 45%, transparent); color: i
 .term:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .equip-stats .stat.worn strong { color: var(--warning); }
 .equip-stats .stat:has(.term) { flex-basis: 100%; }
+
+/* Automatic condition prompts */
+.auto-prompts { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 64px); left: 50%; transform: translateX(-50%); z-index: 60; display: grid; gap: .5rem; width: min(440px, calc(100vw - 32px)); pointer-events: none; }
+.auto-prompt { pointer-events: auto; position: relative; overflow: hidden; display: flex; align-items: center; gap: .6rem; padding: .6rem .7rem .7rem; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 6px 24px rgb(0 0 0 / .18); animation: prompt-in .25s ease-out; transition: opacity .25s, transform .25s; }
+.auto-prompt.leaving { opacity: 0; transform: translateY(-8px); }
+.auto-text { flex: 1; display: grid; gap: .1rem; min-width: 0; }
+.auto-buttons { gap: 4px; flex-wrap: nowrap; }
+.auto-timer { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--accent); transform-origin: left; animation: prompt-timer 10s linear forwards; animation-play-state: var(--run, running); }
+@keyframes prompt-in { from { opacity: 0; transform: translateY(-8px); } }
+@keyframes prompt-timer { to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { .auto-prompt, .auto-timer { animation: none; } }

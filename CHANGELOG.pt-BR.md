@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 0.2.4 — 31/10/2026
+
+- **Aviso automático de condições**: os pacotes podem listar condições que o app percebe sozinho (`auto_conditions`). Um aviso discreto no topo da ficha oferece aplicar a condição, ou removê-la quando deixa de valer, e some depois de 10 segundos. Avisos dispensados ficam quietos até a situação mudar, e imunidades (como um talento) impedem o aviso.
+- Novas funções de fórmula: `current('id')` para o valor atual de um recurso e `maxof('colecao', 'campo')` para o maior valor entre os itens da ficha.
+
 ## 0.2.3 — 31/10/2026
 
 - **Desgaste com efeito**: as coleções podem dizer como o desgaste muda os números do item (`wear.fields`, por exemplo DF e TD da armadura caem), acrescentar penalidades que só existem com desgaste (`wear.stats`, por exemplo ataque −2) e quebrar o item no máximo (`wear.breaks`: os efeitos param e ele aparece como Quebrado). Os valores com desgaste aparecem nos cartões de equipados e nas listas, com o valor base na dica. `wear_ignore` faz itens robustos ignorarem os primeiros níveis.

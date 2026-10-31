@@ -93,6 +93,7 @@ export function validatePackage(p) {
     checkFormula(p.progression?.xp_per_level, 'progression.xp_per_level', errors);
     if (!p.layout?.tabs?.length) warnings.push(t('val.noLayout'));
     checkCreation(p.creation, errors);
+    (p.auto_conditions || []).forEach((a, i) => { checkFormula(a?.when, `auto_conditions[${i}].when`, errors); if (!a?.ref?.includes('/')) errors.push(t('val.needs', { where: `auto_conditions[${i}]`, op: 'auto', field: 'ref' })); });
   }
 
   if (p.type === 'extension') {
@@ -156,6 +157,7 @@ export function buildRules(system, extensions = []) {
     progression: clone(system.progression) || {},
     layout: clone(system.layout) || null,
     creation: clone(system.creation) || null,
+    auto_conditions: clone(system.auto_conditions) || [],
     rolls: clone(system.rolls) || {},
     origin: {}, // "section/id" → id of the last package that touched it
   };

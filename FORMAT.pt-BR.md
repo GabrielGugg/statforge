@@ -151,8 +151,21 @@ Operações: `+ - * / %`, comparações `< <= > >= == !=`, `and` (e), `or` (ou),
 | `count('colecao')` | Quantos itens a ficha tem na coleção. |
 | `sum('colecao', 'campo')` | Soma do campo × quantidade de todos os itens da coleção. Com um terceiro argumento `true`, só os equipados. |
 | `tag('nome')` | Alguma entidade ativa tem essa tag. |
+| `current('id')` | O valor atual de um recurso (o que sobrou, não o máximo). |
+| `maxof('colecao', 'campo')` | O maior valor do campo entre os itens da ficha na coleção. Com um terceiro argumento `true`, só os equipados. |
 
 Uma fórmula que se refere a si mesma (direta ou indiretamente) vira aviso na ficha, e o valor fica 0.
+
+### Condições automáticas
+
+`auto_conditions` lista condições que o app consegue perceber sozinho. Quando `when` passa a valer, um aviso pequeno no topo da ficha oferece adicionar a entidade (`ref`, no formato `colecao/id`); quando deixa de valer com a entidade na ficha, oferece remover. O aviso tem os botões Aplicar e Dispensar e some sozinho depois de 10 segundos. Um aviso dispensado só volta depois que a situação mudar. Um efeito `immunity` ativo para a entidade (um talento, por exemplo) impede o aviso.
+
+```json
+"auto_conditions": [
+  { "ref": "condicoes/sobrecarregado", "when": "carga > carga_max", "text": "Sua carga passou da capacidade." },
+  { "ref": "condicoes/morrendo", "when": "current('pv') <= 0" }
+]
+```
 
 ### Layout
 
