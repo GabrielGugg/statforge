@@ -538,4 +538,6 @@ export default {
   'share.err.DRIVE_404': "A cópia compartilhada não existe mais no Drive.",
   'share.err.SHEET_NOT_FOUND': "Ficha não encontrada.",
   'share.err.deleteFirst': "Não deu para parar de compartilhar antes de apagar, então a ficha foi mantida: {error}",
+  'share.err.SHARE_SELF': "Esse convite tem o seu próprio e-mail. Para testar, use outra conta Google como mestre.",
+  'share.err.SHARE_NOT_GRANTED': "O Google não deu acesso ao mestre na cópia, então ela foi apagada. Nada foi compartilhado.",
 };

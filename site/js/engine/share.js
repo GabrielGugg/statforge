@@ -66,17 +66,35 @@ export function snapshot(sheet, installed, appVersion) {
 
 export const shareFileName = sheet => `StatForge - ${cleanText(sheet.name, 60) || 'Character'}.json`;
 
+/**
+ * Same Google account? Gmail ignores dots and "+anything" in the name, and Drive answers with the
+ * account's own spelling, so "Player.Example+rpg@gmail.com" and "playerexample@gmail.com" are the same person.
+ */
+export function sameAccount(a, b) {
+  const norm = e => {
+    let [user = '', domain = ''] = String(e || '').trim().toLowerCase().split('@');
+    if (domain === 'googlemail.com') domain = 'gmail.com';
+    if (domain === 'gmail.com') user = user.split('+')[0].replace(/\./g, '');
+    return `${user}@${domain}`;
+  };
+  return !!a && !!b && norm(a) === norm(b);
+}
+
+const isTheReader = (p, email) => p.type === 'user' && p.role === 'reader' && sameAccount(p.emailAddress, email);
+
 /** Only the owner and the one reader may be on the file. */
 export function permissionsAreSafe(perms, email) {
-  const want = String(email).toLowerCase();
   let reader = false;
   for (const p of perms || []) {
     if (p.role === 'owner') continue;
-    if (p.type === 'user' && p.role === 'reader' && String(p.emailAddress || '').toLowerCase() === want && !reader) { reader = true; continue; }
+    if (isTheReader(p, email) && !reader) { reader = true; continue; }
     return false;
   }
   return reader;
 }
+
+/** Short description of permissions for error messages (no e-mails: "owner, reader (user), reader (anyone)"). */
+export const describePermissions = perms => (perms || []).map(p => `${p.role} (${p.type})`).join(', ');
 
 async function ok(r) {
   if (!r.ok) {
@@ -92,8 +110,10 @@ async function ok(r) {
  * api(url, opts) = an authorised fetch (sync.js driveRequest), passed in so tests can use a fake Drive.
  * Returns { fileId, permissionId }.
  */
-export async function createShare(api, { sheet, body, email, message = '' }) {
+export async function createShare(api, { sheet, body, email, message = '', ownEmail = '' }) {
   if (!validEmail(email)) throw new Error('INVALID_EMAIL');
+  // Sharing with yourself gives no permission at all (you already own the file).
+  if (sameAccount(email, ownEmail)) throw new Error('SHARE_SELF');
   const boundary = `sf${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
   const meta = JSON.stringify({
     name: shareFileName(sheet), mimeType: 'application/json',
@@ -116,7 +136,8 @@ export async function createShare(api, { sheet, body, email, message = '' }) {
       body: JSON.stringify({ type: 'user', role: 'reader', emailAddress: email }),
     }))).json();
     const perms = await listPermissions(api, fileId);
-    if (!permissionsAreSafe(perms, email)) throw new Error('SHARE_UNEXPECTED_ACCESS');
+    if (!perms.some(p => isTheReader(p, email))) { const e = new Error('SHARE_NOT_GRANTED'); e.detail = describePermissions(perms); throw e; }
+    if (!permissionsAreSafe(perms, email)) { const e = new Error('SHARE_UNEXPECTED_ACCESS'); e.detail = describePermissions(perms); throw e; }
     return { fileId, permissionId: perm.id };
   } catch (e) {
     // Never leave a half-shared copy behind.
@@ -148,7 +169,7 @@ export async function deleteShare(api, fileId) {
 export async function checkShare(api, fileId, email) {
   try {
     const perms = await listPermissions(api, fileId);
-    if (!perms.some(p => p.role === 'reader' && String(p.emailAddress || '').toLowerCase() === email)) return { state: 'revoked', perms };
+    if (!perms.some(p => isTheReader(p, email))) return { state: 'revoked', perms };
     return { state: permissionsAreSafe(perms, email) ? 'ok' : 'unsafe', perms };
   } catch (e) {
     if (e.status === 404) return { state: 'gone', perms: [] };

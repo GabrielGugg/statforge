@@ -538,4 +538,6 @@ export default {
   'share.err.DRIVE_404': "The shared copy no longer exists in Drive.",
   'share.err.SHEET_NOT_FOUND': "Sheet not found.",
   'share.err.deleteFirst': "Could not stop sharing before deleting, so the sheet was kept: {error}",
+  'share.err.SHARE_SELF': "That invite has your own e-mail. To test, use another Google account as the GM.",
+  'share.err.SHARE_NOT_GRANTED': "Google did not give the GM access to the copy, so it was deleted. Nothing was shared.",
 };

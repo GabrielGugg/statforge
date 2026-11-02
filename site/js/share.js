@@ -24,7 +24,7 @@ export async function share(sheetId, { email, table = '', message = '' }) {
   if (await shareOf(sheetId)) throw new Error('ALREADY_SHARED');
   await ensureFileAccess({ interactive: true });
   const body = snapshot(sheet, await pk.installed(), VERSION);
-  const { fileId } = await createShare(driveRequest, { sheet, body, email, message });
+  const { fileId } = await createShare(driveRequest, { sheet, body, email, message, ownEmail: await db.getConfig('syncEmail', '') });
   const all = await shares();
   const now = new Date().toISOString();
   all[sheetId] = { fileId, email, table, since: now, last: now };

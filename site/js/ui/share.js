@@ -11,7 +11,7 @@ import { h, toast, dialog, confirm, byName } from './util.js';
 const errorText = e => {
   const key = `share.err.${e.message}`;
   const txt = t(key);
-  return txt === key ? t('share.err.generic', { error: e.message }) : txt;
+  return (txt === key ? t('share.err.generic', { error: e.message }) : txt) + (e.detail ? ` [${e.detail}]` : '');
 };
 const when = iso => (iso ? new Date(iso).toLocaleString() : '—');
 

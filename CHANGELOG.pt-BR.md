@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.3.1 — 02/11/2026
+
+- Corrigido: compartilhar com um Gmail escrito diferente da conta (pontos, maiúsculas ou "+algo", como "Player.Example@gmail.com" para "playerexample@gmail.com") era tomado como acesso inesperado e cancelado. O Gmail trata os dois como a mesma conta, e agora o StatForge também.
+- Compartilhar com o seu próprio e-mail é recusado com uma mensagem clara (não dá acesso nenhum), antes de criar qualquer coisa no Drive.
+- Quando o Google não dá acesso ao mestre, a mensagem diz isso, e os dois erros mostram as permissões que o Google informou (só os papéis, sem e-mails) para ajudar a achar a causa.
+
 ## 1.3.0 — 02/11/2026
 
 Primeiro passo do Modo Mestre: **compartilhar a ficha com o mestre, só leitura**.
