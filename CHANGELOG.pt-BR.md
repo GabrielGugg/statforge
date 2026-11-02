@@ -2,6 +2,10 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.7.0 — 02/11/2026
+
+- Quando uma versão nova do StatForge é publicada, aparece um aviso no topo: **Atualizar** baixa os arquivos novos e recarrega a página (as fichas continuam onde estão); **Depois** esconde o aviso até o app ser aberto de novo. O app confere alguns segundos depois de abrir, quando você volta para a aba e a cada 30 minutos.
+
 ## 1.6.1 — 02/11/2026
 
 - Modo Mestre: quando um jogador atualiza um pacote, a ficha compartilhada é reenviada na hora (e na próxima vez que o app abrir, para atualizações feitas antes), então o mestre vê a versão nova.
