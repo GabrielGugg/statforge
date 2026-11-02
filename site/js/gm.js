@@ -64,9 +64,65 @@ export async function removeMember(tableId, fileId) {
   const tb = list.find(t => t.id === tableId);
   if (!tb) return;
   tb.members = tb.members.filter(m => m.fileId !== fileId);
+  for (const pt of tb.parties || []) pt.members = pt.members.filter(id => id !== fileId);
   await db.setConfig(cacheKey(tableId, fileId), null);
   await saveTables(list);
 }
+
+// ---------- Parties and team resources (all on the GM's side; players never see them) ----------
+// table.parties = [{ id, name, members: [fileId] }], table.activeParty = id | null,
+// table.resources = [{ id, name, formula }] (the GM's own; the system package can add more in party.resources).
+export const MAX_PARTIES = 20, MAX_RESOURCES = 30;
+const clean = (txt, n) => String(txt ?? '').replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, '').trim().slice(0, n);
+
+async function editTable(tableId, fn) {
+  const list = await tables();
+  const tb = list.find(t => t.id === tableId);
+  if (!tb) throw new Error('TABLE_NOT_FOUND');
+  tb.parties ||= []; tb.resources ||= [];
+  const out = fn(tb);
+  await saveTables(list);
+  return out;
+}
+
+export const createParty = (tableId, name) => editTable(tableId, tb => {
+  if (tb.parties.length >= MAX_PARTIES) throw new Error('TOO_MANY');
+  const pt = { id: newId(), name: clean(name, 60) || '—', members: [] };
+  tb.parties.push(pt);
+  if (!tb.activeParty) tb.activeParty = pt.id;
+  return pt;
+});
+export const renameParty = (tableId, partyId, name) => editTable(tableId, tb => {
+  const pt = tb.parties.find(p => p.id === partyId);
+  if (pt && clean(name, 60)) pt.name = clean(name, 60);
+});
+export const deleteParty = (tableId, partyId) => editTable(tableId, tb => {
+  tb.parties = tb.parties.filter(p => p.id !== partyId);
+  if (tb.activeParty === partyId) tb.activeParty = tb.parties[0]?.id || null;
+});
+export const setActiveParty = (tableId, partyId) => editTable(tableId, tb => {
+  if (partyId === null || tb.parties.some(p => p.id === partyId)) tb.activeParty = partyId;
+});
+/** Puts a sheet in one party (or none: partyId null). A sheet is in at most one party. */
+export const assignMember = (tableId, fileId, partyId) => editTable(tableId, tb => {
+  if (!tb.members.some(m => m.fileId === fileId)) return;
+  for (const pt of tb.parties) pt.members = pt.members.filter(id => id !== fileId);
+  const pt = tb.parties.find(p => p.id === partyId);
+  if (pt) pt.members.push(fileId);
+});
+export const partyOf = (tb, fileId) => (tb.parties || []).find(p => p.members.includes(fileId)) || null;
+
+/** Adds or changes one of the GM's resources. The caller checks the formula (checkPartyFormula). */
+export const saveResource = (tableId, { id, name, formula }) => editTable(tableId, tb => {
+  const r = { id: id || newId(), name: clean(name, 60), formula: String(formula).trim().slice(0, 500) };
+  if (!r.name || !r.formula) throw new Error('RESOURCE_INCOMPLETE');
+  const i = tb.resources.findIndex(x => x.id === r.id);
+  if (i >= 0) tb.resources[i] = r;
+  else if (tb.resources.length >= MAX_RESOURCES) throw new Error('TOO_MANY');
+  else tb.resources.push(r);
+  return r;
+});
+export const deleteResource = (tableId, id) => editTable(tableId, tb => { tb.resources = tb.resources.filter(r => r.id !== id); });
 
 async function getJSON(url) {
   const r = await sync.driveRequest(url);

@@ -451,3 +451,18 @@ button.share-on { border-color: var(--ok); color: var(--ok); }
 .gm-card { margin: 0; display: flex; flex-direction: column; gap: .35rem; }
 .invite-link { flex: 1; min-width: 0; font-family: var(--mono, monospace); font-size: .85rem; }
 .ro-name { font-size: 1.2rem; }
+
+/* GM mode: parties and team resources */
+.error-text { color: var(--danger); }
+.gm-party { border: 1px dashed var(--border); border-radius: 10px; padding: .75rem; margin: .75rem 0; display: flex; flex-direction: column; gap: .5rem; }
+.gm-party h4 { margin: 0; }
+.gm-party.active { border: 2px solid var(--accent); }
+.gm-party.drop { background: var(--surface-2); border-color: var(--accent); }
+.gm-party.loose { border-style: dotted; }
+.gm-card[draggable="true"] { cursor: grab; }
+.gm-active { padding: .6rem .75rem; border-radius: 10px; background: var(--surface-2); margin-bottom: .6rem; }
+.gm-active .stat-chip { font-size: 1rem; }
+.stat-chip.party-err { border-color: var(--danger); }
+.gm-res-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .4rem; }
+.gm-res-list code { font-size: .8rem; word-break: break-all; color: var(--text-muted); }
+select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }

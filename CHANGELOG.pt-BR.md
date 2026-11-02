@@ -2,6 +2,16 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.5.0 — 02/11/2026
+
+**Parties e recursos da equipe** no Modo Mestre.
+
+- **Nova party** divide as fichas da mesa em grupos. Mova uma ficha pelo menu de party no cartão dela, ou arraste o cartão para dentro de uma party (no computador). Cada ficha fica em no máximo uma party; as outras aparecem em "Sem party".
+- Uma party é a **party ativa**: os recursos da equipe dela aparecem no topo da mesa. **Tornar ativa** troca.
+- **Recursos da equipe** são fórmulas sobre os personagens de uma party, calculadas sozinhas e atualizadas quando as fichas mudam. `members('AGI')` lê qualquer valor de cada personagem (atributos, perícias, qualquer fórmula, com todos os efeitos), e `sum`, `avg`, `min`, `max` e `count` combinam esses valores; `size` é o tamanho da party. Exemplos: furtividade da equipe `min(members('AGI'))`, moral `floor(avg(members('CAR'))) + size`. A fórmula é conferida ao salvar, e um personagem em que ela falha conta como 0, com o motivo na dica do valor.
+- Pacotes de sistema podem trazer recursos da equipe prontos em `party.resources` (aparecem como "do sistema"); os do mestre podem ser criados, editados e apagados em cada mesa.
+- Tudo isso fica só com o mestre (aparelho e arquivo privado no Drive). Os jogadores não veem parties nem recursos da equipe, e nada é escrito nos arquivos deles.
+
 ## 1.4.1 — 02/11/2026
 
 - Corrigido: o mestre recebia "O Google recusou o pedido" ao adicionar uma ficha compartilhada. As cópias compartilhadas pela 1.3.x eram marcadas para leitores não poderem baixar, o que também bloqueava o app do mestre. As cópias novas não têm mais essa marca, e o app do jogador tira a marca das cópias antigas sozinho na próxima vez que abrir com acesso ao Google (ou pare de compartilhar e compartilhe de novo).

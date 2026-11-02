@@ -185,6 +185,21 @@ Uma fórmula que se refere a si mesma (direta ou indiretamente) vira aviso na fi
 ]
 ```
 
+### Recursos da equipe (Modo Mestre)
+
+`party.resources` dá ao mestre recursos da equipe prontos, calculados sobre os personagens de uma party no Modo Mestre. Cada um tem `id`, `name` e `formula`. Só o mestre vê.
+
+```json
+"party": {
+  "resources": [
+    { "id": "furtividade_equipe", "name": "Furtividade da equipe", "formula": "min(members('AGI'))" },
+    { "id": "moral", "name": "Moral", "formula": "floor(avg(members('CAR'))) + size" }
+  ]
+}
+```
+
+Nessas fórmulas `members('x')` dá o valor de `x` em cada personagem (qualquer fórmula do sistema funciona, calculada com os efeitos daquele personagem), `sum`, `avg`, `min` e `max` combinam a lista, `count` conta os valores diferentes de 0, e `size` é quantos personagens estão na party. Os outros nomes só podem ser usados dentro de `members(...)`.
+
 ### Layout
 
 ```json

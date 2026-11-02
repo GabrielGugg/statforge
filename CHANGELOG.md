@@ -2,6 +2,16 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.5.0 — 2026-11-02
+
+**Parties and team resources** in GM mode.
+
+- **New party** splits the sheets of a table into groups. Move a sheet with the party menu on its card, or drag the card into a party (desktop). A sheet is in at most one party; the rest show under "No party".
+- One party is the **active party**: its team resources show at the top of the table. **Make active** switches it.
+- **Team resources** are formulas over the characters of a party, calculated automatically and kept up to date as the sheets change. `members('AGI')` reads any value from each character (attributes, skills, any formula, with all their effects), and `sum`, `avg`, `min`, `max` and `count` combine them; `size` is the party size. Examples: team stealth `min(members('AGI'))`, morale `floor(avg(members('CAR'))) + size`. The formula is checked when it is saved, and a character where it fails counts as 0 with the reason in the chip's tooltip.
+- System packages can bring ready-made team resources in `party.resources` (shown as "from the system"); the GM's own ones can be added, edited and deleted per table.
+- All of this stays with the GM (device and private Drive file). Players do not see parties or team resources, and nothing is written to their files.
+
 ## 1.4.1 — 2026-11-02
 
 - Fixed: the GM got "Google refused the request" when adding a shared sheet. Copies shared by 1.3.x were marked so that readers cannot download them, which also blocked the GM's app. New copies no longer have that mark, and the player's app removes it from older copies by itself the next time it opens with Google access (or stop sharing and share again).
