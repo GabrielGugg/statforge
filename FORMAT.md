@@ -148,7 +148,7 @@ Any entity, attribute, skill, derived value, resource or counter can have `effec
 | `immunity`, `resistance`, `vulnerability` | `text` | Listed under active effects. An `immunity` can also name what it covers with `ref` (`collection/id`, a counter id, or a list of them) and/or `tag`: those conditions and counters are no longer offered in the sheet's add lists (e.g. a robot is never offered Bleeding). |
 | `note` | `text` | Reminder on the sheet, for rules the app does not automate. |
 
-Every effect accepts `"if": "formula"`; it only applies when the formula is true. Inside an entity's effects, `qty` and `wear` are that item's values on the sheet.
+Every effect accepts `"if": "formula"`; it only applies when the formula is true. The app shows simple conditions in words (`not has('x')` becomes "unless you have X"); for anything else, give `"if_text"` with the sentence to show, in the pack's language. Inside an entity's effects, `qty` and `wear` are that item's values on the sheet.
 
 ### Formulas
 

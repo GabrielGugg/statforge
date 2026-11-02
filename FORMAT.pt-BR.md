@@ -148,7 +148,7 @@ Qualquer entidade, atributo, perícia, valor calculado, recurso ou contador pode
 | `immunity`, `resistance`, `vulnerability` | `text` | Aparece na lista de efeitos ativos (imunidade, resistência, vulnerabilidade). Uma `immunity` pode dizer o que cobre com `ref` (`colecao/id`, id de contador, ou uma lista deles) e/ou `tag`: essas condições e contadores deixam de ser oferecidos nas listas de adicionar da ficha (ex.: robô nunca vê Sangramento). |
 | `note` | `text` | Lembrete na ficha, para regras que o app não automatiza. |
 
-Todo efeito aceita `"if": "fórmula"`; ele só vale quando a fórmula der verdadeiro. Dentro dos efeitos de uma entidade, `qty` e `wear` são a quantidade e o desgaste daquele item na ficha.
+Todo efeito aceita `"if": "fórmula"`; ele só vale quando a fórmula der verdadeiro. O app mostra condições simples em palavras (`not has('x')` vira "exceto com X"); para as demais, informe `"if_text"` com a frase a mostrar, no idioma do pacote. Dentro dos efeitos de uma entidade, `qty` e `wear` são a quantidade e o desgaste daquele item na ficha.
 
 ### Fórmulas
 
