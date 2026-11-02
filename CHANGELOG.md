@@ -2,6 +2,18 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.4.0 — 2026-11-02
+
+**GM mode** (the **GM** button at the top).
+
+- Create tables (name and system). Each table has an **invite link** with the GM's e-mail, ready to copy and send to the group.
+- **Add shared sheets** opens Google's own file picker: the GM picks the "StatForge - …" files players shared. Each file is read and checked before it joins the table (format, size up to 2 MB, no prototype tricks, hidden characters removed).
+- The table shows a live card per sheet: name, player, level, resources and when it was last updated. It checks Google every 15 s (Settings › GM mode, 10 to 120 s, with a note on Google's usage limit) and only downloads a sheet when it changed.
+- **Open sheet** shows the whole sheet **read-only**, calculated with the GM's own packages: every control is disabled, nothing is saved or sent, and it refreshes by itself while open. A warning shows when the player uses packages the GM lacks or has in another version.
+- When a player stops sharing, the card shows "Access removed" and the copy kept on the GM's device is deleted.
+- Tables are saved on the device and in a private file in the GM's hidden Drive folder, so another device of the GM gets them too. Players never see it.
+- The GM side never writes to players' files: it only reads them (and Google would refuse anyway).
+
 ## 1.3.1 — 2026-11-02
 
 - Fixed: sharing with a Gmail address written differently from the account (dots, capitals or "+tag", such as "Plinio.Aug@gmail.com" for "plinioaug@gmail.com") was taken as unexpected access and cancelled. Gmail treats them as the same account, and so does StatForge now.

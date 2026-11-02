@@ -2,6 +2,18 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.4.0 — 02/11/2026
+
+**Modo Mestre** (botão **Mestre** no topo).
+
+- Crie mesas (nome e sistema). Cada mesa tem um **link de convite** com o e-mail do mestre, pronto para copiar e mandar no grupo.
+- **Adicionar fichas compartilhadas** abre a janela de arquivos do próprio Google: o mestre escolhe os arquivos "StatForge - …" que os jogadores compartilharam. Cada arquivo é lido e conferido antes de entrar na mesa (formato, tamanho até 2 MB, sem truques de protótipo, caracteres ocultos removidos).
+- A mesa mostra um cartão ao vivo por ficha: nome, jogador, nível, recursos e quando foi atualizada. Ela confere o Google a cada 15 s (Configurações › Modo Mestre, de 10 a 120 s, com aviso sobre o limite de uso do Google) e só baixa a ficha quando ela mudou.
+- **Abrir ficha** mostra a ficha inteira **só leitura**, calculada com os pacotes do próprio mestre: todos os controles ficam desativados, nada é salvo nem enviado, e ela se atualiza sozinha enquanto estiver aberta. Aparece um aviso quando o jogador usa pacotes que o mestre não tem ou tem em outra versão.
+- Quando um jogador para de compartilhar, o cartão mostra "Acesso removido" e a cópia guardada no aparelho do mestre é apagada.
+- As mesas ficam salvas no aparelho e num arquivo privado na pasta oculta do Drive do mestre, para outro aparelho do mestre receber também. Os jogadores nunca veem esse arquivo.
+- O lado do mestre nunca escreve nos arquivos dos jogadores: só lê (e o Google recusaria de qualquer jeito).
+
 ## 1.3.1 — 02/11/2026
 
 - Corrigido: compartilhar com um Gmail escrito diferente da conta (pontos, maiúsculas ou "+algo", como "Plinio.Aug@gmail.com" para "plinioaug@gmail.com") era tomado como acesso inesperado e cancelado. O Gmail trata os dois como a mesma conta, e agora o StatForge também.

@@ -13,8 +13,13 @@ import { h, toast, dialog, confirm, ask, downloadJSON, uid, fmt, signed, byName,
 
 const rollHistory = [];
 
-export async function sheetScreen(app, id) {
-  const sheet = await db.get('sheets', id);
+/**
+ * opts.readOnly = { sheet, owner, back }: a sheet shared with the GM. Shown with the GM's own packages,
+ * every control disabled, nothing ever saved or sent anywhere.
+ */
+export async function sheetScreen(app, id, opts = {}) {
+  const ro = opts.readOnly || null;
+  const sheet = ro ? structuredClone(ro.sheet) : await db.get('sheets', id);
   if (!sheet) { app.append(h('div.card.empty', h('p', t('sheet.notFound')), h('a.button', { href: '#/' }, t('common.back')))); return; }
 
   let built;
@@ -30,12 +35,14 @@ export async function sheetScreen(app, id) {
   state.unit = await db.getConfig('unit', 'm');
   state.debug = !!(await db.getConfig('debug', false));
   state.invMode = await db.getConfig('inventoryView', 'cards');
-  state.shared = await shareOf(id);
+  state.shared = ro ? null : await shareOf(id);
+  state.readOnly = ro;
   state.saveCustom = () => db.setConfig(layoutKey, state.custom).catch(e => toast(e.message, 'error'));
 
   let timer;
   const save = () => {
     clearTimeout(timer);
+    if (ro) return; // the GM's view never saves
     timer = setTimeout(() => { sheet.updated = new Date().toISOString(); db.put('sheets', sheet).catch(e => toast(e.message, 'error')); }, 300);
   };
   // Change that affects calculations: save and redraw, keeping the scroll position.
@@ -46,10 +53,37 @@ export async function sheetScreen(app, id) {
 
   function draw() {
     state.calc = compute(state.rules, sheet);
-    app.replaceChildren(header(state), alerts(state), body(state));
-    autoConditions(state);
+    app.replaceChildren(ro ? readOnlyHeader(state) : header(state), alerts(state), body(state));
+    if (ro) lockDown(app); else autoConditions(state);
   }
   draw();
+  if (ro) watchDialogs();
+}
+
+// ---------- GM's read-only view ----------
+function readOnlyHeader(st) {
+  const { sheet, readOnly } = st;
+  return h('div',
+    h('div.alert', h('strong', t('gm.readOnly')), ' ', t('gm.readOnlyOf', { owner: readOnly.owner || '—' })),
+    h('div.sheet-header',
+      h('div.field.field-name', h('span', st.system.name), h('strong.ro-name', sheet.name || t('common.unnamed'))),
+      h('div.field', h('span', t('sheet.level')), h('strong', fmt(sheet.level || 1))),
+      h('div.field', h('span', 'XP'), h('strong', fmt(sheet.xp || 0)))),
+    readOnly.back ? h('p', h('a.button.mini', { href: readOnly.back }, `← ${t('gm.backToTable')}`)) : null);
+}
+
+/** Disables every control except the tabs (navigation only). */
+function lockDown(root) {
+  root.querySelectorAll('input, select, textarea').forEach(el => { el.disabled = true; });
+  root.querySelectorAll('button').forEach(el => { if (!el.closest('.tabs') && !el.classList.contains('debug-btn')) el.disabled = true; });
+}
+// Dialogs (item details) open outside the sheet: their controls are disabled too, while this view is open.
+let dialogWatch = null;
+function watchDialogs() {
+  dialogWatch?.disconnect();
+  dialogWatch = new MutationObserver(() => document.querySelectorAll('.dialog-body').forEach(b => lockDown(b)));
+  dialogWatch.observe(document.body, { childList: true });
+  window.addEventListener('hashchange', () => { dialogWatch?.disconnect(); dialogWatch = null; }, { once: true });
 }
 
 // ---------- Automatic conditions: a quiet prompt when a rule says one starts or ends ----------

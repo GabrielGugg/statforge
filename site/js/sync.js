@@ -98,6 +98,19 @@ export async function ensureFileAccess({ interactive = false } = {}) {
   return true;
 }
 
+/** Current access token (for Google's file picker), or null. */
+export async function accessToken() { await restore(); return hasToken() ? token.value : null; }
+
+/** A private file of this app in the person's hidden Drive folder (GM tables live in one). */
+export async function readAppFile(name) {
+  const f = await findFile(name);
+  return f ? (await drive(`${API}/${f.id}?alt=media`)).json() : null;
+}
+export async function writeAppFile(name, data) {
+  const f = await findFile(name);
+  await upload(f?.id, data, name);
+}
+
 /** Authorised Drive request that returns the raw Response (the share code checks the status itself). */
 export async function driveRequest(url, opts = {}) {
   await restore();
@@ -114,17 +127,17 @@ async function drive(url, opts = {}) {
   return r;
 }
 
-async function findFile() {
-  const q = encodeURIComponent(`name='${FILE}'`);
+async function findFile(name = FILE) {
+  const q = encodeURIComponent(`name='${name}'`);
   const r = await drive(`${API}?spaces=appDataFolder&q=${q}&fields=files(id,modifiedTime)&pageSize=1`);
   return (await r.json()).files?.[0] || null;
 }
 
-async function upload(id, data) {
+async function upload(id, data, name = FILE) {
   const body = JSON.stringify(data);
   if (id) return drive(`${UPLOAD}/${id}?uploadType=media`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body });
   const boundary = `sf${Math.random().toString(36).slice(2)}`;
-  const meta = JSON.stringify({ name: FILE, parents: ['appDataFolder'], mimeType: 'application/json' });
+  const meta = JSON.stringify({ name, parents: ['appDataFolder'], mimeType: 'application/json' });
   return drive(`${UPLOAD}?uploadType=multipart`, { method: 'POST', headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
     body: `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${body}\r\n--${boundary}--` });
 }

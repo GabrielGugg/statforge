@@ -445,3 +445,9 @@ mark { background: color-mix(in srgb, var(--warning) 45%, transparent); color: i
 /* Sharing with the GM */
 .share-email { font-size: 1.05rem; word-break: break-all; }
 button.share-on { border-color: var(--ok); color: var(--ok); }
+
+/* GM mode */
+.gm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: .75rem; }
+.gm-card { margin: 0; display: flex; flex-direction: column; gap: .35rem; }
+.invite-link { flex: 1; min-width: 0; font-family: var(--mono, monospace); font-size: .85rem; }
+.ro-name { font-size: 1.2rem; }
