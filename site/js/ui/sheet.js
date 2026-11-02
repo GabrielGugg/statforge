@@ -740,6 +740,49 @@ function ammoStock(st, ent) {
   return [...groups.values()];
 }
 
+/** Ammo types a magazine accepts, in the package's order. */
+const ammoTypes = ent => [...new Set([].concat(ent.magazine?.ammo || []))];
+const entName = (st, key) => { const [c, r] = key.split('/'); return st.rules.entities[c]?.[r]?.name || r; };
+
+/** The ammo the weapon is using: what is loaded, else the one picked, else the first one in the inventory. */
+function currentAmmo(st, item, ent) {
+  const types = ammoTypes(ent);
+  if (item.loaded && item.loaded_ref) return item.loaded_ref;
+  if (item.ammo_ref && types.includes(item.ammo_ref)) return item.ammo_ref;
+  const stock = ammoStock(st, ent).filter(g => g.qty > 0).map(g => g.key);
+  return types.find(k => stock.includes(k)) || types[0];
+}
+
+/** Rounds left in the magazine go back to the inventory (when the ammo is switched). */
+function unloadRounds(st, item) {
+  if (!item.loaded || !item.loaded_ref) return;
+  const [c, r] = item.loaded_ref.split('/');
+  const back = st.sheet.items.find(x => refKey(x) === item.loaded_ref);
+  if (back) back.qty = Number(back.qty ?? 1) + item.loaded;
+  else st.sheet.items.push({ uid: uid(), collection: c, ref: r, qty: item.loaded });
+  item.loaded = 0;
+}
+
+/** Which ammo the weapon uses; a list to pick from when it takes more than one. */
+function ammoChooser(st, item, ent) {
+  const types = ammoTypes(ent);
+  if (!types.length) return null;
+  const stock = new Map(ammoStock(st, ent).map(g => [g.key, g.qty]));
+  const current = currentAmmo(st, item, ent);
+  if (types.length === 1) return h('div.small.mag-ammo', h('span.muted', `${t('sheet.ammoUsed')}: `), entName(st, types[0]));
+  const label = key => (stock.get(key) ? `${entName(st, key)} (${fmt(stock.get(key))})` : entName(st, key));
+  return h('label.small.mag-ammo', h('span.muted', `${t('sheet.ammoUsed')}: `),
+    h('select.mini', {
+      'aria-label': t('sheet.ammoUsed'),
+      onchange: e => {
+        const key = e.target.value;
+        if (item.loaded && item.loaded_ref && item.loaded_ref !== key && !ent.magazine.charge) unloadRounds(st, item);
+        item.ammo_ref = key;
+        st.change();
+      },
+    }, types.map(key => h('option', { value: key, selected: key === current }, label(key)))));
+}
+
 function takeAmmo(items, n) {
   let left = n;
   for (const i of items) {
@@ -754,21 +797,19 @@ function reload(st, item, ent) {
   const mag = ent.magazine;
   const cap = magazineCapacity(st, item, ent);
   const stock = ammoStock(st, ent).filter(g => g.qty > 0);
+  const chosen = ammoTypes(ent).length > 1 ? currentAmmo(st, item, ent) : null;
+  if (chosen && !stock.some(g => g.key === chosen)) { toast(t('sheet.noChosenAmmo', { name: entName(st, chosen) }), 'error'); return; }
   if (!stock.length) { toast(t('sheet.noAmmo'), 'error'); return; }
   const go = g => {
     // Switching ammo: the rounds still in the magazine go back to the inventory.
-    if (item.loaded && item.loaded_ref && item.loaded_ref !== g.key && !mag.charge) {
-      const [c, r] = item.loaded_ref.split('/');
-      const back = st.sheet.items.find(x => refKey(x) === item.loaded_ref);
-      if (back) back.qty = Number(back.qty ?? 1) + item.loaded;
-      else st.sheet.items.push({ uid: uid(), collection: c, ref: r, qty: item.loaded });
-      item.loaded = 0;
-    }
+    if (item.loaded && item.loaded_ref && item.loaded_ref !== g.key && !mag.charge) unloadRounds(st, item);
     if (mag.charge) { takeAmmo(g.items, 1); item.loaded = cap; }
     else item.loaded = (item.loaded || 0) + takeAmmo(g.items, Math.max(0, cap - (item.loaded || 0)));
     item.loaded_ref = g.key;
+    if (ammoTypes(ent).length > 1) item.ammo_ref = g.key;
     st.change();
   };
+  if (chosen) return go(stock.find(g => g.key === chosen));
   if (stock.length === 1) return go(stock[0]);
   let dlg;
   dlg = dialog(t('sheet.chooseAmmo'), h('div.choices', stock.map(g => h('button.choice-button', { type: 'button', onclick: () => { dlg.close(); go(g); } },
@@ -780,16 +821,19 @@ function magazineRow(st, item, ent) {
   const cap = magazineCapacity(st, item, ent);
   const loaded = Math.min(item.loaded || 0, cap);
   const per = Number(mag.per_shot) || 1;
-  const reserve = ammoStock(st, ent).reduce((n, g) => n + g.qty, 0);
+  const many = ammoTypes(ent).length > 1;
+  const using = many ? currentAmmo(st, item, ent) : null;
+  const reserve = ammoStock(st, ent).filter(g => !using || g.key === using).reduce((n, g) => n + g.qty, 0);
   const set = v => { item.loaded = Math.max(0, Math.min(cap, v)); st.change(); };
   const loadedName = item.loaded_ref && loaded ? st.rules.entities[item.loaded_ref.split('/')[0]]?.[item.loaded_ref.split('/')[1]]?.name : null;
   return h('div.magazine',
     h('div.mag-count', h('span.muted.small', t('sheet.magazine')), h('strong', fmt(loaded)), h('span.muted', `/ ${fmt(cap)}`),
-      loadedName ? h('span.small.muted', ` · ${loadedName}`) : null),
+      loadedName && !many ? h('span.small.muted', ` · ${loadedName}`) : null),
     h('div.row.mag-buttons',
       h('button.mini', { type: 'button', 'aria-label': t('sheet.shoot'), title: t('sheet.shoot'), disabled: loaded < 1, onclick: () => set(loaded - per) }, per > 1 ? `−${per}` : '−1'),
       h('button.mini', { type: 'button', 'aria-label': t('sheet.addRound'), disabled: loaded >= cap, onclick: () => set(loaded + 1) }, '+1'),
       h('button.mini.primary', { type: 'button', disabled: loaded >= cap || !reserve, onclick: () => reload(st, item, ent) }, t('sheet.reload'))),
+    ammoChooser(st, item, ent),
     h('div.small.muted', t('sheet.reserve', { n: fmt(reserve) })));
 }
 

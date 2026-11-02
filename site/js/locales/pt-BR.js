@@ -299,6 +299,8 @@ export default {
   'debug.off': 'inativo agora',
   'sheet.extraBonus': 'extra',
   'sheet.extraBonusOf': 'Modificador extra de {name}',
+  'sheet.ammoUsed': 'Munição',
+  'sheet.noChosenAmmo': 'Não há {name} no inventário. Escolha outra munição ou adicione esta.',
   'sheet.noAmmo': 'Não há munição compatível no inventário.',
   'sheet.chooseAmmo': 'Recarregar com',
   'sheet.loadedNow': 'no pente',

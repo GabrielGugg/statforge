@@ -299,6 +299,8 @@ export default {
   'debug.off': 'not active now',
   'sheet.extraBonus': 'extra',
   'sheet.extraBonusOf': 'Extra modifier for {name}',
+  'sheet.ammoUsed': 'Ammo',
+  'sheet.noChosenAmmo': 'There is no {name} in the inventory. Pick another ammo or add this one.',
   'sheet.noAmmo': 'No matching ammo in the inventory.',
   'sheet.chooseAmmo': 'Reload with',
   'sheet.loadedNow': 'loaded',
