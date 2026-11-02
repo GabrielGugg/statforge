@@ -646,4 +646,8 @@ export default {
   'pkgs.anyLanguage': "Qualquer idioma (sem texto)",
   'pkgs.anyLanguageShort': "qualquer idioma",
   'gm.updateNotYet': "Baixei de novo, mas o link ainda não tem versão mais nova: {list}. O jogador pode ter pego de outro lugar (peça o link).",
+  'appUpdate.text': "Uma versão nova do StatForge está disponível (v{version}).",
+  'appUpdate.update': "Atualizar",
+  'appUpdate.updating': "Atualizando…",
+  'appUpdate.later': "Depois",
 };

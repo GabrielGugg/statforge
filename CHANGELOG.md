@@ -2,6 +2,10 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.7.0 — 2026-11-02
+
+- When a newer version of StatForge is published, a notice appears at the top: **Update** downloads the new files and reloads the page (your sheets stay where they are); **Later** hides it until the app is opened again. The app checks a few seconds after opening, when you come back to the tab, and every 30 minutes.
+
 ## 1.6.1 — 2026-11-02
 
 - GM mode: when a player updates a package, the shared sheet is sent again at once (and on the next app opening, for updates made before), so the GM sees the new version.

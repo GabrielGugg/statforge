@@ -25,6 +25,7 @@ import { gmScreen } from './ui/gm.js';
 import { startShareUpdates, flushPending } from './share.js';
 import * as sync from './sync.js';
 import { autoCheck } from './ui/updates.js';
+import { startUpdateCheck } from './ui/app-update.js';
 import { h } from './ui/util.js';
 
 const app = document.getElementById('app');
@@ -86,6 +87,7 @@ async function start() {
   sync.onStatus(s => { if (s.connected) flushPending(); });
   await startSync();
   autoCheck(() => route());
+  startUpdateCheck();
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
