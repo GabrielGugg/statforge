@@ -152,10 +152,14 @@ export async function rulesForSheet(sheet) {
   const usable = active.filter(id => inst[id] && inst[id].system === system.id);
   const { rules, log } = buildRules(system, usable.map(id => inst[id]));
   // The player's own items live in the sheet and join the collections (same objects, so edits show at once).
+  // Own keys only, and plain objects only: a sheet (possibly one shared by someone else) must not reach prototypes.
   for (const [col, ents] of Object.entries(sheet.custom || {})) {
-    if (!rules.collections[col]) continue;
-    rules.entities[col] ||= {};
-    for (const [id, ent] of Object.entries(ents)) rules.entities[col][id] = ent;
+    if (!Object.hasOwn(rules.collections, col) || !ents || typeof ents !== 'object' || Array.isArray(ents)) continue;
+    if (!Object.hasOwn(rules.entities, col)) rules.entities[col] = {};
+    for (const [id, ent] of Object.entries(ents)) {
+      if (['__proto__', 'constructor', 'prototype'].includes(id) || !ent || typeof ent !== 'object') continue;
+      rules.entities[col][id] = ent;
+    }
   }
   return { rules, log, warnings, system, active: usable };
 }

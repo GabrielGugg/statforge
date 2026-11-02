@@ -630,4 +630,13 @@ export default {
   'gm.err.RESOURCE_INCOMPLETE': "Dê um nome e uma fórmula ao recurso.",
   'gm.deleteShort': "Apagar",
   'gm.unknownName': "\"{names}\" sozinho não diz nada para a party: leia dos personagens com members('{names}'). Só size pode ser usado sozinho.",
+  'gm.cards': "Cartões",
+  'gm.cardsTitle': "O que aparece nos cartões",
+  'gm.cardsHelp': "Escolha os valores que aparecem no cartão de cada ficha desta mesa. Recursos mostram atual/máximo.",
+  'gm.cardsDefault': "Padrão",
+  'gm.section.resources': "Recursos",
+  'gm.section.attributes': "Atributos",
+  'gm.section.skills': "Perícias",
+  'gm.section.derived': "Valores derivados",
+  'gm.section.counters': "Contadores",
 };

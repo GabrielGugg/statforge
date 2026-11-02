@@ -2,6 +2,18 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.6.0 — 02/11/2026
+
+- Modo Mestre: **Cartões** na mesa escolhe os valores que aparecem nos cartões das fichas (recursos, atributos, perícias, valores derivados, contadores). **Padrão** volta para os recursos do sistema.
+- Modo Mestre: **Abrir ficha** abre a ficha só leitura em outra guia, e a mesa continua aberta.
+- Revisão de segurança do compartilhamento e do Modo Mestre:
+  - As fórmulas só enxergam as próprias funções e valores: nomes como `constructor` ou `toString` não alcançam mais funções internas do JavaScript.
+  - Os itens próprios de uma ficha (inclusive de uma ficha compartilhada com o mestre) não conseguem mais mexer em protótipos de objetos quando entram nas regras.
+  - Na visão só leitura do mestre, os botões de salvar e remover das janelas também ficam desativados, e a janela de pacotes nunca abre.
+  - Nomes e e-mails de dono vindos do Google são limpos de caracteres ocultos e de inversão de direção, e a cópia das mesas guardada no Drive do mestre é conferida antes do uso.
+  - A página agora tem uma Content Security Policy: scripts só do próprio site e do login e seletor de arquivos do Google; sem plugins nem scripts embutidos.
+- Novo SECURITY.md (en e pt-BR) explica como as pessoas são protegidas, e o README ganhou um tutorial do Modo Mestre para mestres e jogadores.
+
 ## 1.5.0 — 02/11/2026
 
 **Parties e recursos da equipe** no Modo Mestre.

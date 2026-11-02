@@ -466,3 +466,7 @@ button.share-on { border-color: var(--ok); color: var(--ok); }
 .gm-res-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .4rem; }
 .gm-res-list code { font-size: .8rem; word-break: break-all; color: var(--text-muted); }
 select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }
+.cards-group { margin: .4rem 0; }
+.cards-group summary { cursor: pointer; font-weight: 600; }
+.cards-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: .25rem .75rem; padding: .4rem 0; }
+.cards-options label.check { display: flex; align-items: center; gap: .35rem; font-size: .9rem; }

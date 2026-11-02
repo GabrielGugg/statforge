@@ -81,7 +81,11 @@ function lockDown(root) {
 let dialogWatch = null;
 function watchDialogs() {
   dialogWatch?.disconnect();
-  dialogWatch = new MutationObserver(() => document.querySelectorAll('.dialog-body').forEach(b => lockDown(b)));
+  // the body's controls and any action that would change something (primary/danger); Close and Cancel stay usable
+  dialogWatch = new MutationObserver(() => {
+    document.querySelectorAll('.dialog-body').forEach(b => lockDown(b));
+    document.querySelectorAll('.dialog-actions button.primary, .dialog-actions button.danger').forEach(b => { b.disabled = true; });
+  });
   dialogWatch.observe(document.body, { childList: true });
   window.addEventListener('hashchange', () => { dialogWatch?.disconnect(); dialogWatch = null; }, { once: true });
 }
@@ -1352,6 +1356,7 @@ function rollerBlock(st, def) {
 
 // ---------- This sheet's packages ----------
 async function packagesDialog(st) {
+  if (st.readOnly) return; // never for a sheet shared with the GM
   const { sheet, inst } = st;
   const order = await pk.order();
   const exts = order.filter(id => inst[id]?.system === sheet.system);

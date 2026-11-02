@@ -2,6 +2,18 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.6.0 — 2026-11-02
+
+- GM mode: **Cards** on a table chooses which values the sheet cards show (resources, attributes, skills, derived values, counters). **Default** goes back to the system's resources.
+- GM mode: **Open sheet** opens the read-only sheet in a new tab, so the table stays open.
+- Security review of sharing and GM mode:
+  - Formulas only see their own functions and values: names such as `constructor` or `toString` can no longer reach JavaScript built-ins.
+  - A sheet's own items (including a sheet shared with the GM) can no longer touch object prototypes when they join the rules.
+  - In the GM's read-only view, the save and remove buttons of pop-ups are disabled too, and the packages dialog never opens.
+  - Owner names and e-mails coming from Google are cleaned of hidden and right-to-left characters, and the tables copy kept in the GM's Drive is checked before use.
+  - The page now has a Content Security Policy: scripts only from the site and Google's sign-in and file picker; no plugins or inline scripts.
+- New SECURITY.md (en and pt-BR) explains how people are protected, and the README has a GM mode tutorial for GMs and players.
+
 ## 1.5.0 — 2026-11-02
 
 **Parties and team resources** in GM mode.

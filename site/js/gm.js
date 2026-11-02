@@ -8,7 +8,7 @@
 // ============================================================
 import * as db from './storage.js';
 import * as sync from './sync.js';
-import { validateShare, driveReason } from './engine/share.js';
+import { validateShare, driveReason, cleanText } from './engine/share.js';
 
 const API = 'https://www.googleapis.com/drive/v3/files';
 const APP_FILE = 'statforge-gm.json';
@@ -34,8 +34,25 @@ export async function pullTables() {
   const remote = await sync.readAppFile(APP_FILE).catch(() => null);
   if (!remote?.tables || !Array.isArray(remote.tables)) return false;
   const localWhen = await db.getConfig('gmTablesUpdated', '');
-  if (remote.updated && remote.updated > localWhen) { await db.setConfig('gmTables', remote.tables); await db.setConfig('gmTablesUpdated', remote.updated); return true; }
+  if (typeof remote.updated === 'string' && remote.updated > localWhen) { await db.setConfig('gmTables', normalizeTables(remote.tables)); await db.setConfig('gmTablesUpdated', remote.updated); return true; }
   return false;
+}
+
+const FILE_ID = /^[\w-]{10,200}$/, ID = /^[\w-]{1,40}$/;
+/** Keeps only well-formed tables (the copy in Drive is the GM's own, but it is checked like anything that comes in). */
+function normalizeTables(list) {
+  return list.filter(t => t && ID.test(t.id) && typeof t.system === 'string').slice(0, 100).map(t => {
+    const members = (Array.isArray(t.members) ? t.members : []).filter(m => m && FILE_ID.test(m.fileId))
+      .map(m => ({ fileId: m.fileId, added: cleanText(m.added, 40), name: cleanText(m.name, 120), owner: cleanText(m.owner, 254) }));
+    const ids = new Set(members.map(m => m.fileId));
+    const parties = (Array.isArray(t.parties) ? t.parties : []).filter(p => p && ID.test(p.id)).slice(0, MAX_PARTIES)
+      .map(p => ({ id: p.id, name: cleanText(p.name, 60) || '—', members: (Array.isArray(p.members) ? p.members : []).filter(id => ids.has(id)) }));
+    const resources = (Array.isArray(t.resources) ? t.resources : []).filter(r => r && ID.test(r.id) && typeof r.formula === 'string').slice(0, MAX_RESOURCES)
+      .map(r => ({ id: r.id, name: cleanText(r.name, 60), formula: r.formula.slice(0, 500) }));
+    return { id: t.id, name: cleanText(t.name, 80), system: cleanText(t.system, 80), created: cleanText(t.created, 40), members, parties,
+      activeParty: parties.some(p => p.id === t.activeParty) ? t.activeParty : null, resources,
+      cardStats: Array.isArray(t.cardStats) ? t.cardStats.filter(x => typeof x === 'string' && /^[a-z]+\/[\w.-]{1,80}$/i.test(x)).slice(0, 40) : null };
+  });
 }
 
 const newId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -73,7 +90,7 @@ export async function removeMember(tableId, fileId) {
 // table.parties = [{ id, name, members: [fileId] }], table.activeParty = id | null,
 // table.resources = [{ id, name, formula }] (the GM's own; the system package can add more in party.resources).
 export const MAX_PARTIES = 20, MAX_RESOURCES = 30;
-const clean = (txt, n) => String(txt ?? '').replace(/[\u0000-\u001f\u007f\u202a-\u202e\u2066-\u2069]/g, '').trim().slice(0, n);
+const clean = cleanText;
 
 async function editTable(tableId, fn) {
   const list = await tables();
@@ -122,6 +139,13 @@ export const saveResource = (tableId, { id, name, formula }) => editTable(tableI
   else tb.resources.push(r);
   return r;
 });
+/** What the sheet cards show: ['section/id', …], or null for the default (the system's resources). */
+export const CARD_SECTIONS = ['resources', 'attributes', 'skills', 'derived', 'counters'];
+export const setCardStats = (tableId, list) => editTable(tableId, tb => {
+  tb.cardStats = Array.isArray(list)
+    ? [...new Set(list.map(String).filter(x => /^[a-z]+\/[\w.-]{1,80}$/i.test(x) && CARD_SECTIONS.includes(x.split('/')[0])))].slice(0, 40)
+    : null;
+});
 export const deleteResource = (tableId, id) => editTable(tableId, tb => { tb.resources = tb.resources.filter(r => r.id !== id); });
 
 async function getJSON(url) {
@@ -151,7 +175,7 @@ async function refreshMember(tableId, m) {
   const data = validateShare(text);
   const owner = meta.owners?.[0] || {};
   await db.setConfig(cacheKey(tableId, m.fileId), { ...data, modifiedTime: meta.modifiedTime, fetched: new Date().toISOString(),
-    owner: { email: String(owner.emailAddress || '').slice(0, 254), name: String(owner.displayName || '').slice(0, 80) } });
+    owner: { email: cleanText(owner.emailAddress, 254), name: cleanText(owner.displayName, 80) } });
   return 'updated';
 }
 
