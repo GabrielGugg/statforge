@@ -2,6 +2,10 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.7.1 — 02/11/2026
+
+- Armas: o pente mostra qual munição a arma usa. Quando ela aceita mais de um tipo, uma lista ao lado escolhe a que está em uso (com quantas de cada há no inventário); **Recarregar** passa a usar essa, e trocar devolve ao inventário as balas que ainda estavam no pente.
+
 ## 1.7.0 — 02/11/2026
 
 - Quando uma versão nova do StatForge é publicada, aparece um aviso no topo: **Atualizar** baixa os arquivos novos e recarrega a página (as fichas continuam onde estão); **Depois** esconde o aviso até o app ser aberto de novo. O app confere alguns segundos depois de abrir, quando você volta para a aba e a cada 30 minutos.

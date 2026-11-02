@@ -2,6 +2,10 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.7.1 — 2026-11-02
+
+- Weapons: the magazine shows which ammo the weapon uses. When it takes more than one kind, a list next to it picks the one in use (with how many of each are in the inventory); **Reload** then uses that one, and switching puts the rounds still loaded back in the inventory.
+
 ## 1.7.0 — 2026-11-02
 
 - When a newer version of StatForge is published, a notice appears at the top: **Update** downloads the new files and reloads the page (your sheets stay where they are); **Later** hides it until the app is opened again. The app checks a few seconds after opening, when you come back to the tab, and every 30 minutes.
