@@ -19,7 +19,7 @@
 
     <section id="pt" lang="pt-BR">
       <h1>Política de Privacidade</h1>
-      <p class="muted small">Última atualização: 31 de outubro de 2026</p>
+      <p class="muted small">Última atualização: 2 de novembro de 2026</p>
 
       <p>O StatForge é um aplicativo gratuito e de código aberto para fichas de personagem de RPG de mesa, disponível em <a href="https://gabrielgugg.github.io/statforge/">gabrielgugg.github.io/statforge</a> e mantido por GabrielGugg. Esta política explica quais dados o aplicativo usa e o que acontece com eles.</p>
 
@@ -28,6 +28,7 @@
         <li>O StatForge não tem servidor próprio, não exige cadastro e não coleta dados pessoais.</li>
         <li>Suas fichas, pacotes e configurações ficam no seu navegador.</li>
         <li>Se você ligar a sincronização com o Google Drive, uma cópia desses dados é guardada no <strong>seu</strong> Google Drive, numa pasta oculta que só o StatForge acessa. O desenvolvedor nunca recebe esses dados.</li>
+        <li>Se você compartilhar uma ficha com o mestre, uma cópia dela fica no <strong>seu</strong> Google Drive, com permissão só de leitura para o e-mail do mestre que você confirmou.</li>
         <li>Não usamos cookies de rastreamento, análise de uso nem publicidade.</li>
       </ul>
 
@@ -52,6 +53,16 @@
         <li><strong>Apagar a cópia no Drive:</strong> no Google Drive, abra Configurações › Gerenciar apps, encontre o StatForge e escolha <em>Excluir dados de app ocultos</em>.</li>
       </ul>
 
+      <h2>Compartilhar uma ficha com o mestre (opcional)</h2>
+      <p>Ao abrir o link de convite do mestre e confirmar, o StatForge pede também o escopo <code>https://www.googleapis.com/auth/drive.file</code>, que só dá acesso aos arquivos que o próprio StatForge criou ou que você escolheu. Com ele:</p>
+      <ul>
+        <li>O StatForge cria um arquivo <code>StatForge - &lt;nome do personagem&gt;.json</code> no seu Drive com uma cópia da ficha e o atualiza alguns segundos depois de cada mudança.</li>
+        <li>Esse arquivo recebe uma única permissão: <strong>leitor</strong>, para o e-mail do mestre que aparece no convite e que você confirmou. O StatForge nunca usa "qualquer pessoa com o link" nem dá permissão de edição. Depois de compartilhar, ele confere as permissões e apaga a cópia se encontrar qualquer outro acesso.</li>
+        <li>O mestre vê o seu e-mail (é assim que o Google mostra quem compartilhou) e você vê o dele. O Google envia um aviso por e-mail ao mestre.</li>
+        <li>O StatForge nunca lê de volta essa cópia: a sua ficha de verdade continua no seu aparelho, e nada que alguém faça no arquivo a altera.</li>
+        <li><strong>Para parar:</strong> toque em <em>Parar de compartilhar</em> na ficha (o arquivo é apagado e o mestre perde o acesso na hora) ou apague o arquivo direto no Google Drive. Apagar a ficha no app também para o compartilhamento antes.</li>
+      </ul>
+
       <h2>Pacotes e conteúdo de terceiros</h2>
       <p>Quando você instala um pacote a partir do Hub ou de um link, o navegador baixa o arquivo do endereço indicado (por exemplo, GitHub). Esse serviço recebe as informações técnicas normais de qualquer acesso, como o endereço IP, conforme a política de privacidade dele. O site é hospedado pelo GitHub Pages, que também pode registrar acessos; veja a <a href="https://docs.github.com/pt/site-policy/privacy-policies/github-general-privacy-statement">declaração de privacidade do GitHub</a>.</p>
 
@@ -69,7 +80,7 @@
 
     <section id="en" lang="en">
       <h1>Privacy Policy</h1>
-      <p class="muted small">Last updated: October 31, 2026</p>
+      <p class="muted small">Last updated: November 2, 2026</p>
 
       <p>StatForge is a free, open-source app for tabletop RPG character sheets, available at <a href="https://gabrielgugg.github.io/statforge/">gabrielgugg.github.io/statforge</a> and maintained by GabrielGugg. This policy explains what data the app uses and what happens to it.</p>
 
@@ -78,6 +89,7 @@
         <li>StatForge has no server of its own, needs no account and collects no personal data.</li>
         <li>Your sheets, packages and settings stay in your browser.</li>
         <li>If you turn on Google Drive sync, a copy of that data is kept in <strong>your</strong> Google Drive, in a hidden folder only StatForge can access. The developer never receives it.</li>
+        <li>If you share a sheet with your GM, a copy of it is kept in <strong>your</strong> Google Drive, readable only by the GM e-mail you confirmed.</li>
         <li>We use no tracking cookies, analytics or advertising.</li>
       </ul>
 
@@ -100,6 +112,16 @@
         <li><strong>Disconnect:</strong> in Settings › Cloud sync, tap Disconnect. Access is revoked and the data on your device stays.</li>
         <li><strong>Revoke from your Google account:</strong> at <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>, remove StatForge.</li>
         <li><strong>Delete the Drive copy:</strong> in Google Drive, open Settings › Manage apps, find StatForge and choose <em>Delete hidden app data</em>.</li>
+      </ul>
+
+      <h2>Sharing a sheet with your GM (optional)</h2>
+      <p>When you open your GM's invite link and confirm, StatForge also asks for the <code>https://www.googleapis.com/auth/drive.file</code> scope, which only gives access to files StatForge itself created or that you picked. With it:</p>
+      <ul>
+        <li>StatForge creates a <code>StatForge - &lt;character name&gt;.json</code> file in your Drive with a copy of the sheet and updates it a few seconds after each change.</li>
+        <li>That file gets a single permission: <strong>reader</strong>, for the GM e-mail shown in the invite that you confirmed. StatForge never uses "anyone with the link" and never grants edit access. After sharing it checks the permissions and deletes the copy if it finds any other access.</li>
+        <li>The GM sees your e-mail (that is how Google shows who shared) and you see theirs. Google e-mails the GM a notice.</li>
+        <li>StatForge never reads that copy back: your real sheet stays on your device, and nothing anyone does to the file changes it.</li>
+        <li><strong>To stop:</strong> tap <em>Stop sharing</em> on the sheet (the file is deleted and the GM loses access at once) or delete the file in Google Drive. Deleting the sheet in the app also stops sharing first.</li>
       </ul>
 
       <h2>Packages and third-party content</h2>

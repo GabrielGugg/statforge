@@ -2,6 +2,17 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.3.0 — 2026-11-02
+
+First step of the GM mode: **sharing a sheet with the GM, read-only**.
+
+- The GM sends an invite link (`#/join?gm=…`). The player opens it, sees the GM's e-mail, picks a sheet and confirms. The same is reachable from **Share with GM** on the sheet, by pasting the link.
+- StatForge keeps a copy of the sheet in the player's own Google Drive, updated a few seconds after each change, with a single **reader** permission for the GM's e-mail. Google itself refuses any change by the GM, and the player's app never reads the copy back.
+- Safety checks: permissions are read back after sharing and the copy is deleted if anything else has access; updates pause if someone adds access in Drive; invite links are validated and shown only as text; shared copies are limited to 2 MB.
+- **Stop sharing** deletes the copy, and the GM loses access at once. Deleting a shared sheet stops sharing first.
+- Sharing asks Google for one more permission, `drive.file` (only files StatForge creates or the person picks), and only when someone shares. The Privacy Policy explains it.
+- The GM side (adding shared sheets to a table, parties) comes in the next versions.
+
 ## 1.2.2 — 2026-10-31
 
 - Character creation: conditions on effects are now written in words. "(if not has('x') and not has('y'))" becomes "(unless you have X or Y)", with the entities' names. Packs can give their own sentence with `if_text` (see FORMAT).
