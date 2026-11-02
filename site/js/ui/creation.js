@@ -6,7 +6,16 @@
 import { compute } from '../engine/calc.js';
 import { t } from '../i18n.js';
 import { h, uid, fmt, signed, byName, normalize } from './util.js';
-import { entityDetails, describeEffect } from './sheet.js';
+import { entityDetails, describeEffect, summarizeEffects } from './sheet.js';
+
+// Badges for a choice card: notes (often the downside) are kept, repeated bonuses are merged, the rest is counted.
+function effectBadges(rules, effects) {
+  const lines = summarizeEffects(rules, effects || []);
+  const MAX = 5;
+  const out = lines.slice(0, MAX).map(l => h(l.note ? 'span.badge.warning' : 'span.badge.ok', l.text));
+  if (lines.length > MAX) out.push(h('span.badge', t('creation.moreEffects', { n: lines.length - MAX })));
+  return out;
+}
 
 const SHOWN = 60; // entities listed at once in a pick step; search narrows the rest
 
@@ -23,6 +32,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
   let index = firstFrom(0);
   let showAll = false;
   let query = '';
+  let shown = SHOWN; // grows with "Load more"
 
   const num = (v, calc, fallback) => {
     if (v === undefined || v === null || v === '') return fallback;
@@ -270,8 +280,8 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     return h('div.wizard-footer',
       v.msg ? h('div.small', { style: { color: 'var(--danger)' } }, v.msg) : v.warn ? h('div.small', { style: { color: 'var(--warning)' } }, v.warn) : null,
       h('div.row.spread',
-        back >= 0 ? h('button', { type: 'button', onclick: () => { index = back; query = ''; showAll = false; draw(); } }, `← ${t('common.back')}`) : h('span'),
-        h('button.primary', { type: 'button', disabled: !v.ok, onclick: () => { index = firstFrom(index + 1); query = ''; showAll = false; draw(); } },
+        back >= 0 ? h('button', { type: 'button', onclick: () => { index = back; query = ''; showAll = false; shown = SHOWN; draw(); } }, `← ${t('common.back')}`) : h('span'),
+        h('button.primary', { type: 'button', disabled: !v.ok, onclick: () => { index = firstFrom(index + 1); query = ''; showAll = false; shown = SHOWN; draw(); } },
           `${t('creation.next')} →`)));
   }
 
@@ -303,8 +313,8 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     // chosen ones first, so they never get lost behind the search
     const chosen = c.picks.map(id => rules.entities[step.collection]?.[id]).filter(Boolean);
     list = [...chosen, ...list.filter(e => !c.picks.includes(e.id))];
-    const extra = Math.max(0, list.length - SHOWN);
-    list = list.slice(0, SHOWN);
+    const extra = Math.max(0, list.length - shown);
+    list = list.slice(0, shown);
 
     const toggle = id => {
       if (single) c.picks = c.picks[0] === id && min === 0 ? [] : [id];
@@ -319,7 +329,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       const desc = String(e.description || '').replace(/\s+/g, ' ');
       const facts = Object.entries(fields).filter(([k]) => e[k] !== undefined && e[k] !== '' && typeof e[k] !== 'object' && !desc.slice(0, 200).includes(String(e[k])))
         .slice(0, 3).map(([k, f]) => h('span.badge', `${f.label || k}: ${e[k]}${f.unit ? ` ${f.unit}` : ''}`));
-      const fx = (e.effects || []).filter(ef => ef.type !== 'note').slice(0, 4).map(ef => h('span.badge.ok', describeEffect(rules, ef)));
+      const fx = effectBadges(rules, e.effects);
       return h('div.choice', { class: on ? 'selected' : '' },
         h('label.choice-main',
           h('input', { type: single ? 'radio' : 'checkbox', name: `step${index}`, checked: on, disabled: !on && ((!single && c.picks.length >= max) || !meets(e, calc)), onchange: () => toggle(e.id) }),
@@ -341,7 +351,9 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
         h('label.choice-main', h('input', { type: 'radio', name: `step${index}`, checked: !c.picks.length, onchange: () => { c.picks = []; redraw(); } }),
           h('span.choice-text', h('strong', t('creation.none'))))) : null,
       h('div.choices', list.map(card)),
-      extra ? h('p.muted.small', t('creation.more', { n: extra })) : null,
+      extra ? h('div.row', { style: { justifyContent: 'center', marginTop: '.6rem' } },
+        h('button', { type: 'button', onclick: () => { shown += SHOWN; redraw(); } }, t('creation.loadMore', { n: Math.min(extra, SHOWN) })),
+        h('span.muted.small', t('creation.more', { n: extra }))) : null,
       list.length ? null : h('p.muted', t('sheet.nothingFound')),
     ];
   }

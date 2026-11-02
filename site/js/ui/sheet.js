@@ -583,9 +583,32 @@ function targetName(rules, target) {
   return target;
 }
 
+// Name of whatever has('ref') points at: "collection/id", "collection_id" or a bare entity id.
+function refLabel(rules, ref) {
+  const [c, i] = String(ref).split('/');
+  if (i) return rules.entities[c]?.[i]?.name || ref;
+  for (const [col, ents] of Object.entries(rules.entities)) {
+    if (ents[ref]) return ents[ref].name;
+    if (ref.startsWith(`${col}_`) && ents[ref.slice(col.length + 1)]) return ents[ref.slice(col.length + 1)].name;
+  }
+  return ref;
+}
+
+/** A condition ("if") in words: the pack's if_text when given, otherwise has('x') turned into names. */
+export function describeCond(rules, ef) {
+  if (ef.if_text) return ef.if_text;
+  const cond = String(ef.if).trim();
+  const HAS = String.raw`has\(\s*'([^']+)'\s*\)`;
+  const names = () => [...cond.matchAll(new RegExp(HAS, 'g'))].map(m => refLabel(rules, m[1]));
+  const list = arr => [...new Set(arr)].join(` ${t('effects.or')} `);
+  if (new RegExp(`^not\\s+${HAS}(\\s+and\\s+not\\s+${HAS})*$`).test(cond)) return t('effects.unless', { names: list(names()) });
+  if (new RegExp(`^${HAS}(\\s+or\\s+${HAS})*$`).test(cond)) return t('effects.with', { names: list(names()) });
+  return t('effects.if', { cond: cond.replace(new RegExp(HAS, 'g'), (_, r) => refLabel(rules, r)) });
+}
+
 export function describeEffect(rules, ef) {
   const target = targetName(rules, ef.target);
-  const cond = ef.if ? ` (${t('effects.if', { cond: ef.if })})` : '';
+  const cond = ef.if ? ` (${describeCond(rules, ef)})` : '';
   switch (ef.type) {
     case 'add': return `${/^-?\d+(\.\d+)?$/.test(String(ef.value)) ? signed(Number(ef.value)) : `+ (${ef.value})`} ${t('effects.on', { target })}${cond}`;
     case 'set': return `${target} = ${ef.value}${cond}`;
@@ -595,6 +618,31 @@ export function describeEffect(rules, ef) {
       : t('effects.blocksTag', { tag: ef.tag });
     default: return `${LIST_TYPES.includes(ef.type) ? t(`effects.${ef.type}`) : ef.type}: ${ef.text || target || ''}${cond}`;
   }
+}
+
+/**
+ * Short list of what an entity does, for choice cards: identical bonuses on many skills become one line
+ * ("+2 on all Skills"), notes are flagged so they can stand out.
+ */
+export function summarizeEffects(rules, effects) {
+  const lines = [], groups = new Map();
+  for (const ef of effects) {
+    if (ef.type === 'add' && !ef.if && rules.skills[ef.target]) {
+      const k = String(ef.value);
+      if (!groups.has(k)) { groups.set(k, []); lines.push({ group: k }); }
+      groups.get(k).push(ef);
+    } else lines.push({ text: describeEffect(rules, ef), note: ef.type === 'note' });
+  }
+  const totalSkills = Object.keys(rules.skills).length;
+  const out = lines.flatMap(l => {
+    if (!l.group) return [l];
+    const g = groups.get(l.group);
+    if (g.length < 3) return g.map(ef => ({ text: describeEffect(rules, ef) }));
+    const v = /^-?\d+(\.\d+)?$/.test(l.group) ? signed(Number(l.group)) : `+ (${l.group})`;
+    return [{ text: g.length === totalSkills ? t('effects.allSkills', { v }) : t('effects.nSkills', { v, n: g.length }) }];
+  });
+  // notes first: they usually carry the catch
+  return [...out.filter(l => l.note), ...out.filter(l => !l.note)];
 }
 
 // ---------- Distances: a "range" field shown in the player's unit ----------

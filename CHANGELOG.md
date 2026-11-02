@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.2.2 — 2026-10-31
+
+- Character creation: conditions on effects are now written in words. "(if not has('x') and not has('y'))" becomes "(unless you have X or Y)", with the entities' names. Packs can give their own sentence with `if_text` (see FORMAT).
+- Choice cards show reminders (`note` effects), which often carry the catch, highlighted and first. Identical bonuses on many skills become one line ("+2 on all skills"), and when there are more effects than fit, the card says how many are left (see Details).
+- Long lists in a creation step now have a **Load more** button instead of hiding everything past the first 60.
+
 ## 1.2.1 — 2026-10-31
 
 - Fixed: ranges written as text (such as "20 ft. cone" or "Cone de 6 m") showed the unit glued at the end ("20 ft. cone m"). Now each distance inside the text is converted to the unit chosen in Settings and the words stay.

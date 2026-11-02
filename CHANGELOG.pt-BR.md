@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.2.2 — 31/10/2026
+
+- Criação de personagem: as condições dos efeitos agora aparecem em palavras. "(se not has('x') and not has('y'))" vira "(exceto com X ou Y)", com o nome das entidades. O pacote pode dar a própria frase com `if_text` (ver FORMAT).
+- Os cartões de escolha mostram os lembretes (efeitos `note`), que muitas vezes trazem o lado ruim, em destaque e primeiro. Bônus iguais em muitas perícias viram uma linha só ("+2 em todas as perícias"), e quando há mais efeitos do que cabe, o cartão diz quantos faltam (veja Detalhes).
+- Listas longas num passo da criação agora têm o botão **Carregar mais**, em vez de esconder tudo depois dos 60 primeiros.
+
 ## 1.2.1 — 31/10/2026
 
 - Corrigido: alcances escritos como texto (por exemplo "20 ft. cone" ou "Cone de 6 m") apareciam com a unidade grudada no fim ("20 ft. cone m"). Agora cada distância dentro do texto é convertida para a unidade escolhida em Configurações e as palavras ficam.
