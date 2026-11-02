@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.3.1 — 2026-11-02
+
+- Fixed: sharing with a Gmail address written differently from the account (dots, capitals or "+tag", such as "Plinio.Aug@gmail.com" for "plinioaug@gmail.com") was taken as unexpected access and cancelled. Gmail treats them as the same account, and so does StatForge now.
+- Sharing with your own e-mail is refused with a clear message (it gives no access at all), before anything is created in Drive.
+- When Google does not grant the GM access, the message says so, and both errors list the permissions Google reported (roles only, no e-mails) to help find the cause.
+
 ## 1.3.0 — 2026-11-02
 
 First step of the GM mode: **sharing a sheet with the GM, read-only**.

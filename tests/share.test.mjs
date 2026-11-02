@@ -1,10 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseInvite, makeInvite, validEmail, snapshot, createShare, updateShare, deleteShare, checkShare, permissionsAreSafe, MAX_SHARE_BYTES } from '../site/js/engine/share.js';
+import { sameAccount, parseInvite, makeInvite, validEmail, snapshot, createShare, updateShare, deleteShare, checkShare, permissionsAreSafe, MAX_SHARE_BYTES } from '../site/js/engine/share.js';
 
 // A small fake Google Drive: files with an owner and permissions. Like the real one,
 // it refuses writes from anyone who is not the owner or a writer.
-function fakeDrive({ as = 'player@x.com', tamper = null, failPermission = false } = {}) {
+function fakeDrive({ as = 'player@x.com', tamper = null, failPermission = false, canonical = null, noop = false } = {}) {
   const files = new Map();
   const calls = [];
   let n = 0;
@@ -28,7 +28,8 @@ function fakeDrive({ as = 'player@x.com', tamper = null, failPermission = false 
       if (role !== 'owner') return res(403);
       if (failPermission) return res(400);
       const p = { id: `p${++n}`, ...JSON.parse(opts.body) };
-      f.perms.push(p);
+      if (canonical) p.emailAddress = canonical;
+      if (!noop) f.perms.push(p);
       if (tamper) f.perms.push(tamper);
       return res(200, { id: p.id });
     }
@@ -99,4 +100,20 @@ test('checking a share: ok, extra access, revoked, gone; stopping deletes the fi
   assert.equal((await checkShare(api, fileId, 'gm@mesa.com')).state, 'gone');
   await deleteShare(api, fileId); // already gone: not an error
   assert.equal(permissionsAreSafe([{ role: 'owner' }, { type: 'user', role: 'writer', emailAddress: 'gm@mesa.com' }], 'gm@mesa.com'), false);
+});
+
+test('Gmail spellings count as the same account; self-share and silent no-ops are refused', async () => {
+  assert.equal(sameAccount('Plinio.Aug+rpg@gmail.com', 'plinioaug@gmail.com'), true);
+  assert.equal(sameAccount('a.b@empresa.com', 'ab@empresa.com'), false);
+  // Drive answers with the account's own spelling: still the right reader, share is kept
+  const api = fakeDrive({ canonical: 'plinioaug@gmail.com' });
+  const { fileId } = await createShare(api, { sheet, body: '{}', email: 'plinio.aug@gmail.com' });
+  assert.equal(api.files.size, 1);
+  assert.equal((await checkShare(api, fileId, 'plinio.aug@gmail.com')).state, 'ok');
+  const api2 = fakeDrive();
+  await assert.rejects(createShare(api2, { sheet, body: '{}', email: 'Player@x.com', ownEmail: 'player@x.com' }), /SHARE_SELF/);
+  assert.equal(api2.calls.length, 0);
+  const api3 = fakeDrive({ noop: true });
+  await assert.rejects(createShare(api3, { sheet, body: '{}', email: 'gm@mesa.com' }), e => e.message === 'SHARE_NOT_GRANTED' && e.detail === 'owner (user)');
+  assert.equal(api3.files.size, 0);
 });
