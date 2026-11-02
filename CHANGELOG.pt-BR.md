@@ -2,6 +2,17 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.3.0 — 02/11/2026
+
+Primeiro passo do Modo Mestre: **compartilhar a ficha com o mestre, só leitura**.
+
+- O mestre manda um link de convite (`#/join?gm=…`). O jogador abre, vê o e-mail do mestre, escolhe a ficha e confirma. Dá para chegar no mesmo lugar por **Compartilhar com o mestre** na ficha, colando o link.
+- O StatForge mantém uma cópia da ficha no Google Drive do próprio jogador, atualizada alguns segundos depois de cada mudança, com uma única permissão de **leitor** para o e-mail do mestre. O próprio Google recusa qualquer alteração do mestre, e o app do jogador nunca lê a cópia de volta.
+- Travas de segurança: as permissões são conferidas depois de compartilhar e a cópia é apagada se houver qualquer outro acesso; as atualizações param se alguém adicionar acesso pelo Drive; os links de convite são validados e mostrados só como texto; a cópia tem no máximo 2 MB.
+- **Parar de compartilhar** apaga a cópia, e o mestre perde o acesso na hora. Apagar uma ficha compartilhada para o compartilhamento antes.
+- Compartilhar pede ao Google mais uma permissão, `drive.file` (só arquivos que o StatForge cria ou que a pessoa escolhe), e só quando alguém compartilha. A Política de Privacidade explica.
+- O lado do mestre (adicionar as fichas a uma mesa, parties) vem nas próximas versões.
+
 ## 1.2.2 — 31/10/2026
 
 - Criação de personagem: as condições dos efeitos agora aparecem em palavras. "(se not has('x') and not has('y'))" vira "(exceto com X ou Y)", com o nome das entidades. O pacote pode dar a própria frase com `if_text` (ver FORMAT).

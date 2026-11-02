@@ -43,7 +43,7 @@ export const setConfig = (k, v) => run('config', 'readwrite', s => s.put(v, k));
 // Sheets and packages tell cloud sync when they change, and deletions are remembered
 // ("deleted" in config) so another device does not bring them back.
 const SYNCED = ['sheets', 'packages'];
-const changed = store => { if (SYNCED.includes(store)) window.dispatchEvent(new CustomEvent('statforge:changed', { detail: store })); };
+const changed = (store, id) => { if (SYNCED.includes(store)) window.dispatchEvent(new CustomEvent('statforge:changed', { detail: { store, id } })); };
 async function markDeleted(store, id, on) {
   const all = await getConfig('deleted', {});
   if (on) all[`${store}/${id}`] = new Date().toISOString(); else if (all[`${store}/${id}`]) delete all[`${store}/${id}`]; else return;
@@ -52,12 +52,12 @@ async function markDeleted(store, id, on) {
 
 export async function put(store, obj) {
   const r = await run(store, 'readwrite', s => s.put(obj));
-  if (SYNCED.includes(store)) { await markDeleted(store, obj.id, false); changed(store); }
+  if (SYNCED.includes(store)) { await markDeleted(store, obj.id, false); changed(store, obj.id); }
   return r;
 }
 export async function remove(store, id) {
   const r = await run(store, 'readwrite', s => s.delete(id));
-  if (SYNCED.includes(store)) { await markDeleted(store, id, true); changed(store); }
+  if (SYNCED.includes(store)) { await markDeleted(store, id, true); changed(store, id); }
   return r;
 }
 

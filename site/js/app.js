@@ -6,6 +6,7 @@
 //   #/packages     installed packages
 //   #/hub          package collection (install with one tap)
 //   #/settings     settings
+//   #/join?gm=…    GM's invite: share a sheet with them (read-only, through Google Drive)
 //   ?table=<link>  installs a table package on open
 // ============================================================
 import * as db from './storage.js';
@@ -18,6 +19,8 @@ import { sheetScreen } from './ui/sheet.js';
 import { packagesScreen, installLinkWithFeedback } from './ui/packages.js';
 import { settingsScreen } from './ui/settings.js';
 import { hubScreen } from './ui/hub.js';
+import { joinScreen } from './ui/share.js';
+import { startShareUpdates, flushPending } from './share.js';
 import * as sync from './sync.js';
 import { autoCheck } from './ui/updates.js';
 import { h } from './ui/util.js';
@@ -54,6 +57,7 @@ async function route() {
     else if (name === 'packages') await packagesScreen(app);
     else if (name === 'hub') await hubScreen(app);
     else if (name === 'settings') await settingsScreen(app);
+    else if (name.startsWith('join?')) await joinScreen(app, location.hash);
     else await homeScreen(app);
   } catch (e) {
     console.error(e);
@@ -74,6 +78,8 @@ async function start() {
   }
   window.addEventListener('hashchange', route);
   await route();
+  startShareUpdates();
+  sync.onStatus(s => { if (s.connected) flushPending(); });
   await startSync();
   autoCheck(() => route());
   if ('serviceWorker' in navigator && location.protocol === 'https:') {

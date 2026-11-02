@@ -10,13 +10,16 @@ import { mergeData } from './engine/merge.js';
 // The OAuth client of the official site. Someone hosting StatForge elsewhere sets their own in Settings.
 export const DEFAULT_CLIENT_ID = '960882561949-5eil41c2ikjpfv4pm72bn5tc2pehulc8.apps.googleusercontent.com';
 const SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+// Sharing a sheet with the GM also needs drive.file: only files StatForge created or the person picked.
+// It is asked for only when someone shares, never for plain sync.
+export const FILE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const FILE = 'statforge-sync.json';
 const API = 'https://www.googleapis.com/drive/v3/files';
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
 
 // Access token, kept on this device only ('sync*' config keys never go to the cloud),
 // so reopening the app within the hour keeps syncing without asking Google again.
-let token = null; // { value, expires }
+let token = null; // { value, expires, scope }
 let restored = false;
 let timer = null;
 let running = null;
@@ -55,17 +58,17 @@ function loadGoogle() {
 
 /** Asks Google for access. Must run from a click: it may open a popup. */
 // The account used last time goes as a hint, so Google picks it instead of asking which account.
-async function signIn(prompt = '') {
+async function signIn(prompt = '', scope = SCOPE) {
   const id = await clientId();
   if (!id) throw new Error('NO_CLIENT_ID');
   await loadGoogle();
   const email = await db.getConfig('syncEmail', '');
   await new Promise((ok, fail) => {
     const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: id, scope: SCOPE, prompt, ...(email ? { login_hint: email } : {}),
+      client_id: id, scope, prompt, include_granted_scopes: true, ...(email ? { login_hint: email } : {}),
       callback: r => {
         if (r.error) return fail(new Error(r.error_description || r.error));
-        token = { value: r.access_token, expires: Date.now() + (Number(r.expires_in) || 3600) * 1000 };
+        token = { value: r.access_token, expires: Date.now() + (Number(r.expires_in) || 3600) * 1000, scope: r.scope || scope };
         ok();
       },
       error_callback: e => fail(new Error(e?.message || e?.type || 'popup_closed')),
@@ -80,6 +83,28 @@ async function signIn(prompt = '') {
       if (found) await db.setConfig('syncEmail', found);
     } catch { /* the hint is only a convenience */ }
   }
+}
+
+const hasScope = s => hasToken() && String(token.scope || SCOPE).split(' ').includes(s);
+
+/** For sharing: a valid token that includes drive.file. interactive = may open Google's popup (only from a click). */
+export async function ensureFileAccess({ interactive = false } = {}) {
+  await restore();
+  if (hasScope(FILE_SCOPE)) return true;
+  if (!interactive) return false;
+  await signIn('', `${SCOPE} ${FILE_SCOPE}`);
+  if (!hasScope(FILE_SCOPE)) throw new Error('SCOPE_DENIED');
+  notify();
+  return true;
+}
+
+/** Authorised Drive request that returns the raw Response (the share code checks the status itself). */
+export async function driveRequest(url, opts = {}) {
+  await restore();
+  if (!hasToken()) { const e = new Error('AUTH'); e.status = 401; throw e; }
+  const r = await fetch(url, { ...opts, headers: { Authorization: `Bearer ${token.value}`, ...(opts.headers || {}) } });
+  if (r.status === 401) { token = null; await db.setConfig('syncToken', null); }
+  return r;
 }
 
 async function drive(url, opts = {}) {
@@ -133,7 +158,7 @@ export function syncNow({ interactive = true } = {}) {
       await restore();
       if (!hasToken()) {
         if (!interactive) return false;
-        await signIn();
+        await signIn('', (await db.getConfig('shares', null)) ? `${SCOPE} ${FILE_SCOPE}` : SCOPE);
       }
       const file = await findFile();
       const remote = file ? await (await drive(`${API}/${file.id}?alt=media`)).json() : null;

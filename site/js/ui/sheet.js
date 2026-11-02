@@ -7,6 +7,8 @@ import { checkSet } from '../engine/package.js';
 import { compute, roll, isBroken, effectiveWear } from '../engine/calc.js';
 import { t } from '../i18n.js';
 import { creationWizard } from './creation.js';
+import { shareDialog } from './share.js';
+import { shareOf, stop as stopShare } from '../share.js';
 import { h, toast, dialog, confirm, ask, downloadJSON, uid, fmt, signed, byName, normalize } from './util.js';
 
 const rollHistory = [];
@@ -28,6 +30,7 @@ export async function sheetScreen(app, id) {
   state.unit = await db.getConfig('unit', 'm');
   state.debug = !!(await db.getConfig('debug', false));
   state.invMode = await db.getConfig('inventoryView', 'cards');
+  state.shared = await shareOf(id);
   state.saveCustom = () => db.setConfig(layoutKey, state.custom).catch(e => toast(e.message, 'error'));
 
   let timer;
@@ -148,9 +151,12 @@ function header(st) {
         h(`button.mini${st.editing ? '.primary' : ''}`, { 'aria-pressed': String(st.editing), onclick: () => { st.editing = !st.editing; st.redraw(); } },
           st.editing ? t('sheet.doneArranging') : t('sheet.arrange')),
         h('button.mini', { onclick: () => packagesDialog(st) }, t('sheet.packages', { n: st.active.length + 1 })),
+        h(`button.mini${st.shared ? '.share-on' : ''}`, { onclick: () => shareDialog(sheet.id), title: st.shared ? t('share.sharedWithShort', { email: st.shared.email }) : '' }, st.shared ? t('share.sharedBadge') : t('share.button')),
         h('button.mini', { onclick: () => downloadJSON(sheet, `${normalize(sheet.name).replace(/[^a-z0-9]+/g, '-') || 'sheet'}.json`) }, t('sheet.export')),
         h('button.mini.danger', { onclick: async () => {
           if (await confirm(t('sheet.deleteTitle'), t('sheet.deleteAsk', { name: sheet.name || t('common.unnamed') }), { yes: t('sheet.delete'), danger: true })) {
+            // A shared sheet stops being shared first, so no copy is left readable in Drive.
+            if (st.shared) { try { await stopShare(sheet.id); } catch (e) { toast(t('share.err.deleteFirst', { error: e.message }), 'error'); return; } }
             await db.remove('sheets', sheet.id);
             location.hash = '#/';
           }
