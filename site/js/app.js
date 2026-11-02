@@ -6,6 +6,7 @@
 //   #/packages     installed packages
 //   #/hub          package collection (install with one tap)
 //   #/settings     settings
+//   #/gm[/<table>[/<file>]]  GM mode: tables, shared sheets (read-only)
 //   #/join?gm=…    GM's invite: share a sheet with them (read-only, through Google Drive)
 //   ?table=<link>  installs a table package on open
 // ============================================================
@@ -20,6 +21,7 @@ import { packagesScreen, installLinkWithFeedback } from './ui/packages.js';
 import { settingsScreen } from './ui/settings.js';
 import { hubScreen } from './ui/hub.js';
 import { joinScreen } from './ui/share.js';
+import { gmScreen } from './ui/gm.js';
 import { startShareUpdates, flushPending } from './share.js';
 import * as sync from './sync.js';
 import { autoCheck } from './ui/updates.js';
@@ -58,6 +60,7 @@ async function route() {
     else if (name === 'hub') await hubScreen(app);
     else if (name === 'settings') await settingsScreen(app);
     else if (name.startsWith('join?')) await joinScreen(app, location.hash);
+    else if (name === 'gm') await gmScreen(app, arg, location.hash.split('/')[3]);
     else await homeScreen(app);
   } catch (e) {
     console.error(e);

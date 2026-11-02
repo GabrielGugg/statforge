@@ -176,3 +176,48 @@ export async function checkShare(api, fileId, email) {
     throw e;
   }
 }
+
+// ---------- GM side: reading a shared file safely ----------
+
+const BAD_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+/** Plain-JSON copy with no prototype tricks and a depth limit; anything else is dropped. */
+function cleanJSON(v, depth = 0) {
+  if (depth > 40) throw new Error('SHARE_INVALID');
+  if (v === null || typeof v === 'boolean' || typeof v === 'string') return v;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+  if (Array.isArray(v)) return v.slice(0, 10000).map(x => cleanJSON(x, depth + 1));
+  if (typeof v === 'object') {
+    const out = {};
+    for (const [k, x] of Object.entries(v)) if (!BAD_KEYS.has(k)) out[k] = cleanJSON(x, depth + 1);
+    return out;
+  }
+  return null;
+}
+
+/**
+ * Checks a shared file the GM downloaded and returns { sheet, packages, shared, app }.
+ * Throws SHARE_INVALID / SHARE_TOO_BIG. The result is only ever shown (read-only), never saved as a sheet of the GM.
+ */
+export function validateShare(text) {
+  const raw = String(text ?? '');
+  if (new TextEncoder().encode(raw).length > MAX_SHARE_BYTES) throw new Error('SHARE_TOO_BIG');
+  let data;
+  try { data = JSON.parse(raw); } catch { throw new Error('SHARE_INVALID'); }
+  data = cleanJSON(data);
+  if (!data || data.statforge_share !== SHARE_FORMAT || typeof data.sheet !== 'object' || !data.sheet || Array.isArray(data.sheet)) throw new Error('SHARE_INVALID');
+  const sheet = data.sheet;
+  if (typeof sheet.id !== 'string' || !sheet.id || sheet.id.length > 100) throw new Error('SHARE_INVALID');
+  if (typeof sheet.system !== 'string' || !SYSTEM_ID.test(sheet.system)) throw new Error('SHARE_INVALID');
+  sheet.name = cleanText(sheet.name, 120);
+  if (sheet.extensions != null && (!Array.isArray(sheet.extensions) || sheet.extensions.some(x => typeof x !== 'string' || !SYSTEM_ID.test(x)))) throw new Error('SHARE_INVALID');
+  const packages = Array.isArray(data.packages) ? data.packages.slice(0, 50)
+    .filter(p => p && typeof p.id === 'string' && SYSTEM_ID.test(p.id))
+    .map(p => ({ id: p.id, version: typeof p.version === 'string' ? p.version.slice(0, 40) : null })) : [];
+  return { sheet, packages, shared: typeof data.shared === 'string' ? data.shared.slice(0, 40) : null, app: typeof data.app === 'string' ? data.app.slice(0, 20) : null };
+}
+
+/** Packages the shared sheet uses that the GM lacks, or has in another version. */
+export function packageMismatches(packages, installed) {
+  return (packages || []).map(p => ({ ...p, have: installed?.[p.id]?.version ?? null }))
+    .filter(p => p.have !== p.version);
+}

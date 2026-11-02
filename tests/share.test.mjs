@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sameAccount, parseInvite, makeInvite, validEmail, snapshot, createShare, updateShare, deleteShare, checkShare, permissionsAreSafe, MAX_SHARE_BYTES } from '../site/js/engine/share.js';
+import { validateShare, packageMismatches, sameAccount, parseInvite, makeInvite, validEmail, snapshot, createShare, updateShare, deleteShare, checkShare, permissionsAreSafe, MAX_SHARE_BYTES } from '../site/js/engine/share.js';
 
 // A small fake Google Drive: files with an owner and permissions. Like the real one,
 // it refuses writes from anyone who is not the owner or a writer.
@@ -116,4 +116,20 @@ test('Gmail spellings count as the same account; self-share and silent no-ops ar
   const api3 = fakeDrive({ noop: true });
   await assert.rejects(createShare(api3, { sheet, body: '{}', email: 'gm@mesa.com' }), e => e.message === 'SHARE_NOT_GRANTED' && e.detail === 'owner (user)');
   assert.equal(api3.files.size, 0);
+});
+
+test('GM side: shared files are validated and cleaned before anything is shown', () => {
+  const good = snapshot(sheet, inst, '1.4.0');
+  const v = validateShare(good);
+  assert.equal(v.sheet.id, 's1'); assert.deepEqual(v.packages, [{ id: 'fallout-2.2-pt', version: '1.15.0' }]);
+  for (const bad of ['', 'not json', '[]', '{"statforge_share":2,"sheet":{}}', '{"statforge_share":1,"sheet":{"id":"x","system":"../evil"}}',
+    '{"statforge_share":1,"sheet":{"id":"x","system":"ok","extensions":["a b"]}}', '{"statforge_share":1}']) assert.throws(() => validateShare(bad), /SHARE_INVALID/, bad);
+  assert.throws(() => validateShare('x'.repeat(2 * 1024 * 1024 + 1)), /SHARE_TOO_BIG/);
+  // prototype tricks are dropped, hidden characters stripped from the name
+  const evil = validateShare('{"statforge_share":1,"sheet":{"id":"x","system":"ok","name":"Ana\u202e","__proto__":{"polluted":1},"notes":{"constructor":{"prototype":{"x":1}}}}}');
+  assert.equal(evil.sheet.name, 'Ana'); assert.equal({}.polluted, undefined); assert.equal(Object.getPrototypeOf(evil.sheet), Object.prototype);
+  assert.equal(Object.keys(evil.sheet.notes).length, 0);
+  let deep = '1'; for (let i = 0; i < 60; i++) deep = `[${deep}]`;
+  assert.throws(() => validateShare(`{"statforge_share":1,"sheet":{"id":"x","system":"ok","deep":${deep}}}`), /SHARE_INVALID/);
+  assert.deepEqual(packageMismatches([{ id: 'a', version: '1.0' }, { id: 'b', version: '2.0' }], { a: { version: '1.0' }, b: { version: '2.1' } }), [{ id: 'b', version: '2.0', have: '2.1' }]);
 });
