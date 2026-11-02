@@ -639,4 +639,11 @@ export default {
   'gm.section.skills': "Skills",
   'gm.section.derived': "Derived values",
   'gm.section.counters': "Counters",
+  'gm.newerPackages': {"one": "A player's sheet uses a newer version of {n} package than yours. The sheets are calculated with your packages, so update yours to see them as the players do.", "other": "Players' sheets use newer versions of {n} packages than yours. The sheets are calculated with your packages, so update yours to see them as the players do."},
+  'gm.updateMine': "Update my packages",
+  'gm.updated2': "Packages updated.",
+  'gm.updateFailed': "Could not update: {list}. Update them in Packages.",
+  'pkgs.anyLanguage': "Any language (no text)",
+  'pkgs.anyLanguageShort': "any language",
+  'gm.updateNotYet': "Downloaded again, but the link has no newer version yet: {list}. The player may have got it from somewhere else (ask for the link).",
 };

@@ -5,7 +5,7 @@
 import * as pk from '../packages.js';
 import * as db from '../storage.js';
 import { compareVersions } from '../engine/package.js';
-import { t, getLanguage, languageName } from '../i18n.js';
+import { t, languageName } from '../i18n.js';
 import { h, byName, normalize, fmt } from './util.js';
 import { installLinkWithFeedback, languageBadge } from './packages.js';
 
@@ -34,13 +34,12 @@ export async function hubScreen(app) {
   }
   status.remove();
 
-  const lang = getLanguage().split('-')[0];
-  const langs = [...new Set(index.packages.map(p => p.language).filter(Boolean))].sort();
+  const langs = [...new Set(index.packages.map(p => p.language).filter(l => l && l !== '*'))].sort();
   const search = h('input', { type: 'search', placeholder: t('hub.search'), 'aria-label': t('hub.search') });
   const selType = h('select', { 'aria-label': t('hub.type') }, h('option', { value: '' }, t('hub.allTypes')), TYPES.map(x => h('option', { value: x }, t(`type.${x}`))));
   const selLang = h('select', { 'aria-label': t('pkgs.language') }, h('option', { value: '' }, t('hub.allLanguages')),
-    langs.map(l => h('option', { value: l, selected: l.split('-')[0] === lang }, `${languageName(l)} (${l})`)));
-  if (!langs.some(l => l.split('-')[0] === lang)) selLang.value = '';
+    langs.map(l => h('option', { value: l }, `${languageName(l)} (${l})`)));
+  selLang.value = ''; // all languages by default
   const updates = h('div');
   const list = h('div.hub-list');
   for (const el of [search, selType, selLang]) el.addEventListener(el === search ? 'input' : 'change', () => draw());
@@ -49,7 +48,7 @@ export async function hubScreen(app) {
     const inst = await pk.installed();
     const q = normalize(search.value);
     const found = index.packages
-      .filter(p => (!selType.value || p.type === selType.value) && (!selLang.value || p.language === selLang.value))
+      .filter(p => (!selType.value || p.type === selType.value) && (!selLang.value || p.language === selLang.value || p.language === '*'))
       .filter(p => !q || normalize(`${p.name} ${p.description || ''} ${p.author || ''} ${p.id}`).includes(q))
       .sort((a, b) => TYPES.indexOf(a.type) - TYPES.indexOf(b.type) || byName(a.name, b.name));
 

@@ -14,6 +14,8 @@ export const shareOf = async sheetId => (await shares())[sheetId] || null;
 async function save(all) { await db.setConfig('shares', Object.keys(all).length ? all : null); }
 
 const timers = new Map();
+/** The package versions a sheet is calculated with ("id@version,…"): when they change, the GM's copy is resent. */
+const versionsKey = (sheet, inst) => [sheet.system, ...(sheet.extensions || [])].filter(Boolean).map(id => `${id}@${inst[id]?.version ?? ''}`).join(',');
 const pending = new Set();
 let pushing = false;
 
@@ -23,11 +25,12 @@ export async function share(sheetId, { email, table = '', message = '' }) {
   if (!sheet) throw new Error('SHEET_NOT_FOUND');
   if (await shareOf(sheetId)) throw new Error('ALREADY_SHARED');
   await ensureFileAccess({ interactive: true });
-  const body = snapshot(sheet, await pk.installed(), VERSION);
+  const inst = await pk.installed();
+  const body = snapshot(sheet, inst, VERSION);
   const { fileId } = await createShare(driveRequest, { sheet, body, email, message, ownEmail: await db.getConfig('syncEmail', '') });
   const all = await shares();
   const now = new Date().toISOString();
-  all[sheetId] = { fileId, email, table, since: now, last: now, meta: 2 };
+  all[sheetId] = { fileId, email, table, since: now, last: now, meta: 2, pkgs: versionsKey(sheet, inst) };
   await save(all);
   return all[sheetId];
 }
@@ -67,10 +70,11 @@ async function push(sheetId) {
   // Extra access found (someone changed the file in Drive): stop sending updates until the player decides.
   const state = await checkShare(driveRequest, s.fileId, s.email).catch(() => ({ state: 'error' }));
   if (state.state !== 'ok') { pending.add(sheetId); return; }
-  await updateShare(driveRequest, s.fileId, snapshot(sheet, await pk.installed(), VERSION));
+  const inst = await pk.installed();
+  await updateShare(driveRequest, s.fileId, snapshot(sheet, inst, VERSION));
   pending.delete(sheetId);
   const all = await shares();
-  if (all[sheetId]) { all[sheetId].last = new Date().toISOString(); await save(all); }
+  if (all[sheetId]) { all[sheetId].last = new Date().toISOString(); all[sheetId].pkgs = versionsKey(sheet, inst); await save(all); }
 }
 
 /** Copies shared by 1.3.x could not be downloaded by the GM's app: lift that once, while access is valid. */
@@ -84,6 +88,16 @@ async function fixOldShares() {
   if (changed) await save(all);
 }
 
+/** Shares whose packages were updated since the last send (e.g. while the app was closed) are sent again. */
+async function queueOutdated() {
+  const all = await shares();
+  const inst = await pk.installed();
+  for (const [id, s] of Object.entries(all)) {
+    const sheet = await db.get('sheets', id);
+    if (sheet && s.pkgs !== versionsKey(sheet, inst)) pending.add(id);
+  }
+}
+
 /** Sends updates that waited for access (call after the player signs in again). */
 export async function flushPending() {
   if (pushing) return;
@@ -91,6 +105,7 @@ export async function flushPending() {
   pushing = true;
   try {
     await fixOldShares();
+    await queueOutdated();
     for (const id of [...pending]) await push(id).catch(() => {});
   } finally { pushing = false; }
 }
@@ -98,10 +113,18 @@ export async function flushPending() {
 /** Keeps shared copies up to date a few seconds after the sheet changes. */
 export function startShareUpdates() {
   window.addEventListener('statforge:changed', async e => {
-    if (e.detail?.store !== 'sheets' || !e.detail.id) return;
-    const id = e.detail.id;
-    if (!(await shareOf(id))) return;
-    clearTimeout(timers.get(id));
-    timers.set(id, setTimeout(() => { timers.delete(id); push(id).catch(() => pending.add(id)); }, 3000));
+    if (!e.detail?.id) return;
+    const later = id => {
+      clearTimeout(timers.get(id));
+      timers.set(id, setTimeout(() => { timers.delete(id); push(id).catch(() => pending.add(id)); }, 3000));
+    };
+    if (e.detail.store === 'sheets') { if (await shareOf(e.detail.id)) later(e.detail.id); return; }
+    // A package was installed or updated: resend every shared sheet that uses it, so the GM sees the new version.
+    if (e.detail.store === 'packages') {
+      for (const id of Object.keys(await shares())) {
+        const sheet = await db.get('sheets', id);
+        if (sheet && [sheet.system, ...(sheet.extensions || [])].includes(e.detail.id)) later(id);
+      }
+    }
   });
 }

@@ -639,4 +639,11 @@ export default {
   'gm.section.skills': "Perícias",
   'gm.section.derived': "Valores derivados",
   'gm.section.counters': "Contadores",
+  'gm.newerPackages': {"one": "A ficha de um jogador usa uma versão mais nova de {n} pacote do que a sua. As fichas são calculadas com os seus pacotes, então atualize os seus para ver como os jogadores veem.", "other": "As fichas dos jogadores usam versões mais novas de {n} pacotes do que as suas. As fichas são calculadas com os seus pacotes, então atualize os seus para ver como os jogadores veem."},
+  'gm.updateMine': "Atualizar meus pacotes",
+  'gm.updated2': "Pacotes atualizados.",
+  'gm.updateFailed': "Não deu para atualizar: {list}. Atualize em Pacotes.",
+  'pkgs.anyLanguage': "Qualquer idioma (sem texto)",
+  'pkgs.anyLanguageShort': "qualquer idioma",
+  'gm.updateNotYet': "Baixei de novo, mas o link ainda não tem versão mais nova: {list}. O jogador pode ter pego de outro lugar (peça o link).",
 };

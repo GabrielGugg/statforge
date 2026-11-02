@@ -10,6 +10,8 @@ import * as pk from '../packages.js';
 import * as gm from '../gm.js';
 import * as sync from '../sync.js';
 import { makeInvite, packageMismatches } from '../engine/share.js';
+import { compareVersions } from '../engine/package.js';
+import { findUpdates } from './updates.js';
 import { compute } from '../engine/calc.js';
 import { partyValue, checkPartyFormula } from '../engine/party.js';
 import { t } from '../i18n.js';
@@ -73,7 +75,7 @@ async function tablesScreen(app) {
 async function lobby(app, tableId) {
   const tb = await gm.table(tableId);
   if (!tb) { app.append(h('div.card', h('p', t('gm.notFound')), h('a.button', { href: '#/gm' }, t('common.back')))); return; }
-  const inst = await pk.installed();
+  let inst = await pk.installed();
   const every = await gm.interval();
   let last = null;
 
@@ -119,6 +121,26 @@ async function lobby(app, tableId) {
       resources.length ? chipsFor(pt) : null,
       pt.members.length ? h('div.gm-grid', pt.members.map(id => byId[id]).filter(Boolean).map(card)) : h('p.muted.small', t('gm.partyEmpty'))));
     const loose = loaded.filter(x => !gm.partyOf(fresh, x.m.fileId));
+    // Players already on a newer version of a package the GM has: offer to update the GM's own copy.
+    const newer = {};
+    for (const x of loaded) for (const p of x.c?.packages || []) {
+      const have = inst[p.id]?.version;
+      if (have && p.version && compareVersions(p.version, have) > 0 && compareVersions(p.version, newer[p.id]?.version || '0') > 0) newer[p.id] = { id: p.id, version: p.version, have, name: inst[p.id].name || p.id };
+    }
+    const newerList = Object.values(newer);
+    const updateBox = newerList.length ? h('div.alert.warning',
+      h('p', t('gm.newerPackages', { n: newerList.length })),
+      h('ul.small', newerList.map(p => h('li', `${p.name}: v${p.have} → v${p.version}`))),
+      h('button.primary', { onclick: async e => {
+        e.target.disabled = true;
+        const failed = await updateOwnPackages(newerList.map(p => p.id));
+        inst = await pk.installed();
+        const still = newerList.filter(p => !failed.includes(p.id) && compareVersions(p.version, inst[p.id]?.version || '0') > 0).map(p => p.name);
+        if (failed.length) toast(t('gm.updateFailed', { list: failed.join(', ') }), 'error');
+        else if (still.length) toast(t('gm.updateNotYet', { list: still.join(', ') }), 'error');
+        else toast(t('gm.updated2'));
+        draw();
+      } }, t('gm.updateMine'))) : null;
 
     app.replaceChildren(
       h('div.card',
@@ -169,6 +191,7 @@ async function lobby(app, tableId) {
               } catch (e) { toast(errText(e), 'error'); }
             } }, t('gm.addSheets')))),
         token ? null : await signInBox(() => { refresh(true); }),
+        updateBox,
         !loaded.length ? h('p.muted', t('gm.noSheets')) : null,
         ...parties.map(partyBox),
         loaded.length ? dropZone(null, h('section.gm-party.loose',
@@ -189,6 +212,23 @@ async function lobby(app, tableId) {
   }
   await draw();
   refresh();
+}
+
+/** Updates the GM's own packages: from the link each was installed from, or else from the Hub. Returns the ids that failed. */
+async function updateOwnPackages(ids) {
+  const failed = [];
+  let hub = null;
+  for (const id of ids) {
+    try {
+      const mine = (await pk.installed())[id];
+      if (mine?._source) { await pk.update(id); continue; }
+      hub ||= await findUpdates().catch(() => []);
+      const u = hub.find(x => x.pkg.id === id);
+      if (!u) throw new Error('no source');
+      await pk.installFromLink(u.link);
+    } catch { failed.push(id); }
+  }
+  return failed;
 }
 
 /** The values shown on the cards: the GM's choice, or every resource of the system. */

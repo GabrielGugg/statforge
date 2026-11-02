@@ -39,6 +39,8 @@ O `id` usa só letras, números, `-`, `_` e `.`. Não troque o `id` depois de pu
 
 A estrutura do arquivo (chaves como `name`, `effects`, `type`) é sempre em inglês. O **conteúdo** (nomes, descrições, rótulos, ids dos seus próprios campos) fica no idioma que você quiser, e `language` diz qual: `"pt-BR"`, `"en"`, `"es"` etc.
 
+Um pacote sem nenhum texto (um tema, por exemplo) pode usar `"language": "*"`: ele serve para qualquer idioma e aparece no Hub seja qual for o idioma escolhido.
+
 Uma tradução é um pacote separado, com `id` próprio, por exemplo `fallout-2.2` e `fallout-2.2-pt`. O app mostra o idioma de cada pacote numa etiqueta, destacada quando é diferente do idioma da interface.
 
 Fórmulas são código, então as funções e palavras-chave delas (`floor`, `sum`, `and`...) ficam em inglês em qualquer idioma. Os ids que você cria (`FOR`, `carga_max`) podem estar em qualquer idioma.
@@ -297,7 +299,7 @@ Uma extensão pode mudar o assistente com `{ "op": "modify", "target": "creation
 
 ```json
 {
-  "format": 1, "id": "meu-tema", "name": "Meu Tema", "version": "1.0.0", "language": "pt-BR", "type": "theme",
+  "format": 1, "id": "meu-tema", "name": "Meu Tema", "version": "1.0.0", "language": "*", "type": "theme",
   "font": "Georgia, serif",
   "colors": { "--bg": "#101010", "--surface": "#1a1a1a", "--text": "#eeeeee", "--accent": "#ffcc00", "--accent-text": "#101010" }
 }

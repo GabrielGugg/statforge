@@ -39,6 +39,8 @@ The `id` uses only letters, numbers, `-`, `_` and `.`. Do not change the `id` af
 
 The structure of the file (keys like `name`, `effects`, `type`) is always in English. The **content** (names, descriptions, labels, ids of your own fields) is in whatever language you want, and `language` says which one: `"en"`, `"pt-BR"`, `"es"` and so on.
 
+A package with no text at all (a theme, for example) can use `"language": "*"`: it fits every language and shows in the Hub whatever language is picked.
+
 A translation is a separate package with its own `id`, for example `fallout-2.2` and `fallout-2.2-pt`. The app shows each package's language as a badge, and highlights it when it differs from the interface language.
 
 Formulas are code, so their functions and keywords (`floor`, `sum`, `and`...) are in English in every language. The ids you create (`STR`, `FOR`, `carga_max`) can be in any language.
@@ -296,7 +298,7 @@ An extension can change the assistant with `{ "op": "modify", "target": "creatio
 
 ```json
 {
-  "format": 1, "id": "my-theme", "name": "My Theme", "version": "1.0.0", "language": "en", "type": "theme",
+  "format": 1, "id": "my-theme", "name": "My Theme", "version": "1.0.0", "language": "*", "type": "theme",
   "font": "Georgia, serif",
   "colors": { "--bg": "#101010", "--surface": "#1a1a1a", "--text": "#eeeeee", "--accent": "#ffcc00", "--accent-text": "#101010" }
 }

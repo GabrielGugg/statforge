@@ -470,3 +470,4 @@ select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }
 .cards-group summary { cursor: pointer; font-weight: 600; }
 .cards-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: .25rem .75rem; padding: .4rem 0; }
 .cards-options label.check { display: flex; align-items: center; gap: .35rem; font-size: .9rem; }
+.alert.warning { border-color: var(--warning); }

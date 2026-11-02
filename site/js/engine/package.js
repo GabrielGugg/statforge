@@ -14,6 +14,8 @@ export const SECTIONS = ['attributes', 'skills', 'derived', 'resources', 'counte
 const OPS = ['add', 'replace', 'modify', 'remove', 'rename'];
 const ID_OK = /^[a-z0-9][a-z0-9_.-]*$/i;
 const LANG_OK = /^[a-z]{2,3}(-[a-z0-9]{2,8})*$/i;
+/** "language": "*" = a package with no text (a theme, for example): it fits every language. */
+export const ANY_LANGUAGE = '*';
 
 /** Reads "id@>=1.2" into { id, min }. */
 export function parseRequirement(txt) {
@@ -62,7 +64,7 @@ export function validatePackage(p) {
   if (!TYPES.includes(p.type)) errors.push(t('val.type', { types: TYPES.join(', ') }));
   if (!p.version) warnings.push(t('val.noVersion'));
   if (p.language === undefined) warnings.push(t('val.noLanguage'));
-  else if (typeof p.language !== 'string' || !LANG_OK.test(p.language)) errors.push(t('val.language'));
+  else if (typeof p.language !== 'string' || (p.language !== ANY_LANGUAGE && !LANG_OK.test(p.language))) errors.push(t('val.language'));
 
   if (p.type === 'system') {
     for (const s of SECTIONS) {
