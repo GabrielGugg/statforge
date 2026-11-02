@@ -1,7 +1,7 @@
 // ============================================================
 // GM mode screens:
 //   #/gm                      tables
-//   #/gm/<table>              lobby: invite link, shared sheets (live cards)
+//   #/gm/<table>              lobby: invite link, team resources, parties, shared sheets (live cards)
 //   #/gm/<table>/<file>       one shared sheet, read-only
 // Everything a player sent is shown with h() (textContent), never as HTML.
 // ============================================================
@@ -11,8 +11,9 @@ import * as gm from '../gm.js';
 import * as sync from '../sync.js';
 import { makeInvite, packageMismatches } from '../engine/share.js';
 import { compute } from '../engine/calc.js';
+import { partyValue, checkPartyFormula } from '../engine/party.js';
 import { t } from '../i18n.js';
-import { h, toast, confirm, ask, fmt, byName } from './util.js';
+import { h, toast, confirm, ask, dialog, fmt, byName } from './util.js';
 import { sheetScreen } from './sheet.js';
 
 let poll = null;
@@ -83,8 +84,42 @@ async function lobby(app, tableId) {
     const email = await db.getConfig('syncEmail', '');
     const base = location.href.split('#')[0];
     const invite = email ? makeInvite(base, { email, table: fresh.name, system: fresh.system }) : '';
-    const cards = [];
-    for (const m of fresh.members) cards.push(await memberCard(fresh, m, inst));
+    const loaded = [];
+    for (const m of fresh.members) loaded.push(await loadMember(fresh, m, inst));
+    const byId = Object.fromEntries(loaded.map(x => [x.m.fileId, x]));
+    const parties = fresh.parties || [];
+    const resources = teamResources(fresh, inst);
+    const valuesFor = pt => {
+      const calcs = pt.members.map(id => byId[id]).filter(x => x?.calc).map(x => ({ name: x.c.sheet.name || '?', calc: x.calc }));
+      return resources.map(r => ({ r, ...partyValue(r.formula, calcs) }));
+    };
+    const chipsFor = pt => h('div.stat-chips.party-chips', valuesFor(pt).map(({ r, value, errors }) =>
+      h('span.stat-chip', { class: errors.length ? 'party-err' : '', title: [r.formula, ...errors].join('\n') }, h('span', r.name), h('strong', value === null ? '—' : fmt(Math.round(value * 100) / 100)))));
+    const card = x => memberCard(fresh, x, parties, inst, draw);
+    const dropZone = (partyId, el) => {
+      el.addEventListener('dragover', e => { if (e.dataTransfer.types.includes('text/statforge-member')) { e.preventDefault(); el.classList.add('drop'); } });
+      el.addEventListener('dragleave', () => el.classList.remove('drop'));
+      el.addEventListener('drop', async e => {
+        e.preventDefault(); el.classList.remove('drop');
+        const id = e.dataTransfer.getData('text/statforge-member');
+        if (id) { await gm.assignMember(tableId, id, partyId); draw(); }
+      });
+      return el;
+    };
+    const active = parties.find(p => p.id === fresh.activeParty);
+    const partyBox = pt => dropZone(pt.id, h('section.gm-party', { class: pt.id === fresh.activeParty ? 'active' : '' },
+      h('div.row.spread',
+        h('h4', pt.name, ' ', pt.id === fresh.activeParty ? h('span.badge', t('gm.activeParty')) : null),
+        h('div.row',
+          pt.id === fresh.activeParty ? null : h('button.mini', { onclick: async () => { await gm.setActiveParty(tableId, pt.id); draw(); } }, t('gm.makeActive')),
+          h('button.mini', { onclick: async () => { const n = await ask(t('gm.renameParty'), t('gm.partyName'), pt.name); if (n) { await gm.renameParty(tableId, pt.id, n); draw(); } } }, t('gm.rename')),
+          h('button.mini.danger', { onclick: async () => {
+            if (await confirm(t('gm.deletePartyTitle'), t('gm.deletePartyText', { name: pt.name }), { yes: t('gm.deleteShort'), danger: true })) { await gm.deleteParty(tableId, pt.id); draw(); }
+          } }, t('gm.deleteShort')))),
+      resources.length ? chipsFor(pt) : null,
+      pt.members.length ? h('div.gm-grid', pt.members.map(id => byId[id]).filter(Boolean).map(card)) : h('p.muted.small', t('gm.partyEmpty'))));
+    const loose = loaded.filter(x => !gm.partyOf(fresh, x.m.fileId));
+
     app.replaceChildren(
       h('div.card',
         h('div.row.spread', h('h2', fresh.name), h('div.row',
@@ -101,21 +136,43 @@ async function lobby(app, tableId) {
             h('button.primary', { onclick: async () => { try { await navigator.clipboard.writeText(invite); toast(t('gm.copied')); } catch { toast(t('gm.copyFail'), 'error'); } } }, t('gm.copy'))),
           h('p.muted.small', t('gm.inviteEmail', { email })),
         ] : await signInBox(draw)),
+      h('div.card.gm-resources',
+        h('div.row.spread', h('h3', t('gm.teamResources')),
+          h('button.mini', { onclick: () => resourceDialog(tableId, null, draw) }, t('gm.newResource'))),
+        active && resources.length ? h('div.gm-active', h('div.muted.small', t('gm.activeIs', { name: active.name })), chipsFor(active)) : null,
+        !parties.length ? h('p.muted.small', t('gm.noPartiesHint')) : null,
+        resources.length ? h('ul.gm-res-list', resources.map(r => h('li',
+          h('strong', r.name), ' ', h('code', r.formula), ' ',
+          r.fromPackage ? h('span.badge', t('gm.fromSystem')) : [
+            h('button.mini', { onclick: () => resourceDialog(tableId, r, draw) }, t('gm.edit')),
+            h('button.mini.danger', { onclick: async () => {
+              if (await confirm(t('gm.deleteResTitle'), t('gm.deleteResText', { name: r.name }), { yes: t('gm.deleteShort'), danger: true })) { await gm.deleteResource(tableId, r.id); draw(); }
+            } }, t('gm.deleteShort')),
+          ]))) : h('p.muted.small', t('gm.noResources'))),
       h('div.card',
         h('div.row.spread', h('h3', t('gm.sheets')),
-          h('button.primary', { onclick: async () => {
-            try {
-              const ids = await gm.pickSharedFiles();
-              if (!ids.length) return;
-              const rep = await gm.addMembers(tableId, ids);
-              const ok = rep.filter(r => !r.error), bad = rep.filter(r => r.error);
-              if (ok.length) toast(t('gm.added', { n: ok.length }));
-              if (bad.length) toast(bad.map(r => errText(Object.assign(new Error(r.error), { detail: r.detail }))).join(' · '), 'error');
-              draw();
-            } catch (e) { toast(errText(e), 'error'); }
-          } }, t('gm.addSheets'))),
+          h('div.row',
+            h('button.mini', { onclick: async () => {
+              const n = await ask(t('gm.newParty'), t('gm.partyName'), t('gm.partyDefault', { n: parties.length + 1 }));
+              if (n) { try { await gm.createParty(tableId, n); draw(); } catch (e) { toast(errText(e), 'error'); } }
+            } }, t('gm.newParty')),
+            h('button.primary', { onclick: async () => {
+              try {
+                const ids = await gm.pickSharedFiles();
+                if (!ids.length) return;
+                const rep = await gm.addMembers(tableId, ids);
+                const ok = rep.filter(r => !r.error), bad = rep.filter(r => r.error);
+                if (ok.length) toast(t('gm.added', { n: ok.length }));
+                if (bad.length) toast(bad.map(r => errText(Object.assign(new Error(r.error), { detail: r.detail }))).join(' · '), 'error');
+                draw();
+              } catch (e) { toast(errText(e), 'error'); }
+            } }, t('gm.addSheets')))),
         token ? null : await signInBox(() => { refresh(true); }),
-        cards.length ? h('div.gm-grid', cards) : h('p.muted', t('gm.noSheets')),
+        !loaded.length ? h('p.muted', t('gm.noSheets')) : null,
+        ...parties.map(partyBox),
+        loaded.length ? dropZone(null, h('section.gm-party.loose',
+          parties.length ? h('h4', t('gm.noParty')) : null,
+          loose.length ? h('div.gm-grid', loose.map(card)) : h('p.muted.small', t('gm.allInParties')))) : null,
         h('p.muted.small', last ? t('gm.status', { when: ago(last), n: every }) : t('gm.statusFirst', { n: every }), ' ',
           h('button.mini', { onclick: () => refresh(true) }, t('gm.refreshNow')))));
   }
@@ -133,35 +190,82 @@ async function lobby(app, tableId) {
   refresh();
 }
 
-async function memberCard(tb, m, inst) {
+/** The system package's team resources (read-only) followed by the GM's own. */
+function teamResources(tb, inst) {
+  const fromPkg = (inst[tb.system]?.party?.resources || [])
+    .filter(r => r && typeof r.formula === 'string' && r.name)
+    .map(r => ({ id: `pkg:${r.id}`, name: String(r.name), formula: r.formula, fromPackage: true }));
+  return [...fromPkg, ...(tb.resources || [])];
+}
+
+/** Reads the cached copy and calculates it once with the GM's packages. */
+async function loadMember(tb, m, inst) {
   const c = await gm.cached(tb.id, m.fileId);
+  let rules = null, calc = null;
+  if (c && inst[c.sheet.system]) {
+    try { ({ rules } = await pk.rulesForSheet(c.sheet)); calc = compute(rules, c.sheet); } catch { rules = calc = null; }
+  }
+  return { m, c, rules, calc };
+}
+
+function resourceDialog(tableId, r, onDone) {
+  const name = h('input', { type: 'text', maxlength: 60, value: r?.name || '', placeholder: t('gm.resNamePh') });
+  const formula = h('textarea', { rows: 3, maxlength: 500, value: r?.formula || '', placeholder: "min(members('agi'))", spellcheck: false });
+  if (r?.formula) formula.value = r.formula;
+  const msg = h('p.small');
+  const check = () => {
+    try { checkPartyFormula(formula.value); msg.textContent = ''; msg.className = 'small'; return true; }
+    catch (e) { const u = /^unknown: (.*)$/.exec(e.message); msg.textContent = u ? t('gm.unknownName', { names: u[1] }) : e.message === 'empty' ? t('gm.err.RESOURCE_INCOMPLETE') : t('gm.badFormula', { error: e.message }); msg.className = 'small error-text'; return false; }
+  };
+  formula.addEventListener('input', () => { if (msg.textContent) check(); });
+  dialog(r ? t('gm.editResource') : t('gm.newResource'), [
+    h('label.field', h('span', t('gm.resName')), name),
+    h('label.field', h('span', t('gm.resFormula')), formula),
+    msg,
+    h('details.small', h('summary', t('gm.formulaHelpTitle')), h('ul', ['members', 'sum', 'count', 'size', 'example1', 'example2'].map(k => h('li', t(`gm.formulaHelp.${k}`))))),
+  ], { actions: [
+    { text: t('common.cancel') },
+    { text: t('common.save'), primary: true, action: async () => {
+      if (!name.value.trim()) { name.focus(); return false; }
+      if (!check()) return false;
+      try { await gm.saveResource(tableId, { id: r?.id, name: name.value, formula: formula.value }); onDone(); }
+      catch (e) { toast(errText(e), 'error'); return false; }
+    } },
+  ] });
+}
+
+function memberCard(tb, { m, c, rules, calc }, parties, inst, redraw) {
   const href = `#/gm/${encodeURIComponent(tb.id)}/${encodeURIComponent(m.fileId)}`;
   const remove = h('button.mini', { onclick: async () => {
-    if (await confirm(t('gm.removeTitle'), t('gm.removeText'), { yes: t('gm.remove') })) { await gm.removeMember(tb.id, m.fileId); window.dispatchEvent(new HashChangeEvent('hashchange')); }
+    if (await confirm(t('gm.removeTitle'), t('gm.removeText'), { yes: t('gm.remove') })) { await gm.removeMember(tb.id, m.fileId); redraw(); }
   } }, t('gm.remove'));
+  const current = gm.partyOf(tb, m.fileId)?.id || '';
+  const move = parties.length ? h('select.mini', { 'aria-label': t('gm.moveTo'), onchange: async e => { await gm.assignMember(tb.id, m.fileId, e.target.value || null); e.target.blur(); redraw(); } },
+    h('option', { value: '', selected: !current }, t('gm.noParty')),
+    parties.map(p => h('option', { value: p.id, selected: p.id === current }, p.name))) : null;
+  const drag = { draggable: 'true', ondragstart: e => { e.dataTransfer.setData('text/statforge-member', m.fileId); e.dataTransfer.effectAllowed = 'move'; } };
   if (!c) {
-    return h('div.card.gm-card', h('strong', m.name || t('gm.unknownSheet')), m.owner ? h('div.muted.small', m.owner) : null,
-      h('span.badge.error', m.state === 'lost' ? t('gm.lost') : t('gm.notLoaded')), h('div.row', remove));
+    return h('div.card.gm-card', drag, h('strong', m.name || t('gm.unknownSheet')), m.owner ? h('div.muted.small', m.owner) : null,
+      h('span.badge.error', m.state === 'lost' ? t('gm.lost') : t('gm.notLoaded')), h('div.row', move, remove));
   }
-  const chips = [];
   const miss = packageMismatches(c.packages, inst);
-  try {
-    if (!inst[c.sheet.system]) throw new Error('missing');
-    const { rules } = await pk.rulesForSheet(c.sheet);
-    const calc = compute(rules, c.sheet);
-    for (const r of Object.values(rules.resources)) {
-      const max = calc.value(r.id);
-      const cur = c.sheet.resources?.[r.id] ?? max;
-      chips.push(h('span.stat-chip', { title: r.name }, h('span', r.abbr || r.name), h('strong', r.display === 'card' ? fmt(max) : `${fmt(cur)}/${fmt(max)}`)));
-    }
-  } catch { /* no system package: the card still shows the name */ }
-  return h('div.card.gm-card',
+  const chips = [];
+  if (calc) {
+    try {
+      for (const r of Object.values(rules.resources)) {
+        const max = calc.value(r.id);
+        const cur = c.sheet.resources?.[r.id] ?? max;
+        chips.push(h('span.stat-chip', { title: r.name }, h('span', r.abbr || r.name), h('strong', r.display === 'card' ? fmt(max) : `${fmt(cur)}/${fmt(max)}`)));
+      }
+    } catch { /* the card still shows the name */ }
+  }
+  return h('div.card.gm-card', drag,
     h('div.row.spread', h('strong', c.sheet.name || t('common.unnamed')), m.state === 'lost' ? h('span.badge.error', t('gm.lost')) : m.state === 'error' ? h('span.badge.warning', t('gm.error')) : null),
     h('div.muted.small', `${c.owner?.name || c.owner?.email || ''}${c.owner?.email && c.owner?.name ? ` · ${c.owner.email}` : ''}`),
     h('div.muted.small', `${t('sheet.level')} ${fmt(c.sheet.level || 1)} · ${t('gm.updated', { when: ago(c.modifiedTime) })}`),
     !inst[c.sheet.system] ? h('div.badge.error', t('gm.missingSystem', { id: c.sheet.system })) : miss.length ? h('div.badge.warning', { title: miss.map(p => `${p.id}: ${p.version || '?'} / ${p.have || '—'}`).join('\n') }, t('gm.versionMismatch', { n: miss.length })) : null,
     chips.length ? h('div.stat-chips', chips) : null,
-    h('div.row', h('a.button.mini.primary', { href }, t('gm.open')), remove));
+    h('div.row', h('a.button.mini.primary', { href }, t('gm.open')), move, remove));
 }
 
 // ---------- One shared sheet, read-only ----------

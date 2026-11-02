@@ -185,6 +185,21 @@ A formula that refers to itself (directly or indirectly) becomes a warning on th
 ]
 ```
 
+### Team resources (GM mode)
+
+`party.resources` gives the GM ready-made team resources, calculated over the characters of a party in GM mode. Each one has an `id`, a `name` and a `formula`. Only the GM sees them.
+
+```json
+"party": {
+  "resources": [
+    { "id": "team_stealth", "name": "Team stealth", "formula": "min(members('AGI'))" },
+    { "id": "morale", "name": "Morale", "formula": "floor(avg(members('CAR'))) + size" }
+  ]
+}
+```
+
+In these formulas `members('x')` gives the value of `x` in each character (any formula of the system works, evaluated with that character's effects), `sum`, `avg`, `min` and `max` combine the list, `count` counts the values that are not 0, and `size` is how many characters are in the party. Other names can only be used inside `members(...)`.
+
 ### Layout
 
 ```json

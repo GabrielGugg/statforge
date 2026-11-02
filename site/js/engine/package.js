@@ -99,6 +99,13 @@ export function validatePackage(p) {
     if (!p.layout?.tabs?.length) warnings.push(t('val.noLayout'));
     checkCreation(p.creation, errors);
     checkCreation(p.progression?.level_up, errors, 'progression.level_up');
+    if (p.party !== undefined) {
+      if (!Array.isArray(p.party?.resources)) errors.push(t('val.needs', { where: 'party', op: 'party', field: 'resources' }));
+      else p.party.resources.forEach((r, i) => {
+        if (!r?.id || !r?.name || !r?.formula) errors.push(t('val.needs', { where: `party.resources[${i}]`, op: 'party', field: 'id, name, formula' }));
+        checkFormula(r?.formula, `party.resources[${i}]`, errors);
+      });
+    }
     (p.auto_conditions || []).forEach((a, i) => { checkFormula(a?.when, `auto_conditions[${i}].when`, errors); if (!a?.ref?.includes('/')) errors.push(t('val.needs', { where: `auto_conditions[${i}]`, op: 'auto', field: 'ref' })); });
   }
 
