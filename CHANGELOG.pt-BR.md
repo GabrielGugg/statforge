@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.4.1 — 02/11/2026
+
+- Corrigido: o mestre recebia "O Google recusou o pedido" ao adicionar uma ficha compartilhada. As cópias compartilhadas pela 1.3.x eram marcadas para leitores não poderem baixar, o que também bloqueava o app do mestre. As cópias novas não têm mais essa marca, e o app do jogador tira a marca das cópias antigas sozinho na próxima vez que abrir com acesso ao Google (ou pare de compartilhar e compartilhe de novo).
+- Os erros do Google agora mostram o motivo curto entre colchetes (por exemplo `[cannotDownloadFile]`), e um limite temporário do Google não é mais tomado como "acesso removido".
+- Corrigido: um "null" sobrando no fim da tela do Modo Mestre.
+
 ## 1.4.0 — 02/11/2026
 
 **Modo Mestre** (botão **Mestre** no topo).

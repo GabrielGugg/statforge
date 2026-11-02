@@ -8,7 +8,7 @@
 // ============================================================
 import * as db from './storage.js';
 import * as sync from './sync.js';
-import { validateShare } from './engine/share.js';
+import { validateShare, driveReason } from './engine/share.js';
 
 const API = 'https://www.googleapis.com/drive/v3/files';
 const APP_FILE = 'statforge-gm.json';
@@ -70,7 +70,7 @@ export async function removeMember(tableId, fileId) {
 
 async function getJSON(url) {
   const r = await sync.driveRequest(url);
-  if (!r.ok) { const e = new Error(`DRIVE_${r.status}`); e.status = r.status; throw e; }
+  if (!r.ok) { const e = new Error(`DRIVE_${r.status}`); e.status = r.status; e.detail = await driveReason(r); throw e; }
   return r;
 }
 
@@ -83,7 +83,8 @@ async function refreshMember(tableId, m) {
   try {
     meta = await (await getJSON(`${API}/${m.fileId}?fields=id,name,modifiedTime,trashed,size,owners(emailAddress,displayName)`)).json();
   } catch (e) {
-    if (e.status === 404 || e.status === 403) { await db.setConfig(cacheKey(tableId, m.fileId), null); return 'lost'; }
+    // 404, or 403 that is not a rate limit: the player stopped sharing.
+    if (e.status === 404 || (e.status === 403 && !/rate|quota/i.test(e.detail || ''))) { await db.setConfig(cacheKey(tableId, m.fileId), null); return 'lost'; }
     throw e;
   }
   if (meta.trashed) { await db.setConfig(cacheKey(tableId, m.fileId), null); return 'lost'; }
@@ -138,7 +139,7 @@ export async function addMembers(tableId, fileIds) {
       m.name = c.sheet.name; m.owner = c.owner?.email || '';
       tb.members.push(m);
       report.push({ fileId, name: c.sheet.name, system: c.sheet.system });
-    } catch (e) { await db.setConfig(cacheKey(tableId, fileId), null); report.push({ fileId, error: e.message }); }
+    } catch (e) { await db.setConfig(cacheKey(tableId, fileId), null); report.push({ fileId, error: e.message, detail: e.detail }); }
   }
   await saveTables(list);
   return report;

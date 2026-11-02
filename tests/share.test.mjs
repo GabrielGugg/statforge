@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateShare, packageMismatches, sameAccount, parseInvite, makeInvite, validEmail, snapshot, createShare, updateShare, deleteShare, checkShare, permissionsAreSafe, MAX_SHARE_BYTES } from '../site/js/engine/share.js';
+import { fixShareMeta, validateShare, packageMismatches, sameAccount, parseInvite, makeInvite, validEmail, snapshot, createShare, updateShare, deleteShare, checkShare, permissionsAreSafe, MAX_SHARE_BYTES } from '../site/js/engine/share.js';
 
 // A small fake Google Drive: files with an owner and permissions. Like the real one,
 // it refuses writes from anyone who is not the owner or a writer.
@@ -8,7 +8,7 @@ function fakeDrive({ as = 'player@x.com', tamper = null, failPermission = false,
   const files = new Map();
   const calls = [];
   let n = 0;
-  const res = (status, body = {}) => ({ ok: status < 300, status, json: async () => body, text: async () => JSON.stringify(body) });
+  const res = (status, body = {}) => ({ ok: status < 300, status, json: async () => body, text: async () => JSON.stringify(body), clone: () => res(status, body) });
   const api = async (url, opts = {}) => {
     const method = opts.method || 'GET';
     calls.push({ method, url, body: opts.body });
@@ -34,7 +34,7 @@ function fakeDrive({ as = 'player@x.com', tamper = null, failPermission = false,
       return res(200, { id: p.id });
     }
     if (m[2]) return res(200, { permissions: f.perms });
-    if (method === 'PATCH') { if (role !== 'owner' && role !== 'writer') return res(403); f.content = opts.body; return res(200, { id }); }
+    if (method === 'PATCH') { if (role !== 'owner' && role !== 'writer') return res(403, { error: { errors: [{ reason: 'insufficientFilePermissions' }] } }); if (u.pathname.startsWith('/upload')) f.content = opts.body; else f.meta = { ...f.meta, ...JSON.parse(opts.body) }; return res(200, { id }); }
     if (method === 'DELETE') { if (role !== 'owner') return res(403); files.delete(id); return res(204); }
     return res(200, JSON.parse(f.content.split('\r\n\r\n').pop().split('\r\n--')[0]));
   };
@@ -70,7 +70,8 @@ test('sharing gives exactly one reader permission, and the GM cannot write', asy
   assert.ok(!api.calls.some(c => /anyone|writer/.test(c.body || '')), 'never anyone/writer');
   // The GM (reader) tries to write or delete: Drive refuses.
   api.as = 'gm@mesa.com';
-  await assert.rejects(updateShare(api, fileId, '{"hacked":true}'), /DRIVE_403/);
+  await assert.rejects(updateShare(api, fileId, '{"hacked":true}'), e => e.message === 'DRIVE_403' && e.detail === 'insufficientFilePermissions');
+  await assert.rejects(fixShareMeta(api, fileId), /DRIVE_403/);
   await assert.rejects(deleteShare(api, fileId), /DRIVE_403/);
   assert.equal(JSON.parse(api.files.get(fileId).content.split('\r\n\r\n').pop().split('\r\n--')[0]).sheet.id, 's1');
 });
@@ -132,4 +133,13 @@ test('GM side: shared files are validated and cleaned before anything is shown',
   let deep = '1'; for (let i = 0; i < 60; i++) deep = `[${deep}]`;
   assert.throws(() => validateShare(`{"statforge_share":1,"sheet":{"id":"x","system":"ok","deep":${deep}}}`), /SHARE_INVALID/);
   assert.deepEqual(packageMismatches([{ id: 'a', version: '1.0' }, { id: 'b', version: '2.0' }], { a: { version: '1.0' }, b: { version: '2.1' } }), [{ id: 'b', version: '2.0', have: '2.1' }]);
+});
+
+test('new copies never block the GM from downloading; old ones are fixed by the owner', async () => {
+  const api = fakeDrive();
+  const { fileId } = await createShare(api, { sheet, body: '{}', email: 'gm@mesa.com' });
+  const meta = JSON.parse(api.calls[0].body.split('\r\n\r\n')[1].split('\r\n--')[0]);
+  assert.equal(meta.copyRequiresWriterPermission, undefined);
+  await fixShareMeta(api, fileId);
+  assert.equal(api.files.get(fileId).meta.copyRequiresWriterPermission, false);
 });

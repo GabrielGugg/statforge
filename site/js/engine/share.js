@@ -96,10 +96,15 @@ export function permissionsAreSafe(perms, email) {
 /** Short description of permissions for error messages (no e-mails: "owner, reader (user), reader (anyone)"). */
 export const describePermissions = perms => (perms || []).map(p => `${p.role} (${p.type})`).join(', ');
 
+/** Google's short reason for a refusal ("cannotDownloadFile", "rateLimitExceeded"…), to show in errors. */
+export async function driveReason(r) {
+  try { const j = await r.clone().json(); return String(j?.error?.errors?.[0]?.reason || j?.error?.status || '').slice(0, 60); } catch { return ''; }
+}
 async function ok(r) {
   if (!r.ok) {
     const err = new Error(`DRIVE_${r.status}`);
     err.status = r.status;
+    err.detail = await driveReason(r);
     throw err;
   }
   return r;
@@ -119,8 +124,7 @@ export async function createShare(api, { sheet, body, email, message = '', ownEm
     name: shareFileName(sheet), mimeType: 'application/json',
     description: 'StatForge character sheet shared read-only with the GM. Delete this file to stop sharing.',
     appProperties: { statforge: 'share', sheet: String(sheet.id).slice(0, 100) },
-    // Readers may not download, print or copy it through Drive's own screens.
-    copyRequiresWriterPermission: true,
+    // Not copyRequiresWriterPermission: it also blocks the GM's app from downloading the file through the API.
   });
   const created = await (await ok(await api(`${UPLOAD}?uploadType=multipart&fields=id`, {
     method: 'POST', headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
@@ -149,6 +153,11 @@ export async function createShare(api, { sheet, body, email, message = '', ownEm
 export async function listPermissions(api, fileId) {
   const r = await ok(await api(`${API}/${fileId}/permissions?fields=permissions(id,type,role,emailAddress)`, {}));
   return (await r.json()).permissions || [];
+}
+
+/** Copies shared by 1.3.x blocked downloads by readers (copyRequiresWriterPermission); this lifts it. Owner only. */
+export async function fixShareMeta(api, fileId) {
+  await ok(await api(`${API}/${fileId}?fields=id`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ copyRequiresWriterPermission: false }) }));
 }
 
 /** Rewrites the content of the shared copy. Only the file we created; only its content. */

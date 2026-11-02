@@ -23,7 +23,12 @@ const ago = iso => {
   const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000));
   return s < 60 ? t('gm.agoSec', { n: s }) : s < 3600 ? t('gm.agoMin', { n: Math.round(s / 60) }) : new Date(iso).toLocaleString();
 };
-const errText = e => { const k = `gm.err.${e.message}`; const x = t(k); return x === k ? (t(`share.err.${e.message}`) !== `share.err.${e.message}` ? t(`share.err.${e.message}`) : e.message) : x; };
+const errText = e => {
+  if (e.detail === 'cannotDownloadFile') return t('gm.err.cannotDownload');
+  const k = `gm.err.${e.message}`, k2 = `share.err.${e.message}`;
+  const x = t(k) !== k ? t(k) : t(k2) !== k2 ? t(k2) : e.message;
+  return e.detail ? `${x} [${e.detail}]` : x;
+};
 
 async function signInBox(onDone) {
   return h('div.alert', t('gm.needGoogle'), ' ',
@@ -44,7 +49,7 @@ async function tablesScreen(app) {
   const systems = Object.values(inst).filter(p => p.type === 'system').sort((a, b) => byName(a.name, b.name));
   const name = h('input', { type: 'text', maxlength: 80, placeholder: t('gm.tableNamePh'), 'aria-label': t('gm.tableName') });
   const system = h('select', { 'aria-label': t('gm.system') }, systems.map(s => h('option', { value: s.id }, s.name)));
-  app.append(
+  app.append(...[
     h('div.card',
       h('h2', t('gm.title')),
       h('p.muted', t('gm.intro'))),
@@ -60,7 +65,7 @@ async function tablesScreen(app) {
         } }, t('gm.create')),
       ] : h('p', t('new.needSystem'), ' ', h('a', { href: '#/packages' }, t('new.goPackages')))),
     list.length ? h('div.card', h('h3', t('gm.yourTables')), h('div.choices', list.map(tb => h('a.choice', { href: `#/gm/${encodeURIComponent(tb.id)}` },
-      h('span.choice-text', h('strong', tb.name), h('span.choice-desc', `${inst[tb.system]?.name || tb.system} · ${t('gm.nSheets', { n: tb.members.length })}`)))))) : null);
+      h('span.choice-text', h('strong', tb.name), h('span.choice-desc', `${inst[tb.system]?.name || tb.system} · ${t('gm.nSheets', { n: tb.members.length })}`)))))) : null].filter(Boolean));
 }
 
 // ---------- Lobby ----------
@@ -105,7 +110,7 @@ async function lobby(app, tableId) {
               const rep = await gm.addMembers(tableId, ids);
               const ok = rep.filter(r => !r.error), bad = rep.filter(r => r.error);
               if (ok.length) toast(t('gm.added', { n: ok.length }));
-              if (bad.length) toast(bad.map(r => errText(new Error(r.error))).join(' · '), 'error');
+              if (bad.length) toast(bad.map(r => errText(Object.assign(new Error(r.error), { detail: r.detail }))).join(' · '), 'error');
               draw();
             } catch (e) { toast(errText(e), 'error'); }
           } }, t('gm.addSheets'))),

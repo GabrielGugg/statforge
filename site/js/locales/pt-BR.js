@@ -592,4 +592,5 @@ export default {
   'gm.err.TABLE_NOT_FOUND': "Mesa não encontrada.",
   'settings.gmInterval': "Conferir fichas compartilhadas a cada (segundos)",
   'settings.gmIntervalHint': "Entre {min} e {max} s. Cada conferência faz ao Google uma pergunta leve por ficha e só baixa a ficha quando ela mudou: 6 fichas a cada 15 s dão umas 24 consultas por minuto, muito abaixo do limite do Google por pessoa (325.000 unidades de cota por minuto). Intervalos menores com muitas fichas gastam mais.",
+  'gm.err.cannotDownload': "Esta ficha foi compartilhada por uma versão antiga que bloqueia o download. Peça ao jogador para abrir o StatForge (ele corrige sozinho) ou parar de compartilhar e compartilhar de novo.",
 };
