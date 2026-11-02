@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.4.1 — 2026-11-02
+
+- Fixed: the GM got "Google refused the request" when adding a shared sheet. Copies shared by 1.3.x were marked so that readers cannot download them, which also blocked the GM's app. New copies no longer have that mark, and the player's app removes it from older copies by itself the next time it opens with Google access (or stop sharing and share again).
+- Errors from Google now show its short reason in brackets (for example `[cannotDownloadFile]`), and a temporary limit from Google is no longer taken as "access removed".
+- Fixed: a stray "null" at the bottom of the GM mode screen.
+
 ## 1.4.0 — 2026-11-02
 
 **GM mode** (the **GM** button at the top).

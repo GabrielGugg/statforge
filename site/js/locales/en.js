@@ -592,4 +592,5 @@ export default {
   'gm.err.TABLE_NOT_FOUND': "Table not found.",
   'settings.gmInterval': "Check shared sheets every (seconds)",
   'settings.gmIntervalHint': "Between {min} and {max} s. Each check asks Google one light question per sheet and downloads a sheet only when it changed: 6 sheets every 15 s is about 24 requests a minute, far below Google's limit for a person (325,000 quota units a minute). Shorter intervals with many sheets use more of it.",
+  'gm.err.cannotDownload': "This sheet was shared by an older version that blocks downloads. Ask the player to open StatForge (it fixes this by itself) or to stop sharing and share again.",
 };

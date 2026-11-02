@@ -82,6 +82,7 @@ async function start() {
   window.addEventListener('hashchange', route);
   await route();
   startShareUpdates();
+  flushPending();
   sync.onStatus(s => { if (s.connected) flushPending(); });
   await startSync();
   autoCheck(() => route());

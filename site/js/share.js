@@ -7,7 +7,7 @@ import * as db from './storage.js';
 import * as pk from './packages.js';
 import { VERSION } from './version.js';
 import { ensureFileAccess, driveRequest } from './sync.js';
-import { snapshot, createShare, updateShare, deleteShare, checkShare } from './engine/share.js';
+import { snapshot, createShare, updateShare, deleteShare, checkShare, fixShareMeta } from './engine/share.js';
 
 export const shares = async () => (await db.getConfig('shares', null)) || {};
 export const shareOf = async sheetId => (await shares())[sheetId] || null;
@@ -27,7 +27,7 @@ export async function share(sheetId, { email, table = '', message = '' }) {
   const { fileId } = await createShare(driveRequest, { sheet, body, email, message, ownEmail: await db.getConfig('syncEmail', '') });
   const all = await shares();
   const now = new Date().toISOString();
-  all[sheetId] = { fileId, email, table, since: now, last: now };
+  all[sheetId] = { fileId, email, table, since: now, last: now, meta: 2 };
   await save(all);
   return all[sheetId];
 }
@@ -73,11 +73,26 @@ async function push(sheetId) {
   if (all[sheetId]) { all[sheetId].last = new Date().toISOString(); await save(all); }
 }
 
+/** Copies shared by 1.3.x could not be downloaded by the GM's app: lift that once, while access is valid. */
+async function fixOldShares() {
+  const all = await shares();
+  let changed = false;
+  for (const s of Object.values(all)) {
+    if (s.meta >= 2) continue;
+    try { await fixShareMeta(driveRequest, s.fileId); s.meta = 2; changed = true; } catch { /* next time */ }
+  }
+  if (changed) await save(all);
+}
+
 /** Sends updates that waited for access (call after the player signs in again). */
 export async function flushPending() {
   if (pushing) return;
+  if (!(await ensureFileAccess())) return;
   pushing = true;
-  try { for (const id of [...pending]) await push(id).catch(() => {}); } finally { pushing = false; }
+  try {
+    await fixOldShares();
+    for (const id of [...pending]) await push(id).catch(() => {});
+  } finally { pushing = false; }
 }
 
 /** Keeps shared copies up to date a few seconds after the sheet changes. */
