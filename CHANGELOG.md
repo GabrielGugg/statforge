@@ -2,6 +2,13 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.6.1 — 2026-11-02
+
+- GM mode: when a player updates a package, the shared sheet is sent again at once (and on the next app opening, for updates made before), so the GM sees the new version.
+- GM mode: when players' sheets use a newer version of a package than the GM has, the table says so and **Update my packages** downloads the GM's own copies again (from the link they were installed from, or from the Hub). Sheets are always calculated with the GM's packages.
+- Hub: the language filter now starts on **All languages**.
+- New `"language": "*"` for packages with no text (themes, for example): they fit any language, show with any language filter in the Hub, and get an "any language" badge.
+
 ## 1.6.0 — 2026-11-02
 
 - GM mode: **Cards** on a table chooses which values the sheet cards show (resources, attributes, skills, derived values, counters). **Default** goes back to the system's resources.

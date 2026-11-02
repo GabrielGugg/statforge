@@ -2,6 +2,13 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.6.1 — 02/11/2026
+
+- Modo Mestre: quando um jogador atualiza um pacote, a ficha compartilhada é reenviada na hora (e na próxima vez que o app abrir, para atualizações feitas antes), então o mestre vê a versão nova.
+- Modo Mestre: quando as fichas dos jogadores usam uma versão mais nova de um pacote do que a do mestre, a mesa avisa e **Atualizar meus pacotes** baixa de novo as cópias do mestre (do link de onde foram instaladas, ou do Hub). As fichas são sempre calculadas com os pacotes do mestre.
+- Hub: o filtro de idioma agora começa em **Todos os idiomas**.
+- Novo `"language": "*"` para pacotes sem texto (temas, por exemplo): servem para qualquer idioma, aparecem com qualquer filtro de idioma no Hub e ganham a etiqueta "qualquer idioma".
+
 ## 1.6.0 — 02/11/2026
 
 - Modo Mestre: **Cartões** na mesa escolhe os valores que aparecem nos cartões das fichas (recursos, atributos, perícias, valores derivados, contadores). **Padrão** volta para os recursos do sistema.

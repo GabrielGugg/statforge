@@ -20,6 +20,7 @@ export function exampleUrl() {
 /** Language badge for a package, highlighted when it differs from the interface. */
 export function languageBadge(p) {
   if (!p.language) return null;
+  if (p.language === '*') return h('span.badge', { title: t('pkgs.anyLanguage') }, t('pkgs.anyLanguageShort'));
   const other = p.language.split('-')[0] !== getLanguage().split('-')[0];
   return h(`span.badge${other ? '.warning' : ''}`, { title: languageName(p.language) }, p.language);
 }
@@ -173,7 +174,7 @@ function draggable(box, order, reload) {
 function details(p, inst) {
   const lines = [];
   if (p.description) lines.push(h('p', p.description));
-  if (p.language) lines.push(h('p.small', `${t('pkgs.language')}: ${languageName(p.language)} (${p.language})`));
+  if (p.language) lines.push(h('p.small', `${t('pkgs.language')}: ${p.language === '*' ? t('pkgs.anyLanguage') : `${languageName(p.language)} (${p.language})`}`));
   if (p.type === 'system') {
     const { rules } = buildRules(p, []);
     const counts = Object.entries(rules.entities).map(([c, m]) => `${rules.collections[c]?.name || c}: ${Object.keys(m).length}`);
