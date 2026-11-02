@@ -24,7 +24,7 @@ export const validEmail = e => typeof e === 'string' && e.length <= 254 && EMAIL
 const SYSTEM_ID = /^[a-z0-9][a-z0-9._-]{0,79}$/i;
 // Control and bidirectional-override characters could disguise what is shown (for example an e-mail
 // that reads differently than it is), so they are removed from any text that comes in.
-const cleanText = (s, max) => String(s ?? '').replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩]/g, '').trim().slice(0, max);
+export const cleanText = (s, max) => String(s ?? '').replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩]/g, '').trim().slice(0, max);
 
 /** Invite link the GM sends to the group: the site address + #/join?gm=…&t=…&s=… */
 export function makeInvite(base, { email, table = '', system = '' }) {

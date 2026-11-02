@@ -15,6 +15,7 @@ Ficha de personagem para **qualquer sistema de RPG**. O app não vem com nenhum 
 | 🌐 **Abrir o app** | https://gabrielgugg.github.io/statforge/site/ |
 | 📦 **StatForge Hub** (pacotes para instalar) | https://github.com/GabrielGugg/statforge-hub |
 | 🧭 **Tutorial: usar o app** | [Como usar](#como-usar) (abaixo) |
+| 🎲 **Tutorial: Modo Mestre** | [Modo Mestre](#modo-mestre-ver-as-fichas-dos-jogadores) (abaixo) |
 | 🛠️ **Tutorial: criar um sistema ou homebrew** | [Construtor](https://gabrielgugg.github.io/statforge-hub/builder/) / [Guia do formato](FORMAT.pt-BR.md) e os [exemplos](examples/) |
 | 📤 **Tutorial: compartilhar um pacote no Hub** | [Guia de contribuição do Hub](https://github.com/GabrielGugg/statforge-hub/blob/main/CONTRIBUTING.pt-BR.md) |
 | 📝 **O que mudou em cada versão** | [Changelog](CHANGELOG.pt-BR.md) |
@@ -28,6 +29,32 @@ Ficha de personagem para **qualquer sistema de RPG**. O app não vem com nenhum 
 3. Em **Fichas**, crie uma ficha nova escolhendo o sistema e as extensões.
 
 Quer testar? Na primeira tela, use **Testar com o exemplo**.
+
+## Modo Mestre: ver as fichas dos jogadores
+
+O mestre vê a ficha de cada jogador ao vivo, só leitura, divide o grupo em parties e recebe valores da equipe (furtividade da equipe, moral…) calculados sozinhos. Não existe servidor do StatForge: as fichas passam pelo Google Drive de cada pessoa.
+
+**Mestre**
+
+1. Toque em **Mestre** no topo, dê um nome para a mesa, escolha o sistema e toque em **Criar mesa**.
+2. Entre com o Google e **copie o link de convite**. Mande para o grupo (Discord, WhatsApp…). Ele leva o seu e-mail, que os jogadores veem antes de compartilhar.
+3. Quando um jogador compartilha, o Google te manda um e-mail. Toque em **Adicionar fichas compartilhadas** e escolha os arquivos "StatForge - …" no seletor do próprio Google.
+4. Cada ficha vira um cartão que se atualiza sozinho (a cada 15 s por padrão; Configurações › Modo Mestre). **Abrir ficha** abre a ficha só leitura em outra guia. **Cartões** escolhe os valores que aparecem nos cartões.
+5. **Nova party** cria um grupo. Mova uma ficha pelo menu do cartão ou arrastando. A **party ativa** mostra os recursos da equipe no topo.
+6. **Novo recurso** cria um valor da equipe a partir de uma fórmula sobre os personagens da party, por exemplo `floor(avg(members('furtividade')))`. Veja [Recursos da equipe](FORMAT.pt-BR.md#recursos-da-equipe-modo-mestre).
+
+**Jogador**
+
+1. Abra o link de convite, escolha a sua ficha e confira o e-mail do mestre. Toque em **Compartilhar ficha**. O Google pode pedir para deixar o StatForge criar arquivos no seu Drive (só os arquivos que ele cria).
+2. Pronto: a cópia se atualiza alguns segundos depois de cada mudança. O botão **Compartilhada com o mestre ✓** na ficha mostra quem pode ver, e **Parar de compartilhar** apaga a cópia, o que tira o acesso do mestre.
+
+**O que mantém todo mundo seguro**
+
+- O mestre só lê. O próprio Google recusa qualquer mudança vinda do mestre, e o app do mestre nunca tenta.
+- A cópia do jogador é um arquivo separado: o app só escreve nela e nunca lê de volta, então nada feito nela muda a ficha de verdade.
+- A cópia é compartilhada com um único e-mail, como leitor. Se outra pessoa ganhar acesso (mexendo no Drive, por exemplo), as atualizações param e o jogador é avisado.
+- Parties e recursos da equipe ficam só com o mestre. Os jogadores nunca veem a mesa nem as fichas uns dos outros.
+- Mais em [SECURITY.pt-BR.md](SECURITY.pt-BR.md).
 
 ## Criar um sistema ou homebrew
 

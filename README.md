@@ -15,6 +15,7 @@ Character sheets for **any tabletop RPG**. The app ships with no game: each syst
 | 🌐 **Open the app** | https://gabrielgugg.github.io/statforge/site/ |
 | 📦 **StatForge Hub** (packages to install) | https://github.com/GabrielGugg/statforge-hub |
 | 🧭 **Tutorial: using the app** | [How to use](#how-to-use) (below) |
+| 🎲 **Tutorial: GM mode** | [GM mode](#gm-mode-see-your-players-sheets) (below) |
 | 🛠️ **Tutorial: make a system or homebrew** | [Builder](https://gabrielgugg.github.io/statforge-hub/builder/) / [Format guide](FORMAT.md) and the [examples](examples/) |
 | 📤 **Tutorial: share a package in the Hub** | [Hub contributing guide](https://github.com/GabrielGugg/statforge-hub/blob/main/CONTRIBUTING.md) |
 | 📝 **What changed in each version** | [Changelog](CHANGELOG.md) |
@@ -28,6 +29,32 @@ Character sheets for **any tabletop RPG**. The app ships with no game: each syst
 3. On **Sheets**, create a new sheet by picking the system and the extensions.
 
 Want to try it? On the first screen, use **Try the example**.
+
+## GM mode: see your players' sheets
+
+The GM sees each player's sheet live, read-only, splits the group into parties and gets team values (team stealth, morale…) calculated automatically. There is no StatForge server: sheets travel through each person's own Google Drive.
+
+**GM**
+
+1. Tap **GM** at the top, give the table a name, pick the system and tap **Create table**.
+2. Sign in to Google and **copy the invite link**. Send it to the group (Discord, WhatsApp…). It carries your e-mail, which players see before sharing.
+3. When a player shares, Google e-mails you. Tap **Add shared sheets** and pick the files named "StatForge - …" in Google's own picker.
+4. Each sheet becomes a card that updates by itself (every 15 s by default; Settings › GM mode). **Open sheet** opens it read-only in a new tab. **Cards** chooses which values the cards show.
+5. **New party** creates a group. Move a sheet with the menu on its card or drag it. The **active party** shows its team resources at the top.
+6. **New resource** creates a team value from a formula over the party's characters, for example `floor(avg(members('stealth')))`. See [Team resources](FORMAT.md#team-resources-gm-mode).
+
+**Player**
+
+1. Open the invite link, pick your sheet and check the GM's e-mail. Tap **Share sheet**. Google may ask to let StatForge create files in your Drive (only the files it creates).
+2. That's it: the copy updates a few seconds after each change. The **Shared with GM ✓** button on the sheet shows who can see it, and **Stop sharing** deletes the copy, which removes the GM's access.
+
+**What keeps everyone safe**
+
+- The GM only ever reads. Google itself refuses any change from the GM, and the GM's app never tries.
+- The player's copy is a separate file: the app only writes to it and never reads it back, so nothing done to it can change the real sheet.
+- The copy is shared with exactly one e-mail, as reader. If someone else gets access (for example by changing it in Drive), updates stop and the player is warned.
+- Parties and team resources live only with the GM. Players never see the table, and players never see each other's sheets.
+- More in [SECURITY.md](SECURITY.md).
 
 ## Make a system or homebrew
 

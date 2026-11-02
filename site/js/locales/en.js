@@ -630,4 +630,13 @@ export default {
   'gm.err.RESOURCE_INCOMPLETE': "Give the resource a name and a formula.",
   'gm.deleteShort': "Delete",
   'gm.unknownName': "\"{names}\" alone means nothing for a party: read it from the characters with members('{names}'). Only size can be used on its own.",
+  'gm.cards': "Cards",
+  'gm.cardsTitle': "What the cards show",
+  'gm.cardsHelp': "Pick the values shown on each sheet's card on this table. Resources show current/max.",
+  'gm.cardsDefault': "Default",
+  'gm.section.resources': "Resources",
+  'gm.section.attributes': "Attributes",
+  'gm.section.skills': "Skills",
+  'gm.section.derived': "Derived values",
+  'gm.section.counters': "Counters",
 };

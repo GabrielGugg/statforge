@@ -94,7 +94,7 @@ async function lobby(app, tableId) {
       return resources.map(r => ({ r, ...partyValue(r.formula, calcs) }));
     };
     const chipsFor = pt => h('div.stat-chips.party-chips', valuesFor(pt).map(({ r, value, errors }) =>
-      h('span.stat-chip', { class: errors.length ? 'party-err' : '', title: [r.formula, ...errors].join('\n') }, h('span', r.name), h('strong', value === null ? '—' : fmt(Math.round(value * 100) / 100)))));
+      h('span.stat-chip', { class: errors.length ? 'party-err' : '', title: [r.description, r.formula, ...errors].filter(Boolean).join('\n') }, h('span', r.name), h('strong', value === null ? '—' : fmt(Math.round(value * 100) / 100)))));
     const card = x => memberCard(fresh, x, parties, inst, draw);
     const dropZone = (partyId, el) => {
       el.addEventListener('dragover', e => { if (e.dataTransfer.types.includes('text/statforge-member')) { e.preventDefault(); el.classList.add('drop'); } });
@@ -152,6 +152,7 @@ async function lobby(app, tableId) {
       h('div.card',
         h('div.row.spread', h('h3', t('gm.sheets')),
           h('div.row',
+            h('button.mini', { onclick: () => cardsDialog(fresh, inst, draw) }, t('gm.cards')),
             h('button.mini', { onclick: async () => {
               const n = await ask(t('gm.newParty'), t('gm.partyName'), t('gm.partyDefault', { n: parties.length + 1 }));
               if (n) { try { await gm.createParty(tableId, n); draw(); } catch (e) { toast(errText(e), 'error'); } }
@@ -190,11 +191,38 @@ async function lobby(app, tableId) {
   refresh();
 }
 
+/** The values shown on the cards: the GM's choice, or every resource of the system. */
+function cardStats(tb, rules) {
+  if (Array.isArray(tb.cardStats)) return tb.cardStats;
+  return Object.keys(rules?.resources || {}).map(id => `resources/${id}`);
+}
+
+/** The GM picks what the cards show, from the system package's lists. */
+function cardsDialog(tb, inst, onDone) {
+  const sys = inst[tb.system];
+  if (!sys) { toast(t('gm.missingSystem', { id: tb.system }), 'error'); return; }
+  const chosen = new Set(cardStats(tb, { resources: Object.fromEntries((sys.resources || []).map(r => [r.id, r])) }));
+  const groups = gm.CARD_SECTIONS.filter(sec => Array.isArray(sys[sec]) && sys[sec].length).map(sec => h('details.cards-group', { open: sec === 'resources' || [...chosen].some(k => k.startsWith(`${sec}/`)) },
+    h('summary', t(`gm.section.${sec}`)),
+    h('div.cards-options', sys[sec].filter(x => x?.id).map(x => h('label.check',
+      h('input', { type: 'checkbox', checked: chosen.has(`${sec}/${x.id}`), onchange: e => { if (e.target.checked) chosen.add(`${sec}/${x.id}`); else chosen.delete(`${sec}/${x.id}`); } }),
+      String(x.name || x.id))))));
+  dialog(t('gm.cardsTitle'), [h('p.small', t('gm.cardsHelp')), ...groups], { actions: [
+    { text: t('gm.cardsDefault'), action: async () => { await gm.setCardStats(tb.id, null); onDone(); } },
+    { text: t('common.cancel') },
+    { text: t('common.save'), primary: true, action: async () => {
+      const order = gm.CARD_SECTIONS.flatMap(sec => (sys[sec] || []).map(x => `${sec}/${x.id}`)); // the package's order
+      await gm.setCardStats(tb.id, order.filter(k => chosen.has(k)));
+      onDone();
+    } },
+  ] });
+}
+
 /** The system package's team resources (read-only) followed by the GM's own. */
 function teamResources(tb, inst) {
   const fromPkg = (inst[tb.system]?.party?.resources || [])
     .filter(r => r && typeof r.formula === 'string' && r.name)
-    .map(r => ({ id: `pkg:${r.id}`, name: String(r.name), formula: r.formula, fromPackage: true }));
+    .map(r => ({ id: `pkg:${r.id}`, name: String(r.name), formula: r.formula, description: typeof r.description === 'string' ? r.description : '', fromPackage: true }));
   return [...fromPkg, ...(tb.resources || [])];
 }
 
@@ -251,13 +279,17 @@ function memberCard(tb, { m, c, rules, calc }, parties, inst, redraw) {
   const miss = packageMismatches(c.packages, inst);
   const chips = [];
   if (calc) {
-    try {
-      for (const r of Object.values(rules.resources)) {
-        const max = calc.value(r.id);
-        const cur = c.sheet.resources?.[r.id] ?? max;
-        chips.push(h('span.stat-chip', { title: r.name }, h('span', r.abbr || r.name), h('strong', r.display === 'card' ? fmt(max) : `${fmt(cur)}/${fmt(max)}`)));
-      }
-    } catch { /* the card still shows the name */ }
+    for (const key of cardStats(tb, rules)) {
+      const [sec, id] = key.split('/');
+      const def = rules[sec]?.[id];
+      if (!def) continue;
+      try {
+        const max = calc.value(id);
+        const label = def.abbr || def.name || id;
+        const shown = sec === 'resources' && def.display !== 'card' ? `${fmt(c.sheet.resources?.[id] ?? max)}/${fmt(max)}` : fmt(max);
+        chips.push(h('span.stat-chip', { title: def.name || id }, h('span', label), h('strong', shown)));
+      } catch { /* skip a value that fails */ }
+    }
   }
   return h('div.card.gm-card', drag,
     h('div.row.spread', h('strong', c.sheet.name || t('common.unnamed')), m.state === 'lost' ? h('span.badge.error', t('gm.lost')) : m.state === 'error' ? h('span.badge.warning', t('gm.error')) : null),
@@ -265,7 +297,7 @@ function memberCard(tb, { m, c, rules, calc }, parties, inst, redraw) {
     h('div.muted.small', `${t('sheet.level')} ${fmt(c.sheet.level || 1)} · ${t('gm.updated', { when: ago(c.modifiedTime) })}`),
     !inst[c.sheet.system] ? h('div.badge.error', t('gm.missingSystem', { id: c.sheet.system })) : miss.length ? h('div.badge.warning', { title: miss.map(p => `${p.id}: ${p.version || '?'} / ${p.have || '—'}`).join('\n') }, t('gm.versionMismatch', { n: miss.length })) : null,
     chips.length ? h('div.stat-chips', chips) : null,
-    h('div.row', h('a.button.mini.primary', { href }, t('gm.open')), move, remove));
+    h('div.row', h('a.button.mini.primary', { href, target: '_blank', rel: 'noopener noreferrer' }, t('gm.open')), move, remove));
 }
 
 // ---------- One shared sheet, read-only ----------
