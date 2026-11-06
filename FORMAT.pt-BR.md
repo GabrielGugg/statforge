@@ -106,7 +106,7 @@ Uma coleção (`collections`) é um tipo de coisa (armas, traços, condições).
 }
 ```
 
-Uma entidade também pode ter `requires`, uma fórmula que precisa valer para ela ser adicionada (por exemplo `"FOR >= 5 and level >= 3"`): a busca e os passos de escolha mostram "requisito não atendido" e não deixam escolher. `repeat` diz quantas vezes ela pode ser pega.
+Uma entidade também pode ter `requires`, uma fórmula que precisa valer para ela ser adicionada (por exemplo `"FOR >= 5 and level >= 3"`): a busca e os passos de escolha a mostram desativada, com a parte da fórmula que falha em palavras ("Requisito não atendido: Força ≥ 5"), até o jogador marcar "Ignorar requisitos não atendidos". `requires_text` substitui essas palavras quando o requisito é uma parte só (por exemplo, uma lista longa de "ou"). Com `requires`, o `match_field` do passo de escolha não vale para essa entidade. `repeat` diz quantas vezes ela pode ser pega.
 
 | Opção da coleção | Efeito |
 | --- | --- |
@@ -144,11 +144,14 @@ Qualquer entidade, atributo, perícia, valor calculado, recurso ou contador pode
 | --- | --- | --- |
 | `add` | `target`, `value` | Soma o valor (fórmula) no alvo. |
 | `set` | `target`, `value` | Troca o valor base do alvo. Se houver vários, vale o maior. Os `add` entram por cima (ex.: armadura define a CA e o escudo soma +2). |
+| `limit` | `target`, `value` | Limita o alvo depois de `set` e `add` (se houver vários, vale o menor), por exemplo uma condição que deixa no máximo 6 pontos de ação. |
 | `grant` | `ref` (`colecao/id`) | A ficha passa a ter também essa entidade, enquanto a origem estiver ativa. Ela aparece na lista da coleção com o nome da origem e sai junto com ela. |
 | `block` | `collection` ou `tag` | Anula os efeitos das entidades dessa coleção ou com essa tag (ex.: robô não recebe efeito de químicos). |
 | `advantage`, `disadvantage` | `target`, `text` | Aparece na lista de efeitos ativos (vantagem, desvantagem). |
 | `immunity`, `resistance`, `vulnerability` | `text` | Aparece na lista de efeitos ativos (imunidade, resistência, vulnerabilidade). Uma `immunity` pode dizer o que cobre com `ref` (`colecao/id`, id de contador, ou uma lista deles) e/ou `tag`: essas condições e contadores deixam de ser oferecidos nas listas de adicionar da ficha (ex.: robô nunca vê Sangramento). |
 | `note` | `text` | Lembrete na ficha, para regras que o app não automatiza. |
+
+`add`, `set` e `limit` aceitam `value_text`, o valor em palavras para a ficha e os cartões de escolha (por exemplo `"+ seu nível"`). Sem ele, uma fórmula aparece como "Bônus calculado" (a fórmula fica no Modo debug). Uma entidade pega várias vezes lista cada `note` uma vez só; use `"if": "qty('colecao/id') >= 2"` para um lembrete que só vale a partir da segunda vez.
 
 Todo efeito aceita `"if": "fórmula"`; ele só vale quando a fórmula der verdadeiro. O app mostra condições simples em palavras (`not has('x')` vira "exceto com X"); para as demais, informe `"if_text"` com a frase a mostrar, no idioma do pacote. Dentro dos efeitos de uma entidade, `qty` e `wear` são a quantidade e o desgaste daquele item na ficha.
 

@@ -190,6 +190,7 @@ function header(st) {
           st.editing ? t('sheet.doneArranging') : t('sheet.arrange')),
         h('button.mini', { onclick: () => packagesDialog(st) }, t('sheet.packages', { n: st.active.length + 1 })),
         h(`button.mini${st.shared ? '.share-on' : ''}`, { onclick: () => shareDialog(sheet.id), title: st.shared ? t('share.sharedWithShort', { email: st.shared.email }) : '' }, st.shared ? t('share.sharedBadge') : t('share.button')),
+        h('button.mini', { onclick: () => exportPdf(st) }, t('sheet.exportPdf')),
         h('button.mini', { onclick: () => downloadJSON(sheet, `${normalize(sheet.name).replace(/[^a-z0-9]+/g, '-') || 'sheet'}.json`) }, t('sheet.export')),
         h('button.mini.danger', { onclick: async () => {
           if (await confirm(t('sheet.deleteTitle'), t('sheet.deleteAsk', { name: sheet.name || t('common.unnamed') }), { yes: t('sheet.delete'), danger: true })) {
@@ -199,6 +200,30 @@ function header(st) {
             location.hash = '#/';
           }
         } }, t('sheet.delete')))));
+}
+
+/**
+ * PDF: every tab of the sheet, one after the other, sent to the browser's print window
+ * (where "Save as PDF" makes the file). Nothing leaves the device.
+ */
+function exportPdf(st) {
+  const { sheet, rules } = st;
+  const tabs = (rules.layout?.tabs?.length ? rules.layout : autoLayout(rules)).tabs;
+  const editing = st.editing;
+  st.editing = false;
+  const wrap = h('div.print-sheet',
+    h('div.print-head', h('h1', sheet.name || t('common.unnamed')), h('span', st.system.name),
+      h('span', `${t('sheet.level')} ${fmt(sheet.level || 1)}`), h('span', `XP ${fmt(sheet.xp || 0)}`)),
+    tabs.map(tab => h('section.print-tab', h('h2.print-tab-title', tab.name), dashboard(st, tab))));
+  st.editing = editing;
+  // fields show their text in print
+  wrap.querySelectorAll('textarea').forEach(el => { el.rows = Math.max(2, String(el.value).split('\n').length + 1); });
+  document.body.append(wrap);
+  document.documentElement.classList.add('printing');
+  const done = () => { wrap.remove(); document.documentElement.classList.remove('printing'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done);
+  toast(t('sheet.pdfHint'));
+  setTimeout(() => window.print(), 100);
 }
 
 function alerts(st) {
@@ -575,10 +600,10 @@ function itemEffects(st, item) {
     if (ef.type === 'note' || ef.type === 'block') continue;
     if (ef.if && !calc.formula(ef.if, f.vars)) continue;
     const target = targetName(rules, ef.target);
-    if (ef.type === 'add' || ef.type === 'set') {
+    if (ef.type === 'add' || ef.type === 'set' || ef.type === 'limit') {
       const v = Number(calc.formula(ef.value, f.vars)) || 0;
       if (ef.type === 'add' && !v) continue;
-      texts.push(ef.type === 'add' ? `${signed(v)} ${t('effects.on', { target })}` : `${target} = ${fmt(v)}`);
+      texts.push(ef.type === 'add' ? `${signed(v)} ${t('effects.on', { target })}` : ef.type === 'limit' ? t('effects.limit', { target, v: fmt(v) }) : `${target} = ${fmt(v)}`);
     } else if (ef.type === 'grant') texts.push(describeEffect(rules, ef));
     else texts.push(`${t(`effects.${ef.type}`)}: ${ef.text || [].concat(ef.ref ?? ef.tag ?? []).map(r => refName(rules, r)).join(', ') || target || ''}`);
   }
@@ -601,7 +626,7 @@ function debugText(st, id) {
   else lines.push(x.formula, x.filled !== x.formula ? `= ${x.filled} = ${fmt(x.base)}` : `= ${fmt(x.base)}`);
   for (const p of x.parts) {
     const num = /^-?\d+(\.\d+)?$/.test(p.formula);
-    lines.push(`${p.type === 'set' ? '= ' : signed(p.value)}${p.type === 'set' ? fmt(p.value) : ''} ${p.source}`
+    lines.push(`${p.type === 'set' ? '= ' : p.type === 'limit' ? '≤ ' : signed(p.value)}${p.type === 'set' || p.type === 'limit' ? fmt(p.value) : ''} ${p.source}`
       + (num ? '' : `  (${p.formula}${p.filled !== p.formula ? ` → ${p.filled}` : ''})`)
       + (p.if ? `  [${t('effects.if', { cond: p.if })}]` : '')
       + (p.on ? '' : `  — ${t('debug.off')}`));
@@ -638,6 +663,58 @@ function refLabel(rules, ref) {
   return ref;
 }
 
+/** The parts of a formula joined by a top-level "and" (parentheses kept together). */
+function andParts(formula) {
+  const s = String(formula).trim(), parts = [];
+  let depth = 0, quote = null, start = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (quote) { if (c === quote) quote = null; continue; }
+    if (c === "'" || c === '"') quote = c;
+    else if (c === '(') depth++;
+    else if (c === ')') depth--;
+    else if (!depth && /^\sand\s/.test(s.slice(i, i + 5))) { parts.push(s.slice(start, i)); start = i + 4; }
+  }
+  parts.push(s.slice(start));
+  // "(a or b)" loses its outer parentheses when they wrap the whole part
+  return parts.map(p => p.trim()).filter(Boolean).map(p => {
+    if (!p.startsWith('(') || !p.endsWith(')')) return p;
+    let d = 0;
+    for (let i = 0; i < p.length - 1; i++) { if (p[i] === '(') d++; else if (p[i] === ')') d--; if (!d) return p; }
+    return p.slice(1, -1).trim();
+  });
+}
+
+/** A requirement formula in words: has('x') becomes its name, FOR the attribute's name, >= becomes ≥… */
+function formulaWords(rules, f) {
+  let s = String(f).replace(/has\(\s*'([^']+)'\s*\)/g, (_, r) => `⟦${refLabel(rules, r)}⟧`);
+  s = s.replace(/qty\(\s*'([^']+)'\s*\)/g, (_, r) => `⟦${refLabel(rules, r)}⟧`);
+  const names = {};
+  for (const sec of ['attributes', 'skills', 'derived', 'resources']) for (const [id, d] of Object.entries(rules[sec] || {})) names[id] ||= d.name;
+  s = s.replace(/'[^']*'|⟦[^⟧]*⟧|[\p{L}_][\p{L}\p{N}_]*/gu, w => {
+    if (w.startsWith('⟦') || w.startsWith("'")) return w;
+    if (w === 'and') return t('req.and');
+    if (w === 'or') return t('req.or');
+    if (w === 'not') return t('req.not');
+    if (w === 'level') return t('req.level');
+    return names[w] || w;
+  });
+  return s.replace(/>=/g, '≥').replace(/<=/g, '≤').replace(/!=/g, '≠').replace(/==/g, '=').replace(/[⟦⟧]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Why an entity cannot be taken, in words, or '' when it can: the parts of "requires" that fail
+ * (the pack's requires_text when the requirement is a single part). Entities without "requires" pass.
+ */
+export function unmetRequirement(rules, calc, ent) {
+  if (!ent?.requires) return '';
+  const parts = andParts(ent.requires);
+  const failed = parts.filter(p => !calc.formula(p));
+  if (!failed.length) return calc.formula(ent.requires) ? '' : (ent.requires_text || formulaWords(rules, ent.requires));
+  if (ent.requires_text && parts.length === 1) return ent.requires_text;
+  return failed.map(p => formulaWords(rules, p)).join('; ');
+}
+
 /** A condition ("if") in words: the pack's if_text when given, otherwise has('x') turned into names. */
 export function describeCond(rules, ef) {
   if (ef.if_text) return ef.if_text;
@@ -650,12 +727,22 @@ export function describeCond(rules, ef) {
   return t('effects.if', { cond: cond.replace(new RegExp(HAS, 'g'), (_, r) => refLabel(rules, r)) });
 }
 
+const isNum = v => /^-?\d+(\.\d+)?$/.test(String(v).trim());
+
+/** An effect's value in words: the pack's value_text, the number, or "calculated" (formulas are for the debug mode). */
+function valueWords(ef) {
+  if (ef.value_text) return ef.value_text;
+  if (isNum(ef.value)) return ef.type === 'add' ? signed(Number(ef.value)) : fmt(Number(ef.value));
+  return ef.type === 'add' ? t('effects.calculatedBonus') : t('effects.calculatedValue');
+}
+
 export function describeEffect(rules, ef) {
   const target = targetName(rules, ef.target);
   const cond = ef.if ? ` (${describeCond(rules, ef)})` : '';
   switch (ef.type) {
-    case 'add': return `${/^-?\d+(\.\d+)?$/.test(String(ef.value)) ? signed(Number(ef.value)) : `+ (${ef.value})`} ${t('effects.on', { target })}${cond}`;
-    case 'set': return `${target} = ${ef.value}${cond}`;
+    case 'add': return `${valueWords(ef)} ${t('effects.on', { target })}${cond}`;
+    case 'set': return `${target} = ${valueWords(ef)}${cond}`;
+    case 'limit': return `${t('effects.limit', { target, v: valueWords(ef) })}${cond}`;
     case 'grant': { const [c, i] = String(ef.ref).split('/'); return t('effects.grants', { name: rules.entities[c]?.[i]?.name || ef.ref }); }
     case 'block': return ef.collection
       ? t('effects.blocksCollection', { name: rules.collections[ef.collection]?.name || ef.collection })
@@ -672,7 +759,7 @@ export function summarizeEffects(rules, effects) {
   const lines = [], groups = new Map();
   for (const ef of effects) {
     if (ef.type === 'add' && !ef.if && rules.skills[ef.target]) {
-      const k = String(ef.value);
+      const k = ef.value_text || String(ef.value);
       if (!groups.has(k)) { groups.set(k, []); lines.push({ group: k }); }
       groups.get(k).push(ef);
     } else lines.push({ text: describeEffect(rules, ef), note: ef.type === 'note' });
@@ -682,7 +769,7 @@ export function summarizeEffects(rules, effects) {
     if (!l.group) return [l];
     const g = groups.get(l.group);
     if (g.length < 3) return g.map(ef => ({ text: describeEffect(rules, ef) }));
-    const v = /^-?\d+(\.\d+)?$/.test(l.group) ? signed(Number(l.group)) : `+ (${l.group})`;
+    const v = valueWords(g[0]);
     return [{ text: g.length === totalSkills ? t('effects.allSkills', { v }) : t('effects.nSkills', { v, n: g.length }) }];
   });
   // notes first: they usually carry the catch
@@ -1088,32 +1175,41 @@ function search(st, colIds) {
     if (!many && col.max !== undefined && sheet.items.filter(i => i.collection === c).length >= col.max) dlg.close();
     st.change();
   };
-  // Requirements ("requires") must be met, and a "unique" collection takes each entity only "repeat" times (default once).
+  // Requirements ("requires") must be met, unless the player ticks "ignore", and a "unique" collection
+  // takes each entity only "repeat" times (default once).
+  let ignore = false;
   const blocked = ({ c, e }) => {
-    if (e.requires && !st.calc.formula(e.requires)) return t('creation.unmet');
-    if (rules.collections[c]?.unique && (sheet.items || []).filter(i => i.collection === c && i.ref === e.id).length >= (Number(e.repeat) || 1)) return t('sheet.alreadyHave');
-    return null;
+    if (rules.collections[c]?.unique && (sheet.items || []).filter(i => i.collection === c && i.ref === e.id).length >= (Number(e.repeat) || 1)) return { why: t('sheet.alreadyHave') };
+    const why = unmetRequirement(rules, st.calc, e);
+    return why ? { why: t('creation.unmetWhy', { why }), req: true } : null;
   };
+  const anyUnmet = all.some(x => blocked(x)?.req);
+  const ignoreBox = anyUnmet ? h('label.check.small', h('input', { type: 'checkbox', onchange: ev => { ignore = ev.target.checked; draw(); } }), t('creation.ignoreReq')) : null;
   const draw = () => {
     const q = normalize(input.value);
     const found = all.filter(({ c, e }) => (!filter?.value || c === filter.value) &&
       (!q || normalize(`${e.name} ${e.description || ''} ${(e.tags || []).join(' ')} ${many ? nameOf(c) : ''}`).includes(q)))
       // Names that match come before matches found only in descriptions.
       .sort((a, b) => (q && !normalize(a.e.name).includes(q)) - (q && !normalize(b.e.name).includes(q))).slice(0, 200);
-    list.replaceChildren(...(found.length ? found.map(x => h('div.search-item',
-      h('div', h('div', h('strong', x.e.name), many ? h('span.badge', { style: { marginLeft: '.4rem' } }, nameOf(x.c)) : null,
-          x.e.custom ? h('span.badge.ok', { style: { marginLeft: '.4rem' } }, t('custom.badge')) : null),
-        x.e.description ? h('div.desc', String(x.e.description).slice(0, 140) + (String(x.e.description).length > 140 ? '…' : '')) : null),
-      h('div.row', { style: { flexWrap: 'nowrap' } },
-        h('button.mini', { onclick: () => entityDetails(st, x.c, x.e.id) }, t('sheet.view')),
-        blocked(x) ? h('span.badge.warning', blocked(x)) : h('button.mini.primary', { onclick: () => add(x) }, t('sheet.addShort'))))) : [h('p.muted', t('sheet.nothingFound'))]));
+    list.replaceChildren(...(found.length ? found.map(x => {
+      const b = blocked(x);
+      const off = b && !(b.req && ignore);
+      return h('div.search-item', { class: b ? 'unmet' : '' },
+        h('div.search-text', h('div', h('strong', x.e.name), many ? h('span.badge', { style: { marginLeft: '.4rem' } }, nameOf(x.c)) : null,
+            x.e.custom ? h('span.badge.ok', { style: { marginLeft: '.4rem' } }, t('custom.badge')) : null),
+          x.e.description ? h('div.desc', String(x.e.description).slice(0, 140) + (String(x.e.description).length > 140 ? '…' : '')) : null,
+          b ? h('div.small.unmet-why', b.why) : null),
+        h('div.row', { style: { flexWrap: 'nowrap' } },
+          h('button.mini', { onclick: () => entityDetails(st, x.c, x.e.id) }, t('sheet.view')),
+          h('button.mini.primary', { disabled: off, onclick: () => add(x) }, t('sheet.addShort'))));
+    }) : [h('p.muted', t('sheet.nothingFound'))]));
   };
   input.addEventListener('input', draw);
   filter?.addEventListener('change', draw);
   draw();
   const customCols = ids.filter(c => rules.collections[c]?.custom);
   const create = customCols.length ? h('button.mini', { onclick: () => { dlg.close(); customItem(st, customCols, filter?.value); } }, t('custom.create')) : null;
-  dlg = dialog(many ? t('sheet.addItemTitle') : t('sheet.addTo', { name: nameOf(ids[0]) }), [filter ? h('div.row.search-bar', input, filter) : input, list, create ? h('div.row', { style: { marginTop: '.6rem' } }, create) : null], { width: '640px' });
+  dlg = dialog(many ? t('sheet.addItemTitle') : t('sheet.addTo', { name: nameOf(ids[0]) }), [filter ? h('div.row.search-bar', input, filter) : input, ignoreBox, list, create ? h('div.row', { style: { marginTop: '.6rem' } }, create) : null], { width: '640px' });
   input.focus();
 }
 

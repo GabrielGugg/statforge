@@ -6,11 +6,12 @@
 import { compute } from '../engine/calc.js';
 import { t } from '../i18n.js';
 import { h, uid, fmt, signed, byName, normalize } from './util.js';
-import { entityDetails, describeEffect, summarizeEffects } from './sheet.js';
+import { entityDetails, describeEffect, summarizeEffects, unmetRequirement } from './sheet.js';
 
-// Badges for a choice card: notes (often the downside) are kept, repeated bonuses are merged, the rest is counted.
+// Badges for a choice card: repeated bonuses are merged, the rest is counted. Notes (reminders) are left out:
+// they repeat the description shown right above.
 function effectBadges(rules, effects) {
-  const lines = summarizeEffects(rules, effects || []);
+  const lines = summarizeEffects(rules, (effects || []).filter(ef => ef.type !== 'note'));
   const MAX = 5;
   const out = lines.slice(0, MAX).map(l => h(l.note ? 'span.badge.warning' : 'span.badge.ok', l.text));
   if (lines.length > MAX) out.push(h('span.badge', t('creation.moreEffects', { n: lines.length - MAX })));
@@ -156,16 +157,19 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     return wanted.some(w => have.some(n => n === w || n.startsWith(`${w} `) || w.startsWith(`${n} `)));
   }
 
-  // "requires" is a hard rule (a formula); match_field only suggests.
+  // "requires" is a hard rule (a formula) and, when an entity has it, the only one; match_field only
+  // suggests, for entities without "requires".
   const meets = (ent, calc) => !ent.requires || !!calc.formula(ent.requires);
 
-  function available(step, ent, calc) {
-    if (!meets(ent, calc)) return false;
-    if (!step.match_field) return true;
+  /** Why this entity is not available, in words, or '' when it is. */
+  function unmet(step, ent, calc) {
+    if (ent.requires) return unmetRequirement(rules, calc, ent);
+    if (!step.match_field) return '';
     const v = ent[step.match_field];
-    if (v === undefined || v === null || v === '') return true;
-    return nameMatches(String(v), calc);
+    if (v === undefined || v === null || v === '' || nameMatches(String(v), calc)) return '';
+    return String(v);
   }
+  const available = (step, ent, calc) => !unmet(step, ent, calc);
 
   function allowedSkills(step, calc, sheet) {
     const all = Object.values(rules.skills);
@@ -305,9 +309,11 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     const all = Object.values(rules.entities[step.collection] || {})
       .filter(e => (!step.tag || (e.tags || []).includes(step.tag)) && (!levelUp || step.repeat || ownedCount(e.id) < (Number(e.repeat) || 1)))
       .sort((a, b) => byName(a.name, b.name));
+    // Everything is listed: what the character can take first, then the rest, disabled with the reason,
+    // unless the player ticks "ignore unmet requirements".
     const okAll = all.filter(e => available(step, e, calc));
     const hidden = all.length - okAll.length;
-    let list = showAll ? all : okAll;
+    let list = [...okAll, ...all.filter(e => !okAll.includes(e))];
     const q = normalize(query);
     if (q) list = list.filter(e => normalize(`${e.name} ${e.description || ''} ${Object.values(e).filter(x => typeof x === 'string').join(' ')}`).includes(q));
     // chosen ones first, so they never get lost behind the search
@@ -325,16 +331,17 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     const fields = rules.collections[step.collection]?.fields || {};
     const card = e => {
       const on = c.picks.includes(e.id);
-      const ok = available(step, e, calc);
+      const why = unmet(step, e, calc);
+      const ok = !why;
       const desc = String(e.description || '').replace(/\s+/g, ' ');
       const facts = Object.entries(fields).filter(([k]) => e[k] !== undefined && e[k] !== '' && typeof e[k] !== 'object' && !desc.slice(0, 200).includes(String(e[k])))
         .slice(0, 3).map(([k, f]) => h('span.badge', `${f.label || k}: ${e[k]}${f.unit ? ` ${f.unit}` : ''}`));
       const fx = effectBadges(rules, e.effects);
-      return h('div.choice', { class: on ? 'selected' : '' },
+      return h('div.choice', { class: `${on ? 'selected' : ''}${ok || showAll ? '' : ' unmet'}` },
         h('label.choice-main',
-          h('input', { type: single ? 'radio' : 'checkbox', name: `step${index}`, checked: on, disabled: !on && ((!single && c.picks.length >= max) || !meets(e, calc)), onchange: () => toggle(e.id) }),
+          h('input', { type: single ? 'radio' : 'checkbox', name: `step${index}`, checked: on, disabled: !on && ((!single && c.picks.length >= max) || (!ok && !showAll)), onchange: () => toggle(e.id) }),
           h('span.choice-text',
-            h('strong', e.name), ok ? null : h('span.badge.warning', { style: { marginLeft: '.4rem' } }, t('creation.unmet')),
+            h('strong', e.name), ok ? null : h('span.small.unmet-why', t('creation.unmetWhy', { why })),
             desc ? h('span.choice-desc', desc.length > 180 ? `${desc.slice(0, 180)}…` : desc) : null,
             facts.length || fx.length ? h('span.choice-facts', facts, fx) : null)),
         h('button.mini', { type: 'button', onclick: () => entityDetails(st, step.collection, e.id) }, t('creation.details')));
@@ -345,7 +352,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     return [
       h('div.row.spread', { style: { marginBottom: '.5rem' } },
         h('span.badge', max === Infinity ? t('creation.chosenFree', { n: c.picks.length }) : t('creation.chosen', { n: c.picks.length, max })),
-        hidden ? h('label.check.small', h('input', { type: 'checkbox', checked: showAll, onchange: e => { showAll = e.target.checked; redraw(); } }), t('creation.showAll', { n: hidden })) : null),
+        hidden ? h('label.check.small', h('input', { type: 'checkbox', checked: showAll, onchange: e => { showAll = e.target.checked; redraw(); } }), t('creation.ignoreReq')) : null),
       search,
       single && min === 0 ? h('div.choice', { class: c.picks.length ? '' : 'selected' },
         h('label.choice-main', h('input', { type: 'radio', name: `step${index}`, checked: !c.picks.length, onchange: () => { c.picks = []; redraw(); } }),

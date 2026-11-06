@@ -474,3 +474,33 @@ select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }
 .cards-options label.check { display: flex; align-items: center; gap: .35rem; font-size: .9rem; }
 .alert.warning { border-color: var(--warning); }
 .update-banner { bottom: auto; top: 72px; border-color: var(--accent); }
+
+/* Requirements not met: listed, greyed out, with the reason */
+.unmet-why { color: var(--warning); }
+.choice.unmet { opacity: .65; }
+.choice.unmet .choice-main { cursor: default; }
+.search-item.unmet strong { opacity: .75; }
+.search-text { flex: 1; min-width: 0; }
+
+/* PDF export: every tab of the sheet, printed on white */
+.print-sheet { display: none; }
+@media print {
+  html.printing {
+    --bg: #fff !important; --surface: #fff !important; --surface-2: #f2f2f2 !important; --text: #000 !important;
+    --text-muted: #444 !important; --border: #bbb !important; --accent: #000 !important; --accent-text: #fff !important;
+    color-scheme: light;
+  }
+  html.printing body { background: #fff !important; color: #000 !important; }
+  html.printing body > :not(.print-sheet) { display: none !important; }
+  html.printing .print-sheet { display: block; font-size: 11pt; }
+  .print-sheet .print-head { display: flex; gap: 1rem; align-items: baseline; flex-wrap: wrap; border-bottom: 2px solid #000; margin-bottom: .6rem; }
+  .print-sheet .print-head h1 { margin: 0; font-size: 18pt; }
+  .print-sheet .print-tab + .print-tab { break-before: page; }
+  .print-sheet h2.print-tab-title { font-size: 13pt; margin: 0 0 .4rem; }
+  .print-sheet .dash { display: block; }
+  .print-sheet .card { break-inside: avoid; box-shadow: none; border: 1px solid #bbb; margin-bottom: .5rem; background: #fff; }
+  .print-sheet button:not(.link), .print-sheet select, .print-sheet input[type=search], .print-sheet .debug-btn, .print-sheet .tabs, .print-sheet details > summary::marker { display: none !important; }
+  .print-sheet input, .print-sheet textarea { border: none !important; background: none !important; color: #000 !important; padding: 0 !important; }
+  .print-sheet textarea { resize: none; overflow: visible; }
+  .print-sheet button.link { color: #000 !important; text-decoration: none; padding: 0; border: none; background: none; }
+}

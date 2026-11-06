@@ -95,7 +95,7 @@ export function compute(rules, sheet) {
   const lists = Object.fromEntries(LIST_TYPES.map(x => [x, []]));
   for (const f of active) {
     for (const ef of f.effects) {
-      if (ef.type === 'add' || ef.type === 'set') (byTarget[ef.target] ||= []).push({ ef, f });
+      if (ef.type === 'add' || ef.type === 'set' || ef.type === 'limit') (byTarget[ef.target] ||= []).push({ ef, f });
       else if (LIST_TYPES.includes(ef.type)) lists[ef.type].push({ ef, f });
     }
   }
@@ -139,17 +139,19 @@ export function compute(rules, sheet) {
   }
 
   function applyEffects(id, base) {
-    let sets = null, add = 0;
+    let sets = null, add = 0, limit = null;
     for (const { ef, f } of byTarget[id] || []) {
       try {
         if (ef.if && !run(ef.if, f.vars)) continue;
         const v = num(run(ef.value, f.vars));
         if (ef.type === 'set') sets = sets === null ? v : Math.max(sets, v);
+        else if (ef.type === 'limit') limit = limit === null ? v : Math.min(limit, v);
         else add += v;
       } catch (e) { warn(t('calc.effectError', { source: f.ent.name || f.k, target: id, error: e.message })); }
     }
-    // "set" replaces the base value (highest wins); "add" goes on top.
-    return (sets !== null ? sets : base) + add;
+    // "set" replaces the base value (highest wins); "add" goes on top; "limit" caps the result (lowest wins).
+    const total = (sets !== null ? sets : base) + add;
+    return limit !== null ? Math.min(total, limit) : total;
   }
 
   function value(id) {
@@ -185,9 +187,12 @@ export function compute(rules, sheet) {
     try { return run(f, vars); } catch (e) { warn(e.message); return 0; }
   }
 
-  // List effects (immunity, advantage...) also honor "if".
+  // List effects (immunity, advantage...) also honor "if". An entity taken twice ("repeat") lists each one once.
   for (const type of LIST_TYPES) {
+    const shown = new Set();
     lists[type] = lists[type].filter(({ ef, f }) => {
+      if (shown.has(ef)) return false;
+      shown.add(ef);
       if (!ef.if) return true;
       try { return !!run(ef.if, f.vars); } catch (e) { warn(t('calc.effectError', { source: f.ent.name || f.k, target: type, error: e.message })); return true; }
     });
