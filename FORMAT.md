@@ -106,7 +106,7 @@ A collection is a kind of thing (weapons, traits, conditions). Entities are the 
 }
 ```
 
-An entity may also have `requires`, a formula that must hold to add it (for example `"STR >= 5 and level >= 3"`): search and pick steps show it as "requirement not met" and do not let it be chosen. `repeat` says how many times it can be taken.
+An entity may also have `requires`, a formula that must hold to add it (for example `"STR >= 5 and level >= 3"`): search and pick steps list it disabled, with the part of the formula that fails in words ("Requirement not met: Strength ≥ 5"), until the player ticks "Ignore unmet requirements". `requires_text` replaces those words when the requirement is a single part (e.g. a long "or" list). With `requires`, a pick step's `match_field` is not used for that entity. `repeat` says how many times it can be taken.
 
 | Collection option | Effect |
 | --- | --- |
@@ -144,11 +144,14 @@ Any entity, attribute, skill, derived value, resource or counter can have `effec
 | --- | --- | --- |
 | `add` | `target`, `value` | Adds the value (formula) to the target. |
 | `set` | `target`, `value` | Replaces the target's base value. If there are several, the highest wins. `add` effects go on top (e.g. armor sets AC and a shield adds +2). |
+| `limit` | `target`, `value` | Caps the target after `set` and `add` (if there are several, the lowest wins), e.g. a condition that leaves at most 6 action points. |
 | `grant` | `ref` (`collection/id`) | The sheet also has this entity, while the source is active. It shows in its collection's list with the source's name and leaves with it. |
 | `block` | `collection` or `tag` | Cancels the effects of entities in that collection or with that tag (e.g. a robot gets no effect from chems). |
 | `advantage`, `disadvantage` | `target`, `text` | Listed under active effects. |
 | `immunity`, `resistance`, `vulnerability` | `text` | Listed under active effects. An `immunity` can also name what it covers with `ref` (`collection/id`, a counter id, or a list of them) and/or `tag`: those conditions and counters are no longer offered in the sheet's add lists (e.g. a robot is never offered Bleeding). |
 | `note` | `text` | Reminder on the sheet, for rules the app does not automate. |
+
+`add`, `set` and `limit` accept `value_text`, the value in words for the sheet and the choice cards (e.g. `"+ your level"`). Without it a formula shows as "Calculated bonus" (the formula itself is in debug mode). An entity taken several times lists each `note` once; use `"if": "qty('collection/id') >= 2"` for a reminder that only applies from the second time.
 
 Every effect accepts `"if": "formula"`; it only applies when the formula is true. The app shows simple conditions in words (`not has('x')` becomes "unless you have X"); for anything else, give `"if_text"` with the sentence to show, in the pack's language. Inside an entity's effects, `qty` and `wear` are that item's values on the sheet.
 

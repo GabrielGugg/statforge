@@ -216,3 +216,27 @@ test('creation: items step needs "from"', () => {
   const ok = { ...system, creation: { steps: [{ type: 'items', from: 'classes' }] } };
   assert.deepEqual(validatePackage(ok).errors, []);
 });
+
+test('effects: "limit" caps a value and a repeated entity lists its notes once', () => {
+  const sys = { format: 1, id: 'lim', name: 'L', type: 'system', language: 'en',
+    resources: [{ id: 'ap', name: 'AP', max: '10' }],
+    collections: { conds: { name: 'Conditions' }, feats: { name: 'Feats', unique: true } },
+    entities: {
+      conds: [{ id: 'slow', name: 'Slow', effects: [{ type: 'limit', target: 'ap', value: '6' }] }],
+      feats: [{ id: 'hero', name: 'Hero', repeat: 2, effects: [{ type: 'add', target: 'ap', value: '2' },
+        { type: 'note', text: 'once' }, { type: 'note', text: 'twice', if: "qty('hero') >= 2" }] }],
+    } };
+  assert.deepEqual(validatePackage(sys).errors, []);
+  const { rules } = buildRules(sys, []);
+  const sheet = emptySheet(rules);
+  sheet.items = [{ uid: 'a', collection: 'feats', ref: 'hero' }];
+  let c = compute(rules, sheet);
+  assert.equal(c.value('ap'), 12);
+  assert.deepEqual(c.lists.note.map(x => x.ef.text), ['once']);
+  sheet.items.push({ uid: 'b', collection: 'feats', ref: 'hero' });
+  c = compute(rules, sheet);
+  assert.equal(c.value('ap'), 14);
+  assert.deepEqual(c.lists.note.map(x => x.ef.text), ['once', 'twice']);
+  sheet.items.push({ uid: 'c', collection: 'conds', ref: 'slow' });
+  assert.equal(compute(rules, sheet).value('ap'), 6);
+});

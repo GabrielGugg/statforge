@@ -2,6 +2,17 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.8.0 — 06/11/2026
+
+- Requisitos: nas listas de escolha (criação, subir de nível e **Adicionar** da ficha) tudo aparece; o que não cumpre os requisitos fica desativado e diz qual requisito falta (por exemplo "Requisito não atendido: Sorte ≥ 8"). A caixa **Ignorar requisitos não atendidos** libera esses itens. Ela substitui o antigo "Mostrar mais N com requisito não atendido".
+- Quando uma entidade tem `requires`, ele é a única regra: o campo de sugestão (`match_field`) não esconde mais itens que cumprem a fórmula (era o caso do traço Habilidoso).
+- Efeitos com fórmula aparecem em palavras: o pacote pode dar `value_text` (por exemplo "+ seu nível em Pontos de Vida"); sem ele, aparece "Bônus calculado", e a fórmula fica só no Modo debug.
+- Novo efeito `limit`: um valor máximo para o alvo, aplicado depois dos outros efeitos (por exemplo, uma condição que deixa os Pontos de Ação em no máximo 6).
+- Uma entidade pega mais de uma vez mostra cada lembrete uma vez só, e um lembrete pode depender de quantas vezes ela foi pega (`if` com `qty`).
+- Nas listas de escolha, os cartões não repetem mais o lembrete, que era uma cópia da descrição logo acima.
+- **Exportar PDF** na ficha: abre a janela de impressão com todas as abas, em fundo branco; escolha "Salvar como PDF". O antigo **Exportar** agora se chama **Exportar .json**.
+- A janela **Adicionar** da ficha: o motivo de não poder adicionar fica embaixo da descrição, e o botão não estoura mais a largura.
+
 ## 1.7.1 — 02/11/2026
 
 - Armas: o pente mostra qual munição a arma usa. Quando ela aceita mais de um tipo, uma lista ao lado escolhe a que está em uso (com quantas de cada há no inventário); **Recarregar** passa a usar essa, e trocar devolve ao inventário as balas que ainda estavam no pente.

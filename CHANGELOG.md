@@ -2,6 +2,17 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.8.0 — 2026-11-06
+
+- Requirements: choice lists (creation, level up and the sheet's **Add**) show everything; what the character does not qualify for is disabled and says which requirement is missing (e.g. "Requirement not met: Luck ≥ 8"). The **Ignore unmet requirements** box enables those. It replaces the old "Show N more with unmet requirements".
+- When an entity has `requires`, that is the only rule: the suggestion field (`match_field`) no longer hides entities that meet the formula.
+- Effects with a formula show in words: a pack can give `value_text` (e.g. "+ your level to Hit Points"); without it the app shows "Calculated bonus", and the formula is only in debug mode.
+- New `limit` effect: a maximum for the target, applied after the other effects (e.g. a condition that caps Action Points at 6).
+- An entity taken more than once shows each reminder once, and a reminder can depend on how many times it was taken (`if` with `qty`).
+- Choice cards no longer repeat the reminder, which copied the description right above it.
+- **Export PDF** on the sheet: opens the print window with every tab on a white page; choose "Save as PDF". The old **Export** is now **Export .json**.
+- The sheet's **Add** window: the reason something cannot be added sits under its description, and the button no longer overflows.
+
 ## 1.7.1 — 2026-11-02
 
 - Weapons: the magazine shows which ammo the weapon uses. When it takes more than one kind, a list next to it picks the one in use (with how many of each are in the inventory); **Reload** then uses that one, and switching puts the rounds still loaded back in the inventory.
