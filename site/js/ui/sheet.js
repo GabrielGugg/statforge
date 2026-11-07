@@ -59,12 +59,13 @@ export async function sheetScreen(app, id, opts = {}) {
     if (ro) lockDown(app); else autoConditions(state);
   }
   draw();
-  if (ro) watchDialogs();
+  if (ro) watchDialogs(ro.panel ? app : null);
 }
 
 // ---------- GM's read-only view ----------
 function readOnlyHeader(st) {
   const { sheet, readOnly } = st;
+  if (readOnly.panel) return h('div.muted.small.ro-panel-note', t('gm.readOnly'));
   return h('div',
     h('div.alert', h('strong', t('gm.readOnly')), ' ', t('gm.readOnlyOf', { owner: readOnly.owner || '—' })),
     h('div.sheet-header',
@@ -80,13 +81,24 @@ function lockDown(root) {
   root.querySelectorAll('button').forEach(el => { if (!el.closest('.tabs') && !el.classList.contains('debug-btn')) el.disabled = true; });
 }
 // Dialogs (item details) open outside the sheet: their controls are disabled too, while this view is open.
-let dialogWatch = null;
-function watchDialogs() {
+// In a panel (the GM's combat preview) only the dialogs opened from inside the panel are locked.
+let dialogWatch = null, lastClickInside = false, clickWatch = null;
+function watchDialogs(panel = null) {
   dialogWatch?.disconnect();
+  if (clickWatch) document.removeEventListener('pointerdown', clickWatch, true);
+  clickWatch = panel ? e => { lastClickInside = panel.isConnected && panel.contains(e.target); } : null;
+  if (clickWatch) document.addEventListener('pointerdown', clickWatch, true);
+  const lock = b => {
+    lockDown(b.querySelector('.dialog-body') || b);
+    b.querySelectorAll('.dialog-actions button.primary, .dialog-actions button.danger').forEach(x => { x.disabled = true; });
+  };
   // the body's controls and any action that would change something (primary/danger); Close and Cancel stay usable
-  dialogWatch = new MutationObserver(() => {
-    document.querySelectorAll('.dialog-body').forEach(b => lockDown(b));
-    document.querySelectorAll('.dialog-actions button.primary, .dialog-actions button.danger').forEach(b => { b.disabled = true; });
+  dialogWatch = new MutationObserver(records => {
+    if (panel && !panel.isConnected) { dialogWatch?.disconnect(); dialogWatch = null; return; }
+    for (const r of records) for (const n of r.addedNodes) {
+      if (!(n instanceof Element) || !n.matches('.dialog-backdrop')) continue;
+      if (!panel || lastClickInside) lock(n);
+    }
   });
   dialogWatch.observe(document.body, { childList: true });
   window.addEventListener('hashchange', () => { dialogWatch?.disconnect(); dialogWatch = null; }, { once: true });

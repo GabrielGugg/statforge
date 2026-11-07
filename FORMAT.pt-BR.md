@@ -206,6 +206,20 @@ Uma fórmula que se refere a si mesma (direta ou indiretamente) vira aviso na fi
 
 Nessas fórmulas `members('x')` dá o valor de `x` em cada personagem (qualquer fórmula do sistema funciona, calculada com os efeitos daquele personagem), `sum`, `avg`, `min` e `max` combinam a lista, `count` conta os valores diferentes de 0, e `size` é quantos personagens estão na party. Os outros nomes só podem ser usados dentro de `members(...)`.
 
+### Combate (Modo Mestre)
+
+`combat` diz ao Modo Mestre como funciona um combate no sistema:
+
+```json
+"combat": { "initiative": "1d20 + iniciativa", "hp": "pv", "conditions": "condicoes" }
+```
+
+- `initiative`: a rolagem, como no rolador da ficha (dados mais qualquer fórmula do sistema, calculada para cada personagem). Sem ele, vale `rolls.default`. O Mestre escolhe nas Configurações da mesa para quem o app rola (todos, só NPCs ou ninguém); empates ficam na ordem que o Mestre escolher.
+- `hp`: o recurso que é a vida (sem ele, o primeiro recurso).
+- `conditions`: a coleção de condições. As condições que o personagem já tem na ficha entram no combate, e o Mestre pode adicionar outras dessa coleção.
+
+O que muda no combate (PV, condições, notas) fica no encontro do Mestre: as fichas dos jogadores não mudam.
+
 ### Layout
 
 ```json

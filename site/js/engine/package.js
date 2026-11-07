@@ -109,6 +109,16 @@ export function validatePackage(p) {
         checkFormula(r?.formula, `party.resources[${i}]`, errors);
       });
     }
+    if (p.combat !== undefined) {
+      const c = p.combat;
+      if (!c || typeof c !== 'object' || Array.isArray(c)) errors.push(t('val.notObjectAt', { where: 'combat' }));
+      else {
+        // a roll: dice are checked as numbers
+        if (c.initiative !== undefined) checkFormula(String(c.initiative).replace(/(\d*)d(\d+)/gi, '1'), 'combat.initiative', errors);
+        if (c.hp !== undefined && !(p.resources || []).some(r => r?.id === c.hp)) warnings.push(t('val.combatRef', { field: 'hp', id: c.hp }));
+        if (c.conditions !== undefined && !p.collections?.[c.conditions]) warnings.push(t('val.combatRef', { field: 'conditions', id: c.conditions }));
+      }
+    }
     (p.auto_conditions || []).forEach((a, i) => { checkFormula(a?.when, `auto_conditions[${i}].when`, errors); if (!a?.ref?.includes('/')) errors.push(t('val.needs', { where: `auto_conditions[${i}]`, op: 'auto', field: 'ref' })); });
   }
 
@@ -178,6 +188,7 @@ export function buildRules(system, extensions = []) {
     creation: clone(system.creation) || null,
     auto_conditions: clone(system.auto_conditions) || [],
     rolls: clone(system.rolls) || {},
+    combat: clone(system.combat) || null,
     origin: {}, // "section/id" → id of the last package that touched it
   };
   for (const s of SECTIONS) {

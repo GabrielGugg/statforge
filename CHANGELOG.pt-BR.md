@@ -2,6 +2,16 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.13.0 — 07/11/2026
+
+- Modo Mestre, nova aba **Combate**: encontros com as fichas da mesa (compartilhadas e locais) e criaturas de um compendium (×3 vira "Saqueador 1", "Saqueador 2", "Saqueador 3", cada um com seus PV).
+- **Rolar iniciativa** rola para quem as Configurações da mesa mandam (todos, só NPCs ou ninguém) e ordena a lista; o resultado dos outros é digitado. Empates ficam na ordem que você escolher: arraste as linhas (▲▼ em telas de toque).
+- Rodada, turno atual, **Próximo turno** e **Anterior**; cada linha tem PV (−/+), condições da lista do sistema e uma nota curta. Condições que já estão na ficha de um jogador entram junto com ele no combate.
+- Clicar num nome mostra a ficha, só leitura, ao lado da lista.
+- O que muda no combate fica no encontro, nos seus aparelhos e no seu Drive: as fichas dos jogadores nunca são escritas.
+- Novo campo de sistema `combat` (`initiative`, `hp`, `conditions`). Veja "Combate (Modo Mestre)" no FORMAT.pt-BR.md.
+- As mudanças nas mesas do mestre vão para o Drive dois segundos depois do último clique, em vez de a cada clique.
+
 ## 1.12.0 — 07/11/2026
 
 - Novo tipo de pacote **compendium**: fichas prontas (criaturas, NPCs, inimigos) para um sistema, com tipo, etiquetas e descrição. Os valores são calculados pelas regras do sistema, então uma entrada funciona como qualquer ficha. Veja "Compendium" no FORMAT.pt-BR.md.

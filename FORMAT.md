@@ -206,6 +206,20 @@ A formula that refers to itself (directly or indirectly) becomes a warning on th
 
 In these formulas `members('x')` gives the value of `x` in each character (any formula of the system works, evaluated with that character's effects), `sum`, `avg`, `min` and `max` combine the list, `count` counts the values that are not 0, and `size` is how many characters are in the party. Other names can only be used inside `members(...)`.
 
+### Combat (GM mode)
+
+`combat` tells GM mode how a fight works in the system:
+
+```json
+"combat": { "initiative": "1d20 + init", "hp": "hp", "conditions": "conditions" }
+```
+
+- `initiative`: the roll, like the sheet's roller (dice plus any formula of the system, calculated for each character). Without it, `rolls.default` is used. The GM chooses in the table's Settings who the app rolls for (everyone, NPCs only, or nobody); ties are put in order by the GM.
+- `hp`: the resource that is the hit points (the first resource when missing).
+- `conditions`: the collection of conditions. Conditions a character already has on the sheet come into the fight, and the GM can add others from this collection.
+
+What changes in a fight (HP, conditions, notes) stays in the GM's encounter: the players' sheets do not change.
+
 ### Layout
 
 ```json

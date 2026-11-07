@@ -22,11 +22,20 @@ export const table = async id => (await tables()).find(t => t.id === id) || null
 const cacheKey = (tableId, fileId) => `gmCache:${tableId}:${fileId}`;
 export const cached = (tableId, fileId) => db.getConfig(cacheKey(tableId, fileId), null);
 
+// The copy in Drive is sent a moment after the last change (combat changes come in bursts of clicks).
+let pendingUpload = null, uploadTimer = null;
+async function flushUpload() {
+  clearTimeout(uploadTimer); uploadTimer = null;
+  const data = pendingUpload; pendingUpload = null;
+  if (data && (await sync.accessToken())) sync.writeAppFile(APP_FILE, data).catch(() => {});
+}
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && pendingUpload) flushUpload(); });
+
 async function saveTables(list, { upload = true } = {}) {
   const data = { updated: new Date().toISOString(), tables: list };
   await db.setConfig('gmTables', list);
   await db.setConfig('gmTablesUpdated', data.updated);
-  if (upload && (await sync.accessToken())) sync.writeAppFile(APP_FILE, data).catch(() => {});
+  if (upload) { pendingUpload = data; clearTimeout(uploadTimer); uploadTimer = setTimeout(flushUpload, 2000); }
 }
 
 /** Brings tables from the GM's hidden Drive folder when that copy is newer (another device of the GM). */
@@ -56,7 +65,7 @@ function normalizeTables(list) {
     return { id: t.id, name: cleanText(t.name, 80), system: cleanText(t.system, 80), created: cleanText(t.created, 40), members, parties,
       activeParty: parties.some(p => p.id === t.activeParty) ? t.activeParty : null, resources,
       cardStats: Array.isArray(t.cardStats) ? t.cardStats.filter(x => typeof x === 'string' && /^[a-z]+\/[\w.-]{1,80}$/i.test(x)).slice(0, 40) : null,
-      settings: normalizeSettings(t.settings) };
+      settings: normalizeSettings(t.settings), combat: normalizeCombat(t.combat) };
   });
 }
 
@@ -73,6 +82,38 @@ function normalizeSettings(s) {
   };
 }
 export const settingsOf = tb => normalizeSettings(tb?.settings);
+
+// ---------- Combat: encounters kept by the GM (players' sheets are never written) ----------
+// table.combat = { active: encounterId | null, encounters: [{ id, name, round, turn, started, participants: [
+//   { id, kind: 'member' | 'local' | 'comp', ref, name, npc, init, hp, hpMax, conditions: ['col/ref'], note }] }] }
+// kind 'member': ref = the shared file id; 'local': the local sheet id; 'comp': 'compendiumId/entryId'.
+export const MAX_ENCOUNTERS = 50, MAX_PARTICIPANTS = 100;
+const PART_KINDS = ['member', 'local', 'comp'];
+const numOrNull = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? null : Math.round(Number(v) * 100) / 100);
+function normalizeCombat(c) {
+  c = c && typeof c === 'object' ? c : {};
+  const encounters = (Array.isArray(c.encounters) ? c.encounters : []).filter(e => e && ID.test(e.id)).slice(0, MAX_ENCOUNTERS).map(e => {
+    const participants = (Array.isArray(e.participants) ? e.participants : []).filter(p => p && ID.test(p.id) && PART_KINDS.includes(p.kind) && typeof p.ref === 'string')
+      .slice(0, MAX_PARTICIPANTS).map(p => ({
+        id: p.id, kind: p.kind, ref: p.ref.slice(0, 200), name: cleanText(p.name, 120) || '—', npc: !!p.npc,
+        init: numOrNull(p.init), hp: numOrNull(p.hp), hpMax: numOrNull(p.hpMax),
+        conditions: (Array.isArray(p.conditions) ? p.conditions : []).filter(x => typeof x === 'string' && /^[\w.-]{1,80}\/[\w.-]{1,80}$/.test(x)).slice(0, 40),
+        note: cleanText(p.note, 300),
+      }));
+    const turn = Math.max(0, Math.min(participants.length - 1, Math.round(Number(e.turn)) || 0));
+    return { id: e.id, name: cleanText(e.name, 80) || '—', round: Math.max(1, Math.round(Number(e.round)) || 1), turn, started: !!e.started, participants };
+  });
+  return { active: encounters.some(e => e.id === c.active) ? c.active : encounters[0]?.id || null, encounters };
+}
+export const combatOf = tb => normalizeCombat(tb?.combat);
+/** Changes the table's combat: fn(combat) edits it in place; the result is checked again before saving. */
+export const editCombat = (tableId, fn) => editTable(tableId, tb => {
+  const c = normalizeCombat(tb.combat);
+  const out = fn(c);
+  tb.combat = normalizeCombat(c);
+  return out;
+});
+export const newCombatId = () => newId();
 
 const newId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 

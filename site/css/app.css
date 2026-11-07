@@ -530,3 +530,45 @@ select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }
 .comp-list { max-height: 45vh; overflow-y: auto; margin: .5rem 0; }
 .gm-desc { margin-bottom: .75rem; }
 .gm-desc summary { cursor: pointer; font-weight: 600; }
+/* GM combat */
+.combat-top, .combat-bar { margin-bottom: .75rem; }
+.combat-bar .row { flex-wrap: wrap; }
+.combat-layout { display: grid; gap: .75rem; }
+.combat-layout.with-preview { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+@media (max-width: 900px) { .combat-layout.with-preview { grid-template-columns: 1fr; } }
+.combat-list { display: grid; gap: .4rem; }
+.combat-row { display: grid; grid-template-columns: 1.2rem 4rem minmax(0, 1fr) auto; grid-template-areas: "mark init who hp" ". . note remove"; gap: .3rem .5rem; align-items: center; border: 1px solid var(--border); border-radius: 10px; padding: .45rem .6rem; background: var(--surface); cursor: grab; }
+.combat-row.current { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.combat-row.shown { background: var(--surface-2, var(--surface)); }
+.combat-row.down .combat-name { text-decoration: line-through; color: var(--text-muted); }
+.combat-row.drop { outline: 2px dashed var(--accent); }
+.combat-row.dragging { opacity: .5; }
+.combat-row .turn-mark { grid-area: mark; color: var(--accent); font-weight: 700; }
+.combat-row .init-input { grid-area: init; width: 4rem; text-align: center; }
+.combat-row .combat-who { grid-area: who; min-width: 0; display: grid; gap: .2rem; }
+.combat-row .combat-name { border: 0; background: transparent; padding: 0; min-height: 0; font-weight: 600; text-align: left; justify-content: flex-start; color: var(--text); text-decoration: underline dotted; }
+.combat-row .hp-box { grid-area: hp; display: flex; align-items: center; gap: .25rem; }
+.combat-row .hp-input { width: 4rem; text-align: center; }
+.combat-row .combat-note { grid-area: note; min-height: 32px; padding: .25rem .5rem; font-size: .85rem; }
+.combat-row .combat-remove { grid-area: remove; justify-self: end; }
+.cond-chips { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.cond-chip { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--warning, var(--border)); border-radius: 999px; padding: 0 0 0 .5rem; font-size: .8rem; }
+.cond-chip button.icon { min-width: 24px; min-height: 24px; padding: 0; }
+.cond-add { max-width: 11rem; font-size: .8rem; min-height: 28px; padding: .1rem .3rem; }
+.combat-pick { display: grid; gap: .3rem; max-height: 50vh; overflow-y: auto; margin-top: .5rem; }
+.combat-preview { position: sticky; top: 70px; max-height: calc(100vh - 90px); overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; padding: .6rem; background: var(--bg); }
+.combat-preview-head { margin-bottom: .4rem; }
+.ro-panel-note { margin-bottom: .4rem; }
+@media (max-width: 600px) {
+  .combat-row { grid-template-columns: 1rem 3.4rem minmax(0, 1fr) auto; grid-template-areas: "mark init who remove" ". hp hp hp" ". note note note"; }
+  .combat-row .init-input { width: 3.4rem; }
+}
+.combat-row .move-btns { display: none; grid-area: move; }
+@media (pointer: coarse) {
+  .combat-row { grid-template-areas: "mark init who hp" "move . note remove"; }
+  .combat-row .move-btns { display: flex; flex-direction: column; }
+  .combat-row .move-btns button.icon { min-width: 28px; min-height: 24px; padding: 0; font-size: .7rem; }
+}
+@media (pointer: coarse) and (max-width: 600px) {
+  .combat-row { grid-template-areas: "mark init who remove" "move hp hp hp" "move note note note"; }
+}

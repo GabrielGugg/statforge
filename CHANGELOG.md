@@ -2,6 +2,16 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.13.0 — 2026-11-07
+
+- GM mode, new **Combat** tab: encounters with the table's sheets (shared and local) and creatures from a compendium (×3 becomes "Raider 1", "Raider 2", "Raider 3", each with its own HP).
+- **Roll initiative** rolls for whoever the table's Settings say (everyone, NPCs only or nobody) and sorts the list; the others' results are typed in. Ties stay in the order you choose: drag the rows (▲▼ on touch screens).
+- Round, current turn, **Next turn** and **Previous**; each row has HP (−/+), conditions from the system's list and a short note. Conditions already on a player's sheet come in when they join the fight.
+- Clicking a name shows that sheet, read-only, beside the list.
+- What changes in a fight stays in the encounter, on your devices and your Drive: the players' sheets are never written.
+- New system field `combat` (`initiative`, `hp`, `conditions`). See "Combat (GM mode)" in FORMAT.md.
+- Changes to the GM's tables reach Drive two seconds after the last click, instead of on each one.
+
 ## 1.12.0 — 2026-11-07
 
 - New package type **compendium**: ready-made sheets (creatures, NPCs, enemies) for one system, with kind, tags and description. Their values are calculated by the system's rules, so an entry works like any sheet. See "Compendium" in FORMAT.md.
