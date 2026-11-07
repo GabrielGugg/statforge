@@ -2,6 +2,10 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.8.1 — 2026-11-07
+
+- Skills: `"attribute"` can be a list (e.g. `["STR", "CHA"]`); the skill uses the highest of those modifiers, and the sheet shows both ("Intimidation (STR/CHA)").
+
 ## 1.8.0 — 2026-11-06
 
 - Requirements: choice lists (creation, level up and the sheet's **Add**) show everything; what the character does not qualify for is disabled and says which requirement is missing (e.g. "Requirement not met: Luck ≥ 8"). The **Ignore unmet requirements** box enables those. It replaces the old "Show N more with unmet requirements".

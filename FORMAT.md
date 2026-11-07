@@ -70,7 +70,7 @@ Formulas are code, so their functions and keywords (`floor`, `sum`, `and`...) ar
 ```
 
 - **`rolls.modifier`**: how the modifier comes from the attribute value. In Fallout, `value - 5`; in D&D, `floor((value - 10) / 2)`. Without it, no modifier is shown.
-- **Skill**: the default total is `points + mod(attribute)`. For another rule, use `"total": "points * 2 + mod(INT)"`.
+- **Skill**: the default total is `points + mod(attribute)`. `"attribute"` can also be a list, e.g. `["STR", "CHA"]`: the skill uses the highest of those modifiers. For another rule, use `"total": "points * 2 + mod(INT)"`.
 - **Derived**: a computed number. `"if": "has('human')"` shows the value only when the condition holds. `"unit": "lb"` appears next to it.
 - **Skills block**: the sheet shows points and totals with an **Edit** button; editing uses − / +, then **Apply** or **Cancel**. `"budget": "formula"` is how many points the skills should add up to (counting every point on the sheet, creation bonuses included); spending more or fewer shows a warning and Apply asks first.
 - **Resource**: `"display": "toggles"` shows one checkbox per point instead of a number and a bar (karma caps, spell slots, uses per day). A higher maximum means more checkboxes. `"display": "card"` shows only the total, with no current value or bar (points spent and refilled every turn).

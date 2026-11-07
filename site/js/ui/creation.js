@@ -421,7 +421,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
         const v = c.points[s.id] || 0;
         const set = n => { if (n) c.points[s.id] = n; else delete c.points[s.id]; redraw(); };
         return h('div.attr-row',
-          h('div.attr-name', h('strong', s.name), s.attribute ? h('span.muted.small', rules.attributes[s.attribute]?.abbr || s.attribute) : null),
+          h('div.attr-name', h('strong', s.name), s.attribute ? h('span.muted.small', [].concat(s.attribute).map(a => rules.attributes[a]?.abbr || a).join('/')) : null),
           h('div.stepper',
             h('button', { type: 'button', 'aria-label': `${s.name} −1`, disabled: v <= 0, onclick: () => set(v - 1) }, '−'),
             h('output', fmt(v)),

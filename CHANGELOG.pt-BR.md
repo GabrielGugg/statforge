@@ -2,6 +2,10 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.8.1 — 07/11/2026
+
+- Perícias: `"attribute"` pode ser uma lista (por exemplo `["FOR", "CAR"]`); a perícia usa o maior modificador entre eles, e a ficha mostra os dois ("Intimidação (FOR/CAR)").
+
 ## 1.8.0 — 06/11/2026
 
 - Requisitos: nas listas de escolha (criação, subir de nível e **Adicionar** da ficha) tudo aparece; o que não cumpre os requisitos fica desativado e diz qual requisito falta (por exemplo "Requisito não atendido: Sorte ≥ 8"). A caixa **Ignorar requisitos não atendidos** libera esses itens. Ela substitui o antigo "Mostrar mais N com requisito não atendido".

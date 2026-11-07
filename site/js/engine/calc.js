@@ -154,6 +154,12 @@ export function compute(rules, sheet) {
     return limit !== null ? Math.min(total, limit) : total;
   }
 
+  // A skill's attribute modifier; with several attributes ("attribute": ["STR", "CHA"]) the highest one.
+  function skillMod(def) {
+    const attrs = skillAttributes(rules, def);
+    return attrs.length ? Math.max(...attrs.map(a => functions.mod(value(a)))) : 0;
+  }
+
   function value(id) {
     if (memo.has(id)) return memo.get(id);
     if (computing.has(id)) throw new FormulaError(t('calc.cycle', { id }));
@@ -167,7 +173,7 @@ export function compute(rules, sheet) {
         const points = num(sheet.skills?.[id]);
         const base = def.total
           ? run(def.total, { points })
-          : points + (def.attribute && rules.attributes[def.attribute] ? functions.mod(value(def.attribute)) : 0);
+          : points + skillMod(def);
         v = applyEffects(id, num(base));
       } else if (sec === 'derived') v = applyEffects(id, num(run(def.formula))) + (def.editable_bonus ? num(sheet.bonus?.[id]) : 0);
       else if (sec === 'resources') v = applyEffects(id, num(run(def.max)));
@@ -223,7 +229,8 @@ export function compute(rules, sheet) {
     if (sec === 'attributes') base = num(sheet.attributes?.[id] ?? def.default ?? def.min ?? 0);
     else if (sec === 'skills') {
       vars = { points: num(sheet.skills?.[id]) };
-      formula = def.total || (def.attribute && rules.attributes[def.attribute] ? `points + mod(${def.attribute})` : 'points');
+      const attrs = skillAttributes(rules, def);
+      formula = def.total || (attrs.length > 1 ? `points + max(${attrs.map(a => `mod(${a})`).join(', ')})` : attrs.length ? `points + mod(${attrs[0]})` : 'points');
     } else if (sec === 'derived') formula = def.formula;
     else if (sec === 'resources') formula = def.max;
     else return null;
@@ -258,6 +265,11 @@ export function compute(rules, sheet) {
     mod: v => functions.mod(v),
     blocked: sources.filter(blocked),
   };
+}
+
+/** The attributes a skill uses: "attribute" may be one id or a list (then the highest modifier counts). */
+export function skillAttributes(rules, def) {
+  return [].concat(def?.attribute ?? []).filter(a => rules.attributes?.[a]);
 }
 
 const fmtNum = v => (typeof v === 'number' ? String(Math.round(v * 100) / 100) : String(v));

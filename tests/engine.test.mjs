@@ -240,3 +240,17 @@ test('effects: "limit" caps a value and a repeated entity lists its notes once',
   sheet.items.push({ uid: 'c', collection: 'conds', ref: 'slow' });
   assert.equal(compute(rules, sheet).value('ap'), 6);
 });
+
+test('skills: "attribute" as a list uses the highest modifier', () => {
+  const sys = { format: 1, id: 'two', name: 'T', type: 'system', language: 'en', rolls: { modifier: 'value - 5' },
+    attributes: [{ id: 'STR', name: 'Strength', default: 5 }, { id: 'CHA', name: 'Charisma', default: 5 }],
+    skills: [{ id: 'intim', name: 'Intimidation', attribute: ['STR', 'CHA'] }] };
+  assert.deepEqual(validatePackage(sys).errors, []);
+  const { rules } = buildRules(sys, []);
+  const sheet = emptySheet(rules);
+  sheet.attributes = { STR: 4, CHA: 8 };
+  sheet.skills = { intim: 1 };
+  const c = compute(rules, sheet);
+  assert.equal(c.value('intim'), 4);
+  assert.equal(c.explain('intim').formula, 'points + max(mod(STR), mod(CHA))');
+});

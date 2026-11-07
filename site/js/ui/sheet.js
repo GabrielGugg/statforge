@@ -417,7 +417,7 @@ function skillsBlock(st, def) {
   const saved = id => Number(sheet.skills?.[id] || 0);
   const budget = def.budget !== undefined ? Number(calc.formula(def.budget)) || 0 : null;
   const spentOf = pts => list.reduce((n, p) => n + Number(pts[p.id] || 0), 0);
-  const attr = p => (p.attribute ? h('span.muted.small', ` (${rules.attributes[p.attribute]?.abbr || p.attribute})`) : null);
+  const attr = p => (p.attribute ? h('span.muted.small', ` (${[].concat(p.attribute).map(a => rules.attributes[a]?.abbr || a).join('/')})`) : null);
   const name = p => h('td', h('span', { title: p.description || '' }, p.name), attr(p));
   const head = h('thead', h('tr', h('th', t('sheet.skill')), h('th.num', def.points_label || t('sheet.points')), h('th.num', t('sheet.total'))));
 
