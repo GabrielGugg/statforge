@@ -2,7 +2,7 @@
 // GM mode screens:
 //   #/gm                      tables
 //   #/gm/<table>              lobby, in tabs: Characters (invite link, team resources, parties, live cards)
-//                             Combat (encounters), Tables (roll tables), Notes and Settings (name, refresh rate, initiative, delete)
+//                             Combat (encounters), Shield (the GM's cards), Tables (roll tables), Notes and Settings (name, refresh rate, initiative, delete)
 //   #/gm/<table>/<file>       one shared sheet, read-only
 // Everything a player sent is shown with h() (textContent), never as HTML.
 // ============================================================
@@ -22,6 +22,7 @@ import { sheetScreen } from './sheet.js';
 import { combatTab } from './combat.js';
 import { rollTablesTab } from './tables.js';
 import { notesTab } from './gm-notes.js';
+import { shieldTab } from './shield.js';
 
 let poll = null;
 const lobbyTab = {}; // the tab open in each table's lobby, while the app is open
@@ -150,7 +151,7 @@ async function lobby(app, tableId) {
         draw();
       } }, t('gm.updateMine'))) : null;
 
-    const tabs = [['characters', t('gm.tab.characters')], ['combat', t('gm.tab.combat')], ['tables', t('gm.tab.tables')], ['notes', t('gm.tab.notes')], ['settings', t('gm.tab.settings')]];
+    const tabs = [['characters', t('gm.tab.characters')], ['combat', t('gm.tab.combat')], ['shield', t('gm.tab.shield')], ['tables', t('gm.tab.tables')], ['notes', t('gm.tab.notes')], ['settings', t('gm.tab.settings')]];
     const tabBar = h('div.tabs.gm-tabs', { role: 'tablist' }, tabs.map(([id, label]) => h('button', { role: 'tab', 'aria-selected': String(lobbyTab[tableId] === id),
       onclick: () => { lobbyTab[tableId] = id; draw(); } }, label)));
     const header = h('div.card.gm-head',
@@ -162,6 +163,12 @@ async function lobby(app, tableId) {
       const parts = await combatTab({ tb: fresh, inst, loaded, redraw: draw });
       app.replaceChildren(header, ...parts);
       window.scrollTo(0, y);
+      return;
+    }
+    if (lobbyTab[tableId] === 'shield') {
+      const y = window.scrollX, yy = window.scrollY;
+      app.replaceChildren(header, ...shieldTab({ tb: fresh, loaded, redraw: draw, chips: x => statChips(fresh, x) }));
+      window.scrollTo(y, yy);
       return;
     }
     if (lobbyTab[tableId] === 'tables') {
@@ -241,7 +248,7 @@ async function lobby(app, tableId) {
     if (!location.hash.startsWith(`#/gm/${encodeURIComponent(tableId)}`) || location.hash.split('/').length > 3) return;
     if (now || document.visibilityState === 'visible') {
       try { const r = await gm.refreshTable(tableId); if (!r.offline) last = new Date().toISOString(); } catch (e) { toast(errText(e), 'error'); }
-      if (lobbyTab[tableId] === 'characters' && !document.activeElement?.matches('input:not([readonly]), textarea, select')) await draw();
+      if (['characters', 'shield'].includes(lobbyTab[tableId]) && !document.querySelector('.dialog-backdrop') && !document.activeElement?.matches('input:not([readonly]), textarea, select')) await draw();
     }
     poll = setTimeout(() => refresh(), every * 1000);
   }
@@ -427,6 +434,24 @@ function resourceDialog(tableId, r, onDone) {
   ] });
 }
 
+/** The values a sheet's card shows (the table's choice in Cards), as chips. Also used by the shield. */
+function statChips(tb, { c, rules, calc }) {
+  const chips = [];
+  if (!calc || !c?.sheet) return chips;
+  for (const key of cardStats(tb, rules)) {
+    const [sec, id] = key.split('/');
+    const def = rules[sec]?.[id];
+    if (!def) continue;
+    try {
+      const max = calc.value(id);
+      const label = def.abbr || def.name || id;
+      const shown = sec === 'resources' && def.display !== 'card' ? `${fmt(c.sheet.resources?.[id] ?? max)}/${fmt(max)}` : fmt(max);
+      chips.push(h('span.stat-chip', { title: def.name || id }, h('span', label), h('strong', shown)));
+    } catch { /* skip a value that fails */ }
+  }
+  return chips;
+}
+
 function memberCard(tb, { m, c, rules, calc, local }, parties, inst, redraw) {
   const href = local ? `#/sheet/${encodeURIComponent(local.id)}` : `#/gm/${encodeURIComponent(tb.id)}/${encodeURIComponent(m.fileId)}`;
   const remove = local
@@ -451,20 +476,7 @@ function memberCard(tb, { m, c, rules, calc, local }, parties, inst, redraw) {
       h('span.badge.error', m.state === 'lost' ? t('gm.lost') : t('gm.notLoaded')), h('div.row', move, remove));
   }
   const miss = local ? [] : packageMismatches(c.packages, inst);
-  const chips = [];
-  if (calc) {
-    for (const key of cardStats(tb, rules)) {
-      const [sec, id] = key.split('/');
-      const def = rules[sec]?.[id];
-      if (!def) continue;
-      try {
-        const max = calc.value(id);
-        const label = def.abbr || def.name || id;
-        const shown = sec === 'resources' && def.display !== 'card' ? `${fmt(c.sheet.resources?.[id] ?? max)}/${fmt(max)}` : fmt(max);
-        chips.push(h('span.stat-chip', { title: def.name || id }, h('span', label), h('strong', shown)));
-      } catch { /* skip a value that fails */ }
-    }
-  }
+  const chips = statChips(tb, { c, rules, calc });
   return h('div.card.gm-card', drag,
     h('div.row.spread', h('strong', c.sheet.name || t('common.unnamed')),
       local ? h('span.badge.local', local.gm?.npc ? t('gm.local.npcBadge') : t('gm.local.badge'))

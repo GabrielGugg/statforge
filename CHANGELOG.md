@@ -2,6 +2,13 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.16.0 — 2026-11-07
+
+- GM mode, new **Shield** tab: the GM's screen for the session, in pages (sub-tabs). Each page scrolls down (grid) or sideways (one row).
+- Cards: free text, a note from the Notes tab, a roll table with Roll, the players' values (active party, the values chosen in Cards), a dice roller that keeps the last results, and the active encounter's turn order with Next turn.
+- **Arrange**: drag (or ↑↓/←→), width like the sheet's blocks (3 to 12 of 12), height (auto, short, medium, tall), edit and remove. Everything is saved per table.
+- The table's tabs are now Characters, Combat, Shield, Tables, Notes and Settings.
+
 ## 1.15.0 — 2026-11-07
 
 - GM mode, new **Notes** tab: the GM's notebook for each table, the same one as the sheet's (title, text, fold, search with the matching lines highlighted). Only the GM sees it; it is saved in the table, on the GM's devices and Drive.

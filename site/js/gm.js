@@ -67,7 +67,7 @@ function normalizeTables(list) {
       activeParty: parties.some(p => p.id === t.activeParty) ? t.activeParty : null, resources,
       cardStats: Array.isArray(t.cardStats) ? t.cardStats.filter(x => typeof x === 'string' && /^[a-z]+\/[\w.-]{1,80}$/i.test(x)).slice(0, 40) : null,
       settings: normalizeSettings(t.settings), combat: normalizeCombat(t.combat),
-      notes: normalizeNotes(t.notes),
+      notes: normalizeNotes(t.notes), shield: normalizeShield(t.shield),
       rollTables: (Array.isArray(t.rollTables) ? t.rollTables : []).map(x => normalizeRollTable(x, newId)).filter(Boolean).slice(0, MAX_ROLL_TABLES) };
   });
 }
@@ -126,6 +126,35 @@ function normalizeNotes(list) {
 }
 export const notesOf = tb => normalizeNotes(tb?.notes);
 export const saveNotes = (tableId, notes) => editTable(tableId, tb => { tb.notes = normalizeNotes(notes); });
+
+// ---------- The GM's shield: pages of cards, per table ----------
+// table.shield = { active: pageId, pages: [{ id, name, scroll: 'grid' | 'row', cards: [
+//   { id, type, title, w: 3|4|6|8|12, h: 'auto'|'s'|'m'|'l', text?, ref?, dice? }] }] }
+export const SHIELD_TYPES = ['text', 'note', 'table', 'stats', 'dice', 'initiative'];
+export const SHIELD_WIDTHS = [3, 4, 6, 8, 12], SHIELD_HEIGHTS = ['auto', 's', 'm', 'l'];
+export const MAX_PAGES = 20, MAX_CARDS = 60;
+function normalizeShield(sh) {
+  sh = sh && typeof sh === 'object' ? sh : {};
+  const pages = (Array.isArray(sh.pages) ? sh.pages : []).filter(p => p && ID.test(p.id)).slice(0, MAX_PAGES).map(p => ({
+    id: p.id, name: cleanText(p.name, 40) || '—', scroll: p.scroll === 'row' ? 'row' : 'grid',
+    cards: (Array.isArray(p.cards) ? p.cards : []).filter(c => c && ID.test(c.id) && SHIELD_TYPES.includes(c.type)).slice(0, MAX_CARDS).map(c => ({
+      id: c.id, type: c.type, title: cleanText(c.title, 80),
+      w: SHIELD_WIDTHS.includes(Number(c.w)) ? Number(c.w) : 4, h: SHIELD_HEIGHTS.includes(c.h) ? c.h : 'auto',
+      ...(c.type === 'text' ? { text: typeof c.text === 'string' ? c.text.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').slice(0, 10000) : '' } : {}),
+      ...(['note', 'table'].includes(c.type) ? { ref: typeof c.ref === 'string' && ID.test(c.ref) ? c.ref : null } : {}),
+      ...(c.type === 'dice' ? { dice: cleanText(c.dice, 40) || '1d20' } : {}),
+    })),
+  }));
+  return { active: pages.some(p => p.id === sh.active) ? sh.active : pages[0]?.id || null, pages };
+}
+export const shieldOf = tb => normalizeShield(tb?.shield);
+/** Changes the shield: fn(shield) edits it in place; checked again before saving. */
+export const editShield = (tableId, fn) => editTable(tableId, tb => {
+  const sh = normalizeShield(tb.shield);
+  const out = fn(sh);
+  tb.shield = normalizeShield(sh);
+  return out;
+});
 
 // ---------- The GM's roll tables (loot, weather, encounters…), per table ----------
 export const rollTablesOf = tb => (Array.isArray(tb?.rollTables) ? tb.rollTables : []).map(x => normalizeRollTable(x, newId)).filter(Boolean);

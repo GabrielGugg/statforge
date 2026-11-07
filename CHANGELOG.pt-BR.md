@@ -2,6 +2,13 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.16.0 — 07/11/2026
+
+- Modo Mestre, nova aba **Escudo**: a tela do mestre para a sessão, em páginas (sub-abas). Cada página rola para baixo (grade) ou para o lado (uma fileira).
+- Cartões: texto livre, uma nota da aba Notas, uma tabela de rolagem com Rolar, os valores dos jogadores (party ativa, os valores escolhidos em Cartões), um rolador de dados que guarda os últimos resultados e a ordem dos turnos do encontro ativo com Próximo turno.
+- **Organizar**: arrastar (ou ↑↓/←→), largura como os blocos da ficha (de 3 a 12 de 12), altura (automática, baixo, médio, alto), editar e tirar. Tudo fica salvo por mesa.
+- As abas da mesa agora são Personagens, Combate, Escudo, Tabelas, Notas e Configurações.
+
 ## 1.15.0 — 07/11/2026
 
 - Modo Mestre, nova aba **Notas**: o caderno do mestre em cada mesa, o mesmo da ficha (título, texto, recolher, busca com as linhas encontradas destacadas). Só o mestre vê; fica salvo na mesa, nos aparelhos e no Drive do mestre.

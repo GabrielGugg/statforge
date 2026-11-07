@@ -331,9 +331,9 @@ function block(st, def) {
 }
 
 // ---------- Dashboard: a 12-column grid the player can rearrange ----------
-const WIDTHS = [3, 4, 6, 8, 12];
+export const WIDTHS = [3, 4, 6, 8, 12];
 const blockKey = (def, i) => def.id || `${def.block}-${def.collection || (def.items || []).join('+') || i}`;
-const spans = w => ({ '--lg': w, '--md': Math.min(6, Math.max(2, Math.round(w / 2))), '--sm': w <= 3 ? 1 : 2 });
+export const spans = w => ({ '--lg': w, '--md': Math.min(6, Math.max(2, Math.round(w / 2))), '--sm': w <= 3 ? 1 : 2 });
 
 function dashboard(st, tab) {
   const saved = st.custom[tab.id] || [];
@@ -398,7 +398,7 @@ function dashboard(st, tab) {
 }
 
 /** Drag a block by its handle (mouse or touch); the others make room as it moves. */
-function startDrag(ev, grid, done) {
+export function startDrag(ev, grid, done) {
   const el = ev.target.closest('.block');
   ev.preventDefault();
   el.classList.add('dragging');

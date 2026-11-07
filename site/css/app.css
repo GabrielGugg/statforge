@@ -585,3 +585,31 @@ select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }
 .rt-table tr.hit td { background: color-mix(in srgb, var(--accent) 15%, transparent); font-weight: 600; }
 .rt-edit-rows { font-family: ui-monospace, monospace; font-size: .9rem; }
 .warning-text { color: var(--warning); }
+/* GM shield */
+.shield-head { margin-bottom: .75rem; }
+.shield-head .tabs { margin-top: -.25rem; }
+.shield-add-page { font-weight: 700; }
+.shield-bar { flex-wrap: wrap; gap: .5rem; }
+.shield-bar .row { flex-wrap: wrap; }
+.shield-scroll { display: inline-flex; align-items: center; gap: .3rem; }
+.shield-grid { margin-bottom: 1rem; }
+.shield-row { display: flex; gap: 12px; overflow-x: auto; padding-bottom: .5rem; margin-bottom: 1rem; scroll-snap-type: x proximity; align-items: flex-start; }
+.shield-row > .shield-card { flex: 0 0 calc(var(--w, 4) * 70px); max-width: 90vw; scroll-snap-align: start; }
+.shield-card { display: flex; flex-direction: column; min-width: 0; }
+.shield-card h3 { margin-bottom: .4rem; }
+.shield-body { min-height: 0; overflow: auto; display: grid; gap: .4rem; align-content: start; }
+.shield-card[data-h="s"] .shield-body { max-height: 160px; }
+.shield-card[data-h="m"] .shield-body { max-height: 320px; }
+.shield-card[data-h="l"] .shield-body { max-height: 560px; }
+.shield-card[data-h="s"], .shield-card[data-h="m"], .shield-card[data-h="l"] { align-self: start; }
+.shield-text { margin: 0; }
+.shield-stats { display: grid; gap: .4rem; }
+.shield-stat-row { display: grid; gap: .2rem; border-top: 1px solid var(--border); padding-top: .3rem; }
+.shield-rolls { list-style: none; padding: 0; margin: 0; display: grid; gap: .2rem; }
+.shield-rolls li.latest strong { font-size: 1.3rem; color: var(--accent); }
+.shield-init { margin: 0; padding-left: 1.4rem; display: grid; gap: .15rem; }
+.shield-init li.current { font-weight: 700; color: var(--accent); }
+.shield-init li.down { text-decoration: line-through; color: var(--text-muted); }
+.shield-init .init-val { display: inline-block; min-width: 2ch; font-variant-numeric: tabular-nums; }
+.shield-bar select, .shield-card .block-tools select { padding-right: 1.8rem; }
+.shield-stat-row:first-child { border-top: 0; padding-top: 0; }
