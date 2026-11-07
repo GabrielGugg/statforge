@@ -2,7 +2,7 @@
 // GM mode screens:
 //   #/gm                      tables
 //   #/gm/<table>              lobby, in tabs: Characters (invite link, team resources, parties, live cards)
-//                             Combat (encounters), Tables (roll tables) and Settings (name, refresh rate, initiative, delete)
+//                             Combat (encounters), Tables (roll tables), Notes and Settings (name, refresh rate, initiative, delete)
 //   #/gm/<table>/<file>       one shared sheet, read-only
 // Everything a player sent is shown with h() (textContent), never as HTML.
 // ============================================================
@@ -21,6 +21,7 @@ import { h, toast, confirm, ask, dialog, fmt, byName, normalize } from './util.j
 import { sheetScreen } from './sheet.js';
 import { combatTab } from './combat.js';
 import { rollTablesTab } from './tables.js';
+import { notesTab } from './gm-notes.js';
 
 let poll = null;
 const lobbyTab = {}; // the tab open in each table's lobby, while the app is open
@@ -149,7 +150,7 @@ async function lobby(app, tableId) {
         draw();
       } }, t('gm.updateMine'))) : null;
 
-    const tabs = [['characters', t('gm.tab.characters')], ['combat', t('gm.tab.combat')], ['tables', t('gm.tab.tables')], ['settings', t('gm.tab.settings')]];
+    const tabs = [['characters', t('gm.tab.characters')], ['combat', t('gm.tab.combat')], ['tables', t('gm.tab.tables')], ['notes', t('gm.tab.notes')], ['settings', t('gm.tab.settings')]];
     const tabBar = h('div.tabs.gm-tabs', { role: 'tablist' }, tabs.map(([id, label]) => h('button', { role: 'tab', 'aria-selected': String(lobbyTab[tableId] === id),
       onclick: () => { lobbyTab[tableId] = id; draw(); } }, label)));
     const header = h('div.card.gm-head',
@@ -166,6 +167,12 @@ async function lobby(app, tableId) {
     if (lobbyTab[tableId] === 'tables') {
       const y = window.scrollY;
       app.replaceChildren(header, ...rollTablesTab({ tb: fresh, redraw: draw }));
+      window.scrollTo(0, y);
+      return;
+    }
+    if (lobbyTab[tableId] === 'notes') {
+      const y = window.scrollY;
+      app.replaceChildren(header, ...notesTab({ tb: fresh, redraw: draw }));
       window.scrollTo(0, y);
       return;
     }

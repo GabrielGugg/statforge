@@ -1466,7 +1466,8 @@ function matchingLines(text, q, max = 3) {
   return String(text || '').split('\n').filter(l => normalize(l).includes(q)).slice(0, max);
 }
 
-function notebookBlock(st, def) {
+/** Also used by the GM's notes (ui/gm-notes.js) with a small stand-in for the sheet state. */
+export function notebookBlock(st, def) {
   const { sheet } = st;
   const key = def.id || 'notebook';
   sheet.notebooks ||= {};

@@ -2,6 +2,10 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.15.0 — 2026-11-07
+
+- GM mode, new **Notes** tab: the GM's notebook for each table, the same one as the sheet's (title, text, fold, search with the matching lines highlighted). Only the GM sees it; it is saved in the table, on the GM's devices and Drive.
+
 ## 1.14.0 — 2026-11-07
 
 - GM mode, new **Tables** tab: roll tables per table (loot, weather, random encounters…). Each has a die and rows written one per line ("1-4: Acid rain"); the editor warns about results no row covers.

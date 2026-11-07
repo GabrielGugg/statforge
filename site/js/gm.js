@@ -67,6 +67,7 @@ function normalizeTables(list) {
       activeParty: parties.some(p => p.id === t.activeParty) ? t.activeParty : null, resources,
       cardStats: Array.isArray(t.cardStats) ? t.cardStats.filter(x => typeof x === 'string' && /^[a-z]+\/[\w.-]{1,80}$/i.test(x)).slice(0, 40) : null,
       settings: normalizeSettings(t.settings), combat: normalizeCombat(t.combat),
+      notes: normalizeNotes(t.notes),
       rollTables: (Array.isArray(t.rollTables) ? t.rollTables : []).map(x => normalizeRollTable(x, newId)).filter(Boolean).slice(0, MAX_ROLL_TABLES) };
   });
 }
@@ -116,6 +117,15 @@ export const editCombat = (tableId, fn) => editTable(tableId, tb => {
   return out;
 });
 export const newCombatId = () => newId();
+
+// ---------- The GM's notes, per table (the same notebook as the sheet's) ----------
+export const MAX_NOTES = 500;
+function normalizeNotes(list) {
+  return (Array.isArray(list) ? list : []).filter(n => n && ID.test(n.id)).slice(0, MAX_NOTES)
+    .map(n => ({ id: n.id, title: cleanText(n.title, 200), text: typeof n.text === 'string' ? n.text.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').slice(0, 20000) : '', open: !!n.open }));
+}
+export const notesOf = tb => normalizeNotes(tb?.notes);
+export const saveNotes = (tableId, notes) => editTable(tableId, tb => { tb.notes = normalizeNotes(notes); });
 
 // ---------- The GM's roll tables (loot, weather, encounters…), per table ----------
 export const rollTablesOf = tb => (Array.isArray(tb?.rollTables) ? tb.rollTables : []).map(x => normalizeRollTable(x, newId)).filter(Boolean);

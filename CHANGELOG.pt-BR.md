@@ -2,6 +2,10 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.15.0 — 07/11/2026
+
+- Modo Mestre, nova aba **Notas**: o caderno do mestre em cada mesa, o mesmo da ficha (título, texto, recolher, busca com as linhas encontradas destacadas). Só o mestre vê; fica salvo na mesa, nos aparelhos e no Drive do mestre.
+
 ## 1.14.0 — 07/11/2026
 
 - Modo Mestre, nova aba **Tabelas**: tabelas de rolagem por mesa (espólio, clima, encontros aleatórios…). Cada uma tem um dado e linhas escritas uma por linha ("1-4: Chuva ácida"); o editor avisa quais resultados ficaram sem linha.
