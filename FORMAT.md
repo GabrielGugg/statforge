@@ -106,7 +106,7 @@ A collection is a kind of thing (weapons, traits, conditions). Entities are the 
 }
 ```
 
-An entity may also have `requires`, a formula that must hold to add it (for example `"STR >= 5 and level >= 3"`): search and pick steps list it disabled, with the part of the formula that fails in words ("Requirement not met: Strength ≥ 5"), until the player ticks "Ignore unmet requirements". `requires_text` replaces those words when the requirement is a single part (e.g. a long "or" list). With `requires`, a pick step's `match_field` is not used for that entity. `repeat` says how many times it can be taken.
+An entity with `"uses": 3` has limited uses: the sheet shows one box per use and keeps the count on the sheet item. An entity may also have `requires`, a formula that must hold to add it (for example `"STR >= 5 and level >= 3"`): search and pick steps list it disabled, with the part of the formula that fails in words ("Requirement not met: Strength ≥ 5"), until the player ticks "Ignore unmet requirements". `requires_text` replaces those words when the requirement is a single part (e.g. a long "or" list). With `requires`, a pick step's `match_field` is not used for that entity. `repeat` says how many times it can be taken.
 
 | Collection option | Effect |
 | --- | --- |

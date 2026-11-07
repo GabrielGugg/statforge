@@ -475,6 +475,12 @@ select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }
 .alert.warning { border-color: var(--warning); }
 .update-banner { bottom: auto; top: 72px; border-color: var(--accent); }
 
+/* Limited uses: one box per use */
+.uses-row { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin-top: .25rem; }
+.use-pips { display: inline-flex; gap: 3px; }
+.use-pips button { width: 18px; height: 18px; min-height: 18px; padding: 0; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); }
+.use-pips button.full { background: var(--accent); border-color: var(--accent); }
+
 /* Requirements not met: listed, greyed out, with the reason */
 .unmet-why { color: var(--warning); }
 .choice.unmet { opacity: .65; }

@@ -106,7 +106,7 @@ Uma coleção (`collections`) é um tipo de coisa (armas, traços, condições).
 }
 ```
 
-Uma entidade também pode ter `requires`, uma fórmula que precisa valer para ela ser adicionada (por exemplo `"FOR >= 5 and level >= 3"`): a busca e os passos de escolha a mostram desativada, com a parte da fórmula que falha em palavras ("Requisito não atendido: Força ≥ 5"), até o jogador marcar "Ignorar requisitos não atendidos". `requires_text` substitui essas palavras quando o requisito é uma parte só (por exemplo, uma lista longa de "ou"). Com `requires`, o `match_field` do passo de escolha não vale para essa entidade. `repeat` diz quantas vezes ela pode ser pega.
+Uma entidade com `"uses": 3` tem usos limitados: a ficha mostra uma caixinha por uso e guarda a contagem no item da ficha. Uma entidade também pode ter `requires`, uma fórmula que precisa valer para ela ser adicionada (por exemplo `"FOR >= 5 and level >= 3"`): a busca e os passos de escolha a mostram desativada, com a parte da fórmula que falha em palavras ("Requisito não atendido: Força ≥ 5"), até o jogador marcar "Ignorar requisitos não atendidos". `requires_text` substitui essas palavras quando o requisito é uma parte só (por exemplo, uma lista longa de "ou"). Com `requires`, o `match_field` do passo de escolha não vale para essa entidade. `repeat` diz quantas vezes ela pode ser pega.
 
 | Opção da coleção | Efeito |
 | --- | --- |

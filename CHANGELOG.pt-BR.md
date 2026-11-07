@@ -2,6 +2,10 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.9.0 — 07/11/2026
+
+- Itens com usos limitados: uma entidade com `"uses": 3` mostra uma caixinha por uso na ficha (inventário, listas e itens equipados), marcada conforme os usos são gastos. Quando todos acabam, aparece **Esgotado** e, se você tiver mais de um, **Abrir outro** tira um da quantidade e recomeça a contagem.
+
 ## 1.8.1 — 07/11/2026
 
 - Perícias: `"attribute"` pode ser uma lista (por exemplo `["FOR", "CAR"]`); a perícia usa o maior modificador entre eles, e a ficha mostra os dois ("Intimidação (FOR/CAR)").

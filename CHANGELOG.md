@@ -2,6 +2,10 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.9.0 — 2026-11-07
+
+- Items with limited uses: an entity with `"uses": 3` shows one box per use on the sheet (inventory, lists and equipped items), ticked as uses are spent. When none are left it shows **Used up** and, if you have more than one, **Open another** takes one from the quantity and starts over.
+
 ## 1.8.1 — 2026-11-07
 
 - Skills: `"attribute"` can be a list (e.g. `["STR", "CHA"]`); the skill uses the highest of those modifiers, and the sheet shows both ("Intimidation (STR/CHA)").

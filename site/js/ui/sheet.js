@@ -982,6 +982,7 @@ function equippedBlock(st, def) {
         }),
         wearStats(item).map(x => h('span.stat.worn', h('span.muted.small', x.label), h('strong', x.value)))) : null,
       itemEffects(st, item),
+      usesControl(st, item, ent, col),
       isBroken(rules, item) ? h('div.small', { style: { color: 'var(--danger)' } }, t('sheet.brokenText')) : null,
       ent?.magazine ? magazineRow(st, item, ent) : null,
       col.mods ? h('div.equip-mods.small',
@@ -1027,7 +1028,8 @@ function inventoryBlock(st, def) {
       .sort((a, b) => byName(a.name, b.name));
     tbody.replaceChildren(...list.map(({ i, col, name }) => h('tr',
       h('td', col.equippable ? h('input', { type: 'checkbox', checked: !!i.equipped, 'aria-label': t('sheet.equipName', { name }), onchange: e => { i.equipped = e.target.checked; st.change(); } }) : null),
-      h('td', h('button.mini.link', { onclick: () => entityDetails(st, i.collection, i.ref, i) }, name), wearBadge(col, i), h('div.small.muted', col.name), itemEffects(st, i)),
+      h('td', h('button.mini.link', { onclick: () => entityDetails(st, i.collection, i.ref, i) }, name), wearBadge(col, i), h('div.small.muted', col.name), itemEffects(st, i),
+        usesControl(st, i, rules.entities[i.collection]?.[i.ref], col)),
       listCols.map(f => h('td.small.num', fieldsFor(def.list_fields, i.collection).includes(f) ? fmtField(rules.entities[i.collection]?.[i.ref]?.[f], col.fields?.[f], st) : '—')),
       h('td.num', col.quantity ? h('input', { type: 'number', value: i.qty ?? 1, min: 0, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name }),
         onchange: e => { i.qty = Math.max(0, Number(e.target.value) || 0); st.change(); } }) : null),
@@ -1075,7 +1077,8 @@ function listBlock(st, def) {
       h('td', h('button.mini.link', { onclick: () => entityDetails(st, colId, item.ref, item) }, name),
         def.wear_badge ? wearBadge(col, item) : null,
         ent ? null : h('span.badge.error', t('sheet.notFoundBadge')),
-        itemEffects(st, item)),
+        itemEffects(st, item),
+        usesControl(st, item, ent, col)),
       columns.map(c => h('td.small', fmtField(itemValue(st, colId, item, ent, c), fields[c], st))),
       usesQty ? h('td.num', h('input', { type: 'number', value: item.qty ?? 1, min: 0, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name }),
         onchange: e => { item.qty = Math.max(0, Number(e.target.value) || 0); st.change(); } })) : null,
@@ -1137,6 +1140,30 @@ function itemValue(st, colId, item, ent, f) {
 }
 
 /** "Wear 2" badge, only when the item has wear. */
+/**
+ * Items with limited uses ("uses": 3 on the entity): one box per use, marked as they are spent
+ * (the count is kept on the sheet item as "used"). When all are spent and the player has more of the
+ * same item, "Open another" takes one from the quantity and starts over.
+ */
+function usesControl(st, item, ent, col) {
+  const n = Math.floor(Number(ent?.uses) || 0);
+  if (n <= 0) return null;
+  const used = Math.min(n, Math.max(0, Number(item.used) || 0));
+  const set = v => { item.used = Math.max(0, Math.min(n, v)); if (!item.used) delete item.used; st.change(); };
+  const spent = used >= n;
+  const more = col?.quantity && (item.qty ?? 1) > 1;
+  const boxes = n <= 10
+    ? h('span.use-pips', Array.from({ length: n }, (_, i) => h('button', { type: 'button', class: i < used ? 'full' : '',
+        'aria-label': t('sheet.useN', { n: i + 1 }), 'aria-pressed': String(i < used), onclick: () => set(used === i + 1 ? i : i + 1) })))
+    : h('span.row', { style: { gap: '2px', flexWrap: 'nowrap' } },
+        h('button.mini', { 'aria-label': t('sheet.lessUsed'), onclick: () => set(used - 1) }, '−'),
+        h('button.mini', { 'aria-label': t('sheet.moreUsed'), onclick: () => set(used + 1) }, '+'));
+  return h('div.uses-row.small',
+    h('span.muted', t('sheet.uses')), boxes, h('span', t('sheet.usesLeft', { n: n - used, total: n })),
+    spent ? h('span.badge.warning', t('sheet.spent')) : null,
+    spent && more ? h('button.mini', { onclick: () => { item.qty = (item.qty ?? 1) - 1; delete item.used; st.change(); } }, t('sheet.openAnother')) : null);
+}
+
 function wearBadge(col, item) {
   if (!col?.wear?.max || !(item.wear > 0)) return null;
   const broken = col.wear.breaks && item.wear >= col.wear.max;
@@ -1308,6 +1335,7 @@ export function entityDetails(st, colId, id, item) {
   const content = [
     ent.description ? h('p', { style: { whiteSpace: 'pre-line' } }, ent.description) : null,
     rows.length ? h('table.table', h('tbody', rows)) : null,
+    Number(ent.uses) > 0 ? h('p.small', h('strong', `${t('sheet.uses')}: `), String(Math.floor(Number(ent.uses)))) : null,
     ent.effects?.length ? [h('h4', { style: { margin: '.8rem 0 .3rem' } }, t('sheet.effects')), h('ul.effects-list', ent.effects.map(ef => h('li', describeEffect(rules, ef))))] : null,
     ent.tags?.length ? h('p.small', ent.tags.map(x => h('span.badge', { style: { marginRight: '4px' } }, x))) : null,
     ent.custom ? h('p.muted.small', t('custom.origin')) : origin ? h('p.muted.small', t('sheet.origin', { name: st.inst[origin]?.name || origin })) : null,
