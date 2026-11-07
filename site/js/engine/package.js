@@ -2,11 +2,12 @@
 // Package validation and rule assembly for a sheet
 // (system + extensions in list order, applying patches).
 // ============================================================
+import { checkCompendium } from './compendium.js';
 import { parse, FormulaError } from './formula.js';
 import { t } from '../i18n.js';
 
 export const FORMAT = 1;
-export const TYPES = ['system', 'extension', 'theme', 'table'];
+export const TYPES = ['system', 'extension', 'theme', 'table', 'compendium'];
 
 // System sections that are lists of objects with an id. In the result
 // they become id → object maps, and can be patch targets ("section/id").
@@ -134,6 +135,8 @@ export function validatePackage(p) {
   if (p.type === 'theme') {
     if (!p.colors || typeof p.colors !== 'object') errors.push(t('val.themeColors'));
   }
+
+  if (p.type === 'compendium') checkCompendium(p, errors, warnings);
 
   if (p.type === 'table') {
     if (!p.system?.url && !p.system?.id) errors.push(t('val.tableSystem'));

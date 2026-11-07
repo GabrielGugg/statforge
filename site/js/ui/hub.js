@@ -12,7 +12,7 @@ import { installLinkWithFeedback, languageBadge } from './packages.js';
 export const DEFAULT_HUB = 'https://raw.githubusercontent.com/GabrielGugg/statforge-hub/main/index.json';
 export const hubUrl = async () => (await db.getConfig('hubUrl', '')) || DEFAULT_HUB;
 
-const TYPES = ['system', 'extension', 'theme', 'table'];
+const TYPES = ['system', 'extension', 'theme', 'table', 'compendium'];
 
 export async function hubScreen(app) {
   const url = await hubUrl();
@@ -72,7 +72,7 @@ export async function hubScreen(app) {
         h('strong', p.name), ' ', languageBadge(p), ' ', h('span.badge', t(`type.${p.type}`)),
         mine ? h(`span.badge.${newer ? 'warning' : 'ok'}`, newer ? t('hub.newVersion', { v: p.version }) : t('hub.installed')) : null),
       h('div.meta.small.muted', [p.version && `v${p.version}`, p.author, system && t('pkgs.forSystem', { name: system }),
-        p.entities ? t('hub.entities', { n: p.entities }) : null, p.license, p.bytes ? `${fmt(Math.ceil(p.bytes / 1024))} KB` : null].filter(Boolean).join(' · ')),
+        p.entities ? t('hub.entities', { n: p.entities }) : null, p.entries ? t('hub.entries', { n: p.entries }) : null, p.license, p.bytes ? `${fmt(Math.ceil(p.bytes / 1024))} KB` : null].filter(Boolean).join(' · ')),
       p.description ? h('p.small.hub-desc', p.description) : null,
       h('div.row',
         h(`button.mini${mine && !newer ? '' : '.primary'}`, { onclick: install },

@@ -9,6 +9,7 @@
 import * as db from './storage.js';
 import * as sync from './sync.js';
 import { validateShare, driveReason, cleanText } from './engine/share.js';
+import { entrySheet } from './engine/compendium.js';
 
 const API = 'https://www.googleapis.com/drive/v3/files';
 const APP_FILE = 'statforge-gm.json';
@@ -186,6 +187,20 @@ export async function copyToLocal(tableId, fileId, { name } = {}) {
   Object.assign(sheet, { id: newId(), name: cleanText(name || sheet.name, 120), created: now, updated: now, gm: { table: tableId, npc: false, from: fileId } });
   await db.put('sheets', sheet);
   return sheet;
+}
+
+/** A local sheet (NPC) from a compendium entry, calculated with the table system's rules. Returns { sheet, missing }. */
+export async function localFromEntry(tableId, rules, compendium, entryId, { versions } = {}) {
+  const tb = await table(tableId);
+  if (!tb || compendium?.type !== 'compendium' || compendium.system !== tb.system) throw new Error('ENTRY_NOT_FOUND');
+  const now = new Date().toISOString();
+  const { sheet, missing, description } = entrySheet(rules, compendium, entryId, {
+    id: newId(), system: tb.system, extensions: [], versions: versions || {}, created: now, updated: now,
+    gm: { table: tableId, npc: true, compendium: { id: compendium.id, entry: entryId, version: cleanText(compendium.version, 40) } },
+  });
+  if (description) sheet.gm.description = description;
+  await db.put('sheets', sheet);
+  return { sheet, missing };
 }
 
 /** Deletes a local sheet and takes it out of the table's parties. */

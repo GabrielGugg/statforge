@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.12.0 — 07/11/2026
+
+- Novo tipo de pacote **compendium**: fichas prontas (criaturas, NPCs, inimigos) para um sistema, com tipo, etiquetas e descrição. Os valores são calculados pelas regras do sistema, então uma entrada funciona como qualquer ficha. Veja "Compendium" no FORMAT.pt-BR.md.
+- Modo Mestre: numa mesa, **Do compendium** busca nos compendiums instalados do sistema da mesa (por nome, etiqueta e tipo) e transforma uma entrada numa ficha local marcada como NPC. A descrição fica na ficha, e os itens que os seus pacotes não têm são avisados.
+- Pacotes e o Hub mostram os compendiums separados (filtro de tipo no Hub, número de entradas).
+
 ## 1.11.0 — 07/11/2026
 
 - Modo Mestre: **fichas locais**. Numa mesa, **Nova ficha local** cria uma ficha sua (um NPC, uma criatura, um personagem reserva) com o sistema da mesa e o assistente de criação de sempre; marque **NPC** se quiser. Ela abre no editor completo da ficha, com uma barra para voltar à mesa.

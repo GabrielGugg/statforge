@@ -186,6 +186,7 @@ function header(st) {
       h('a.button.mini', { href: tableHref }, `← ${t('gm.backToTable')}`),
       h('span.muted.small', t('gm.local.of', { table: tb.name })),
       h('label.check.small', h('input', { type: 'checkbox', checked: !!sheet.gm.npc, onchange: e => { sheet.gm.npc = e.target.checked; st.save(); } }), h('span', t('gm.local.npc')))) : null,
+    tb && sheet.gm.description ? h('details.card.gm-desc', h('summary', t('gm.comp.description')), h('p.pre-line', String(sheet.gm.description))) : null,
     h('div.sheet-header',
       h('label.field.field-name', h('span', st.system.name), name),
       numField(t('sheet.level'), 'level'),

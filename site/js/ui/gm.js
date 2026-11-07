@@ -15,8 +15,9 @@ import { compareVersions } from '../engine/package.js';
 import { findUpdates } from './updates.js';
 import { compute } from '../engine/calc.js';
 import { partyValue, checkPartyFormula } from '../engine/party.js';
+import { entries as compendiumEntries, ENTRY_KINDS } from '../engine/compendium.js';
 import { t } from '../i18n.js';
-import { h, toast, confirm, ask, dialog, fmt, byName } from './util.js';
+import { h, toast, confirm, ask, dialog, fmt, byName, normalize } from './util.js';
 import { sheetScreen } from './sheet.js';
 
 let poll = null;
@@ -189,6 +190,7 @@ async function lobby(app, tableId) {
               if (n) { try { await gm.createParty(tableId, n); draw(); } catch (e) { toast(errText(e), 'error'); } }
             } }, t('gm.newParty')),
             h('button.mini', { onclick: () => { location.hash = `#/new/${encodeURIComponent(tableId)}`; } }, t('gm.local.new')),
+            compendiumsFor(fresh, inst).length ? h('button.mini', { onclick: () => compendiumDialog(fresh, inst, draw) }, t('gm.comp.add')) : null,
             h('button.primary', { onclick: async () => {
               try {
                 const ids = await gm.pickSharedFiles();
@@ -312,6 +314,52 @@ function teamResources(tb, inst) {
   return [...fromPkg, ...(tb.resources || [])];
 }
 
+const compendiumsFor = (tb, inst) => Object.values(inst).filter(p => p.type === 'compendium' && p.system === tb.system).sort((a, b) => byName(a.name, b.name));
+
+/** Picks an entry of an installed compendium and makes it a local sheet (NPC) of the table. */
+function compendiumDialog(tb, inst, onDone) {
+  const comps = compendiumsFor(tb, inst);
+  let chosen = null;
+  const selComp = h('select', { 'aria-label': t('type.compendium') }, comps.map(c => h('option', { value: c.id }, `${c.name} (v${c.version || '0'})`)));
+  const selKind = h('select', { 'aria-label': t('gm.comp.kind') }, h('option', { value: '' }, t('gm.comp.allKinds')), ENTRY_KINDS.map(k => h('option', { value: k }, t(`gm.comp.kind.${k}`))));
+  const search = h('input', { type: 'search', placeholder: t('gm.comp.search'), 'aria-label': t('gm.comp.search') });
+  const list = h('div.choices.comp-list');
+  const detail = h('div.small');
+  const draw = () => {
+    const comp = inst[selComp.value];
+    const q = normalize(search.value.trim());
+    const all = compendiumEntries(comp).filter(e => (!selKind.value || e.kind === selKind.value) && (!q || normalize(`${e.name} ${e.tags.join(' ')}`).includes(q)));
+    const shown = all.slice(0, 100);
+    list.replaceChildren(...(shown.length ? shown.map(e => h('label.choice', { class: chosen === e.id ? 'selected' : '' },
+      h('input', { type: 'radio', name: 'comp-entry', checked: chosen === e.id, onchange: () => { chosen = e.id; draw(); } }),
+      h('span.choice-text', h('strong', e.name),
+        h('span.choice-desc', [t(`gm.comp.kind.${e.kind}`), `${t('sheet.level')} ${fmt(e.level)}`, ...e.tags].join(' · '))))) : [h('p.muted.small', t('gm.comp.none'))]),
+      all.length > shown.length ? h('p.muted.small', t('gm.comp.more', { n: all.length - shown.length })) : '');
+    const e = all.find(x => x.id === chosen);
+    detail.replaceChildren(e?.description ? h('p.pre-line', e.description) : '');
+  };
+  selComp.addEventListener('change', () => { chosen = null; draw(); });
+  selKind.addEventListener('change', draw);
+  search.addEventListener('input', draw);
+  draw();
+  dialog(t('gm.comp.add'), [
+    comps.length > 1 ? h('label.field', h('span', t('type.compendium')), selComp) : null,
+    h('div.row', search, selKind), list, detail,
+  ], { actions: [
+    { text: t('common.cancel') },
+    { text: t('gm.comp.create'), primary: true, action: async () => {
+      if (!chosen) { toast(t('gm.comp.pick'), 'error'); return false; }
+      try {
+        const comp = inst[selComp.value];
+        const { rules } = await pk.rulesForSheet({ system: tb.system, extensions: [] });
+        const { sheet, missing } = await gm.localFromEntry(tb.id, rules, comp, chosen, { versions: { [tb.system]: inst[tb.system]?.version || '0' } });
+        toast(missing.length ? t('gm.comp.missing', { name: sheet.name, list: missing.join(', ') }) : t('gm.comp.created', { name: sheet.name }), missing.length ? 'warning' : 'ok');
+        onDone();
+      } catch (e) { toast(errText(e), 'error'); return false; }
+    } },
+  ] });
+}
+
 /** A GM's local sheet, shaped like a shared one so cards and parties treat both alike. */
 async function loadLocal(sheet, inst) {
   let rules = null, calc = null;
@@ -399,7 +447,7 @@ function memberCard(tb, { m, c, rules, calc, local }, parties, inst, redraw) {
     h('div.row.spread', h('strong', c.sheet.name || t('common.unnamed')),
       local ? h('span.badge.local', local.gm?.npc ? t('gm.local.npcBadge') : t('gm.local.badge'))
         : m.state === 'lost' ? h('span.badge.error', t('gm.lost')) : m.state === 'error' ? h('span.badge.warning', t('gm.error')) : null),
-    local ? h('div.muted.small', local.gm?.from ? t('gm.local.copyOf') : t('gm.local.yours'))
+    local ? h('div.muted.small', local.gm?.from ? t('gm.local.copyOf') : local.gm?.compendium ? t('gm.local.fromComp', { name: inst[local.gm.compendium.id]?.name || local.gm.compendium.id }) : t('gm.local.yours'))
       : h('div.muted.small', `${c.owner?.name || c.owner?.email || ''}${c.owner?.email && c.owner?.name ? ` · ${c.owner.email}` : ''}`),
     h('div.muted.small', local ? `${t('sheet.level')} ${fmt(c.sheet.level || 1)}` : `${t('sheet.level')} ${fmt(c.sheet.level || 1)} · ${t('gm.updated', { when: ago(c.modifiedTime) })}`),
     !inst[c.sheet.system] ? h('div.badge.error', t('gm.missingSystem', { id: c.sheet.system })) : miss.length ? h('div.badge.warning', { title: miss.map(p => `${p.id}: ${p.version || '?'} / ${p.have || '—'}`).join('\n') }, t('gm.versionMismatch', { n: miss.length })) : null,

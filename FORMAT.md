@@ -2,11 +2,11 @@
 
 [Leia em português](FORMAT.pt-BR.md)
 
-This guide is for anyone who wants to make a system, a homebrew, a theme or a table package for StatForge. The files in `examples/` show all of it working, in English (`examples/en/`) and in Portuguese (`examples/pt-BR/`).
+This guide is for anyone who wants to make a system, a homebrew, a theme, a table or a compendium package for StatForge. The files in `examples/` show all of it working, in English (`examples/en/`) and in Portuguese (`examples/pt-BR/`).
 
 To check a package without opening the app: `npm run validate -- my-package.json`.
 
-## The four types
+## The five types
 
 | Type | What for |
 | --- | --- |
@@ -14,6 +14,7 @@ To check a package without opening the app: `npm run validate -- my-package.json
 | `extension` | Homebrew, supplement or errata. Brings only the changes (patches) to a system. |
 | `theme` | App colors (and font). |
 | `table` | A list of links: system, extensions and theme. The GM sends one link and the player installs everything. |
+| `compendium` | Ready-made sheets (creatures, NPCs, enemies) for one system. Only used in GM mode. |
 
 Every package starts with:
 
@@ -325,3 +326,36 @@ Relative links are resolved from the table's link. If a package is already insta
 The GM can send a ready link: `https://<app-address>/site/?table=<table-link>`. When opened, the app installs everything.
 
 **Where to host:** the link must allow access from other sites (CORS). GitHub ("raw" link or GitHub Pages) and Gist work well, and the app turns a regular GitHub link into "raw" by itself. Google Drive and Dropbox links are converted to direct downloads, but Google Drive often blocks this access; if it fails, download the file and use "Install file".
+
+## Compendium
+
+A compendium brings ready-made sheets for one system: creatures, NPCs and enemies. It shows up only in GM mode: in a table of the same system, **From compendium** turns an entry into a local sheet of that table (marked as NPC), which the GM can then edit like any sheet.
+
+```json
+{
+  "format": 1, "id": "bestiary-wasteland", "name": "Wasteland Bestiary", "version": "1.0.0", "language": "en", "type": "compendium",
+  "system": "fallout-2.2-en",
+  "entries": [
+    {
+      "id": "raider",
+      "name": "Raider",
+      "kind": "enemy",
+      "tags": ["human", "desert"],
+      "description": "A wasteland bandit.\nAttacks in groups.",
+      "sheet": {
+        "level": 2,
+        "attributes": { "STR": 6, "AGI": 7 },
+        "skills": { "melee_weapons": 2 },
+        "items": [{ "collection": "weapons", "ref": "combat_knife", "qty": 1, "equipped": true }],
+        "notes": { "notes": "Flees at half HP." }
+      }
+    }
+  ]
+}
+```
+
+- `system`: the id of the system the entries are for. The GM only sees the compendium in tables of that system.
+- `kind`: `creature`, `npc`, `enemy` or `other` (the default). `tags` are free words for the search.
+- `sheet` holds only what differs from an empty sheet. The values (HP, defense, initiative…) are **not** written in the entry: the system's own rules calculate them, so an entry works like any sheet. Ids the system does not know are ignored; an item whose entity does not exist is left out, and the GM is told which.
+- `description` is plain text (line breaks are kept). Like everything in a package, it is shown as text, never as HTML.
+- Planned for later versions: items and attacks of the compendium's own (used only by its entries) and ready-made tables (`tables`). For now, items must refer to the system's entities.

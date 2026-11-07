@@ -54,10 +54,10 @@ function showResult(ok, failures, table) {
 export async function packagesScreen(app) {
   const inst = await pk.installed();
   const order = await pk.order();
-  const byType = { system: [], extension: [], theme: [], table: [] };
+  const byType = { system: [], extension: [], theme: [], table: [], compendium: [] };
   for (const p of Object.values(inst)) byType[p.type]?.push(p);
   byType.extension.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
-  for (const type of ['system', 'theme', 'table']) byType[type].sort((a, b) => byName(a.name, b.name));
+  for (const type of ['system', 'theme', 'table', 'compendium']) byType[type].sort((a, b) => byName(a.name, b.name));
 
   const reload = () => { app.replaceChildren(); packagesScreen(app); };
 
@@ -85,8 +85,8 @@ export async function packagesScreen(app) {
     return;
   }
 
-  const headings = { system: 'pkgs.systems', extension: 'pkgs.extensions', theme: 'pkgs.themes', table: 'pkgs.tables' };
-  for (const type of ['system', 'extension', 'theme', 'table']) {
+  const headings = { system: 'pkgs.systems', extension: 'pkgs.extensions', theme: 'pkgs.themes', table: 'pkgs.tables', compendium: 'pkgs.compendiums' };
+  for (const type of ['system', 'extension', 'theme', 'table', 'compendium']) {
     const list = byType[type];
     if (!list.length) continue;
     const sec = h('section.section', h('h2', t(headings[type])));

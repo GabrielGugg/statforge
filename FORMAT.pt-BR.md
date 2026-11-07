@@ -2,11 +2,11 @@
 
 [Read in English](FORMAT.md)
 
-Este guia é para quem quer criar um sistema, um homebrew, um tema ou um pacote de mesa para o StatForge. Os arquivos da pasta `examples/` mostram tudo isso funcionando, em inglês (`examples/en/`) e em português (`examples/pt-BR/`).
+Este guia é para quem quer criar um sistema, um homebrew, um tema, um pacote de mesa ou um compendium para o StatForge. Os arquivos da pasta `examples/` mostram tudo isso funcionando, em inglês (`examples/en/`) e em português (`examples/pt-BR/`).
 
 Para conferir um pacote sem abrir o app: `npm run validate -- meu-pacote.json`.
 
-## Os quatro tipos
+## Os cinco tipos
 
 | Tipo | Para quê |
 | --- | --- |
@@ -14,6 +14,7 @@ Para conferir um pacote sem abrir o app: `npm run validate -- meu-pacote.json`.
 | `extension` | Homebrew, suplemento ou errata. Só traz as mudanças (patches) sobre um sistema. |
 | `theme` | Cores (e fonte) do app. |
 | `table` | Pacote de mesa: uma lista de links (sistema, extensões e tema). O Mestre manda um só link e o jogador instala tudo. |
+| `compendium` | Fichas prontas (criaturas, NPCs, inimigos) para um sistema. Só é usado no Modo Mestre. |
 
 Todo pacote começa com:
 
@@ -326,3 +327,36 @@ Links relativos são resolvidos a partir do link da mesa. Se um pacote já estiv
 O Mestre pode mandar o link pronto: `https://<endereço-do-app>/site/?table=<link-da-mesa>`. Ao abrir, o app instala tudo.
 
 **Onde hospedar:** o link precisa permitir acesso de outros sites (CORS). GitHub (link "raw" ou GitHub Pages) e Gist funcionam bem, e o app converte o link comum do GitHub para "raw" sozinho. Links do Google Drive e do Dropbox são convertidos para download direto, mas o Google Drive costuma bloquear esse acesso; se der erro, baixe o arquivo e use "Instalar arquivo".
+
+## Compendium
+
+Um compendium traz fichas prontas para um sistema: criaturas, NPCs e inimigos. Ele só aparece no Modo Mestre: numa mesa do mesmo sistema, **Do compendium** transforma uma entrada numa ficha local daquela mesa (marcada como NPC), que o Mestre pode editar como qualquer ficha.
+
+```json
+{
+  "format": 1, "id": "bestiario-ermo", "name": "Bestiário do Ermo", "version": "1.0.0", "language": "pt-BR", "type": "compendium",
+  "system": "fallout-2.2-pt",
+  "entries": [
+    {
+      "id": "saqueador",
+      "name": "Saqueador",
+      "kind": "enemy",
+      "tags": ["humano", "deserto"],
+      "description": "Bandido do ermo.\nAtaca em grupo.",
+      "sheet": {
+        "level": 2,
+        "attributes": { "FOR": 6, "AGI": 7 },
+        "skills": { "corpo_a_corpo": 2 },
+        "items": [{ "collection": "armas", "ref": "armas_cortantes_faca", "qty": 1, "equipped": true }],
+        "notes": { "notas": "Foge com metade dos PV." }
+      }
+    }
+  ]
+}
+```
+
+- `system`: o id do sistema das entradas. O Mestre só vê o compendium em mesas desse sistema.
+- `kind`: `creature` (criatura), `npc`, `enemy` (inimigo) ou `other` (outro, o padrão). `tags` são palavras livres para a busca.
+- `sheet` só traz o que difere de uma ficha vazia. Os valores (PV, defesa, iniciativa…) **não** são escritos na entrada: as regras do próprio sistema calculam, então uma entrada funciona como qualquer ficha. Ids que o sistema não conhece são ignorados; um item cuja entidade não existe fica de fora, e o Mestre é avisado de qual.
+- `description` é texto simples (as quebras de linha são mantidas). Como tudo num pacote, é mostrado como texto, nunca como HTML.
+- Previsto para próximas versões: itens e ataques do próprio compendium (usados só pelas entradas dele) e tabelas prontas (`tables`). Por enquanto, os itens precisam ser entidades do sistema.

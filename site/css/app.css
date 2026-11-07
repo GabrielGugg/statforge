@@ -526,3 +526,7 @@ select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }
 .gm-head, .gm-head ~ .card:not(.section) { margin-bottom: .75rem; }
 .badge.local { border: 1px solid var(--accent); color: var(--accent); background: transparent; }
 .gm-local-bar { margin-bottom: .75rem; gap: .5rem; flex-wrap: wrap; }
+.pre-line { white-space: pre-line; }
+.comp-list { max-height: 45vh; overflow-y: auto; margin: .5rem 0; }
+.gm-desc { margin-bottom: .75rem; }
+.gm-desc summary { cursor: pointer; font-weight: 600; }

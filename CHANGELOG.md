@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.12.0 — 2026-11-07
+
+- New package type **compendium**: ready-made sheets (creatures, NPCs, enemies) for one system, with kind, tags and description. Their values are calculated by the system's rules, so an entry works like any sheet. See "Compendium" in FORMAT.md.
+- GM mode: in a table, **From compendium** searches the installed compendiums of the table's system (by name, tag and kind) and turns an entry into a local sheet marked as NPC. Its description stays on the sheet, and items your packages do not have are reported.
+- Packages and the Hub list compendiums on their own (Hub type filter, number of entries).
+
 ## 1.11.0 — 2026-11-07
 
 - GM mode: **local sheets**. In a table, **New local sheet** creates a sheet of yours (an NPC, a creature, a spare character) with the table's system and the usual creation wizard; mark it as **NPC** if you like. It opens in the full sheet editor, with a bar to go back to the table.
