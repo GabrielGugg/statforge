@@ -182,24 +182,42 @@ function header(st) {
       h('label.field.field-name', h('span', st.system.name), name),
       numField(t('sheet.level'), 'level'),
       numField('XP', 'xp')),
-    h('div.row.spread', { style: { marginBottom: '1rem' } },
+    h('div.row.spread.sheet-actions', { style: { marginBottom: '1rem' } },
       next || h('span'),
       h('div.row',
         levelBtn,
-        h(`button.mini${st.editing ? '.primary' : ''}`, { 'aria-pressed': String(st.editing), onclick: () => { st.editing = !st.editing; st.redraw(); } },
-          st.editing ? t('sheet.doneArranging') : t('sheet.arrange')),
-        h('button.mini', { onclick: () => packagesDialog(st) }, t('sheet.packages', { n: st.active.length + 1 })),
         h(`button.mini${st.shared ? '.share-on' : ''}`, { onclick: () => shareDialog(sheet.id), title: st.shared ? t('share.sharedWithShort', { email: st.shared.email }) : '' }, st.shared ? t('share.sharedBadge') : t('share.button')),
-        h('button.mini', { onclick: () => exportPdf(st) }, t('sheet.exportPdf')),
-        h('button.mini', { onclick: () => downloadJSON(sheet, `${normalize(sheet.name).replace(/[^a-z0-9]+/g, '-') || 'sheet'}.json`) }, t('sheet.export')),
-        h('button.mini.danger', { onclick: async () => {
-          if (await confirm(t('sheet.deleteTitle'), t('sheet.deleteAsk', { name: sheet.name || t('common.unnamed') }), { yes: t('sheet.delete'), danger: true })) {
-            // A shared sheet stops being shared first, so no copy is left readable in Drive.
-            if (st.shared) { try { await stopShare(sheet.id); } catch (e) { toast(t('share.err.deleteFirst', { error: e.message }), 'error'); return; } }
-            await db.remove('sheets', sheet.id);
-            location.hash = '#/';
-          }
-        } }, t('sheet.delete')))));
+        st.editing ? h('button.mini.primary', { 'aria-pressed': 'true', onclick: () => { st.editing = false; st.redraw(); } }, t('sheet.doneArranging')) : null,
+        // The rest lives in one menu, so the bar does not fill up as the app grows.
+        moreMenu([
+          { text: t('sheet.arrange'), action: () => { st.editing = true; st.redraw(); } },
+          { text: t('sheet.packages', { n: st.active.length + 1 }), action: () => packagesDialog(st) },
+          { text: t('sheet.exportPdf'), action: () => exportPdf(st) },
+          { text: t('sheet.export'), action: () => downloadJSON(sheet, `${normalize(sheet.name).replace(/[^a-z0-9]+/g, '-') || 'sheet'}.json`) },
+          { text: t('sheet.delete'), danger: true, action: async () => {
+            if (await confirm(t('sheet.deleteTitle'), t('sheet.deleteAsk', { name: sheet.name || t('common.unnamed') }), { yes: t('sheet.delete'), danger: true })) {
+              // A shared sheet stops being shared first, so no copy is left readable in Drive.
+              if (st.shared) { try { await stopShare(sheet.id); } catch (e) { toast(t('share.err.deleteFirst', { error: e.message }), 'error'); return; } }
+              await db.remove('sheets', sheet.id);
+              location.hash = '#/';
+            }
+          } },
+        ]))));
+}
+
+/** "More ⋯": a small menu of actions. Closes on a choice, a click outside or Escape. */
+function moreMenu(items) {
+  const menu = h('details.more-menu',
+    h('summary.button.mini', { 'aria-label': t('sheet.more') }, `${t('sheet.more')} ⋯`),
+    h('div.more-list', { role: 'menu' }, items.map(it => h(`button.mini${it.danger ? '.danger' : ''}`, { type: 'button', role: 'menuitem',
+      onclick: () => { menu.open = false; it.action(); } }, it.text))));
+  const outside = e => { if (!menu.contains(e.target)) menu.open = false; };
+  const esc = e => { if (e.key === 'Escape') menu.open = false; };
+  menu.addEventListener('toggle', () => {
+    if (menu.open) { document.addEventListener('click', outside); document.addEventListener('keydown', esc); }
+    else { document.removeEventListener('click', outside); document.removeEventListener('keydown', esc); }
+  });
+  return menu;
 }
 
 /**

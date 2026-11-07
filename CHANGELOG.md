@@ -2,6 +2,10 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.9.1 — 2026-11-07
+
+- Sheet: the bar under the name now holds **Level up**, **Share with the GM** and a **More ⋯** menu with Arrange, Packages, Export PDF, Export .json and Delete. While you arrange the blocks, **Done** shows on the bar.
+
 ## 1.9.0 — 2026-11-07
 
 - Items with limited uses: an entity with `"uses": 3` shows one box per use on the sheet (inventory, lists and equipped items), ticked as uses are spent. When none are left it shows **Used up** and, if you have more than one, **Open another** takes one from the quantity and starts over.

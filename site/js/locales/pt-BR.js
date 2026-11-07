@@ -269,6 +269,7 @@ export default {
   'sheet.usesLeft': 'restam {n} de {total}',
   'sheet.spent': 'Esgotado',
   'sheet.openAnother': 'Abrir outro',
+  'sheet.more': 'Mais',
   'sheet.exportPdf': 'Exportar PDF',
   'sheet.pdfHint': 'Na janela de impressão, escolha "Salvar como PDF".',
   'sheet.delete': 'Excluir',

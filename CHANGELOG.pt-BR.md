@@ -2,6 +2,10 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.9.1 — 07/11/2026
+
+- Ficha: a barra abaixo do nome ficou com **Subir de nível**, **Compartilhar com o mestre** e um menu **Mais ⋯** com Organizar, Pacotes, Exportar PDF, Exportar .json e Excluir. Enquanto você organiza os blocos, **Concluir** aparece na barra.
+
 ## 1.9.0 — 07/11/2026
 
 - Itens com usos limitados: uma entidade com `"uses": 3` mostra uma caixinha por uso na ficha (inventário, listas e itens equipados), marcada conforme os usos são gastos. Quando todos acabam, aparece **Esgotado** e, se você tiver mais de um, **Abrir outro** tira um da quantidade e recomeça a contagem.
