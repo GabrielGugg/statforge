@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.14.0 — 07/11/2026
+
+- Modo Mestre, nova aba **Tabelas**: tabelas de rolagem por mesa (espólio, clima, encontros aleatórios…). Cada uma tem um dado e linhas escritas uma por linha ("1-4: Chuva ácida"); o editor avisa quais resultados ficaram sem linha.
+- **Rolar** mostra o resultado e a linha, e os dados escritos na linha ("2d10 tampinhas") já vêm rolados. Dá para abrir as linhas e ver a tabela inteira, com o resultado destacado.
+- Exporte uma tabela ou todas como .json e importe em outra mesa. Os arquivos importados são conferidos e mostrados só como texto.
+
 ## 1.13.0 — 07/11/2026
 
 - Modo Mestre, nova aba **Combate**: encontros com as fichas da mesa (compartilhadas e locais) e criaturas de um compendium (×3 vira "Saqueador 1", "Saqueador 2", "Saqueador 3", cada um com seus PV).

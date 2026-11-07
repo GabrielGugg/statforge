@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.14.0 — 2026-11-07
+
+- GM mode, new **Tables** tab: roll tables per table (loot, weather, random encounters…). Each has a die and rows written one per line ("1-4: Acid rain"); the editor warns about results no row covers.
+- **Roll** shows the result and its row, and dice written in the row ("2d10 caps") come rolled. The rows can be opened to see the whole table, with the result highlighted.
+- Export one table or all of them as .json, and import them in another table. Imported files are checked and shown as text only.
+
 ## 1.13.0 — 2026-11-07
 
 - GM mode, new **Combat** tab: encounters with the table's sheets (shared and local) and creatures from a compendium (×3 becomes "Raider 1", "Raider 2", "Raider 3", each with its own HP).

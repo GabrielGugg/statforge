@@ -572,3 +572,16 @@ select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }
 @media (pointer: coarse) and (max-width: 600px) {
   .combat-row { grid-template-areas: "mark init who remove" "move hp hp hp" "move note note note"; }
 }
+/* GM roll tables */
+.rt-top, .rt-card { margin-bottom: .75rem; }
+.rt-top .row, .rt-card .row { flex-wrap: wrap; }
+.rt-search { margin-top: .5rem; }
+.rt-result { margin: .5rem 0; }
+.rt-result:empty { display: none; }
+.rt-result-main { font-size: 1.05rem; }
+.rt-table { width: 100%; border-collapse: collapse; margin-top: .4rem; font-size: .9rem; }
+.rt-table td { border-top: 1px solid var(--border); padding: .3rem .4rem; vertical-align: top; }
+.rt-table td.rt-range { width: 4.5rem; white-space: nowrap; color: var(--text-muted); }
+.rt-table tr.hit td { background: color-mix(in srgb, var(--accent) 15%, transparent); font-weight: 600; }
+.rt-edit-rows { font-family: ui-monospace, monospace; font-size: .9rem; }
+.warning-text { color: var(--warning); }

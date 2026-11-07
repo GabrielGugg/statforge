@@ -10,6 +10,7 @@ import * as db from './storage.js';
 import * as sync from './sync.js';
 import { validateShare, driveReason, cleanText } from './engine/share.js';
 import { entrySheet } from './engine/compendium.js';
+import { normalizeTable as normalizeRollTable, MAX_TABLES as MAX_ROLL_TABLES } from './engine/rolltable.js';
 
 const API = 'https://www.googleapis.com/drive/v3/files';
 const APP_FILE = 'statforge-gm.json';
@@ -65,7 +66,8 @@ function normalizeTables(list) {
     return { id: t.id, name: cleanText(t.name, 80), system: cleanText(t.system, 80), created: cleanText(t.created, 40), members, parties,
       activeParty: parties.some(p => p.id === t.activeParty) ? t.activeParty : null, resources,
       cardStats: Array.isArray(t.cardStats) ? t.cardStats.filter(x => typeof x === 'string' && /^[a-z]+\/[\w.-]{1,80}$/i.test(x)).slice(0, 40) : null,
-      settings: normalizeSettings(t.settings), combat: normalizeCombat(t.combat) };
+      settings: normalizeSettings(t.settings), combat: normalizeCombat(t.combat),
+      rollTables: (Array.isArray(t.rollTables) ? t.rollTables : []).map(x => normalizeRollTable(x, newId)).filter(Boolean).slice(0, MAX_ROLL_TABLES) };
   });
 }
 
@@ -114,6 +116,29 @@ export const editCombat = (tableId, fn) => editTable(tableId, tb => {
   return out;
 });
 export const newCombatId = () => newId();
+
+// ---------- The GM's roll tables (loot, weather, encounters…), per table ----------
+export const rollTablesOf = tb => (Array.isArray(tb?.rollTables) ? tb.rollTables : []).map(x => normalizeRollTable(x, newId)).filter(Boolean);
+/** Adds or changes one; throws TABLE_INCOMPLETE when it has no name or rows. */
+export const saveRollTable = (tableId, data) => editTable(tableId, tb => {
+  const rt = normalizeRollTable(data, newId);
+  if (!rt || !rt.rows.length) throw new Error('TABLE_INCOMPLETE');
+  tb.rollTables = rollTablesOf(tb);
+  const i = tb.rollTables.findIndex(x => x.id === rt.id);
+  if (i >= 0) tb.rollTables[i] = rt;
+  else if (tb.rollTables.length >= MAX_ROLL_TABLES) throw new Error('TOO_MANY');
+  else tb.rollTables.push(rt);
+  return rt;
+});
+export const deleteRollTable = (tableId, id) => editTable(tableId, tb => { tb.rollTables = rollTablesOf(tb).filter(x => x.id !== id); });
+/** Adds tables from a file (already checked by importFile). Returns how many came in. */
+export const addRollTables = (tableId, list) => editTable(tableId, tb => {
+  tb.rollTables = rollTablesOf(tb);
+  const room = MAX_ROLL_TABLES - tb.rollTables.length;
+  const add = list.slice(0, Math.max(0, room)).map(x => ({ ...x, id: newId() }));
+  tb.rollTables.push(...add);
+  return add.length;
+});
 
 const newId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
