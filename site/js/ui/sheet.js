@@ -9,6 +9,7 @@ import { t } from '../i18n.js';
 import { creationWizard } from './creation.js';
 import { shareDialog } from './share.js';
 import { shareOf, stop as stopShare } from '../share.js';
+import * as gm from '../gm.js';
 import { h, toast, dialog, confirm, ask, downloadJSON, uid, fmt, signed, byName, normalize } from './util.js';
 
 const rollHistory = [];
@@ -37,6 +38,7 @@ export async function sheetScreen(app, id, opts = {}) {
   state.invMode = await db.getConfig('inventoryView', 'cards');
   state.shared = ro ? null : await shareOf(id);
   state.readOnly = ro;
+  state.gmTable = !ro && sheet.gm ? await gm.table(sheet.gm.table) : null; // a GM's local sheet (NPC or copy)
   state.saveCustom = () => db.setConfig(layoutKey, state.custom).catch(e => toast(e.message, 'error'));
 
   let timer;
@@ -177,7 +179,13 @@ function header(st) {
   }
   const atMax = rules.progression?.max_level && (sheet.level || 1) >= rules.progression.max_level;
   const levelBtn = atMax ? null : h(`button.mini${ready ? '.primary' : ''}`, { onclick: () => levelUp(st) }, t('level.up'));
+  const tb = st.gmTable;
+  const tableHref = tb ? `#/gm/${encodeURIComponent(tb.id)}` : null;
   return h('div',
+    tb ? h('div.row.spread.gm-local-bar',
+      h('a.button.mini', { href: tableHref }, `← ${t('gm.backToTable')}`),
+      h('span.muted.small', t('gm.local.of', { table: tb.name })),
+      h('label.check.small', h('input', { type: 'checkbox', checked: !!sheet.gm.npc, onchange: e => { sheet.gm.npc = e.target.checked; st.save(); } }), h('span', t('gm.local.npc')))) : null,
     h('div.sheet-header',
       h('label.field.field-name', h('span', st.system.name), name),
       numField(t('sheet.level'), 'level'),
@@ -186,7 +194,8 @@ function header(st) {
       next || h('span'),
       h('div.row',
         levelBtn,
-        h(`button.mini${st.shared ? '.share-on' : ''}`, { onclick: () => shareDialog(sheet.id), title: st.shared ? t('share.sharedWithShort', { email: st.shared.email }) : '' }, st.shared ? t('share.sharedBadge') : t('share.button')),
+        // A GM's local sheet is never shared: it belongs to the table.
+        tb ? null : h(`button.mini${st.shared ? '.share-on' : ''}`, { onclick: () => shareDialog(sheet.id), title: st.shared ? t('share.sharedWithShort', { email: st.shared.email }) : '' }, st.shared ? t('share.sharedBadge') : t('share.button')),
         st.editing ? h('button.mini.primary', { 'aria-pressed': 'true', onclick: () => { st.editing = false; st.redraw(); } }, t('sheet.doneArranging')) : null,
         // The rest lives in one menu, so the bar does not fill up as the app grows.
         moreMenu([
@@ -198,6 +207,7 @@ function header(st) {
             if (await confirm(t('sheet.deleteTitle'), t('sheet.deleteAsk', { name: sheet.name || t('common.unnamed') }), { yes: t('sheet.delete'), danger: true })) {
               // A shared sheet stops being shared first, so no copy is left readable in Drive.
               if (st.shared) { try { await stopShare(sheet.id); } catch (e) { toast(t('share.err.deleteFirst', { error: e.message }), 'error'); return; } }
+              if (tb) { await gm.removeLocal(tb.id, sheet.id); location.hash = tableHref; return; }
               await db.remove('sheets', sheet.id);
               location.hash = '#/';
             }

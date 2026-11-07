@@ -524,3 +524,5 @@ select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }
 .gm-head .tabs { margin-bottom: 0; margin-top: .5rem; border-bottom: 0; }
 .gm-head h2 { margin-bottom: 0; }
 .gm-head, .gm-head ~ .card:not(.section) { margin-bottom: .75rem; }
+.badge.local { border: 1px solid var(--accent); color: var(--accent); background: transparent; }
+.gm-local-bar { margin-bottom: .75rem; gap: .5rem; flex-wrap: wrap; }

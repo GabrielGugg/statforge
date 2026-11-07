@@ -39,6 +39,9 @@ export async function pullTables() {
 }
 
 const FILE_ID = /^[\w-]{10,200}$/, ID = /^[\w-]{1,40}$/;
+// A local sheet (the GM's own, kept in this device's sheets) is a party member as 'local:<sheet id>'.
+export const LOCAL_ID = /^local:[\w-]{1,120}$/;
+export const localKey = sheetId => `local:${sheetId}`;
 /** Keeps only well-formed tables (the copy in Drive is the GM's own, but it is checked like anything that comes in). */
 function normalizeTables(list) {
   return list.filter(t => t && ID.test(t.id) && typeof t.system === 'string').slice(0, 100).map(t => {
@@ -46,7 +49,7 @@ function normalizeTables(list) {
       .map(m => ({ fileId: m.fileId, added: cleanText(m.added, 40), name: cleanText(m.name, 120), owner: cleanText(m.owner, 254) }));
     const ids = new Set(members.map(m => m.fileId));
     const parties = (Array.isArray(t.parties) ? t.parties : []).filter(p => p && ID.test(p.id)).slice(0, MAX_PARTIES)
-      .map(p => ({ id: p.id, name: cleanText(p.name, 60) || '—', members: (Array.isArray(p.members) ? p.members : []).filter(id => ids.has(id)) }));
+      .map(p => ({ id: p.id, name: cleanText(p.name, 60) || '—', members: (Array.isArray(p.members) ? p.members : []).filter(id => ids.has(id) || LOCAL_ID.test(id)) }));
     const resources = (Array.isArray(t.resources) ? t.resources : []).filter(r => r && ID.test(r.id) && typeof r.formula === 'string').slice(0, MAX_RESOURCES)
       .map(r => ({ id: r.id, name: cleanText(r.name, 60), formula: r.formula.slice(0, 500) }));
     return { id: t.id, name: cleanText(t.name, 80), system: cleanText(t.system, 80), created: cleanText(t.created, 40), members, parties,
@@ -88,6 +91,7 @@ export async function deleteTable(id) {
   const list = await tables();
   const tb = list.find(t => t.id === id);
   for (const m of tb?.members || []) await db.setConfig(cacheKey(id, m.fileId), null);
+  for (const s of await localSheets(id)) await db.remove('sheets', s.id);
   await saveTables(list.filter(t => t.id !== id));
 }
 /** Forgets a sheet on this table (the player keeps it; only they can stop sharing). */
@@ -137,7 +141,7 @@ export const setActiveParty = (tableId, partyId) => editTable(tableId, tb => {
 });
 /** Puts a sheet in one party (or none: partyId null). A sheet is in at most one party. */
 export const assignMember = (tableId, fileId, partyId) => editTable(tableId, tb => {
-  if (!tb.members.some(m => m.fileId === fileId)) return;
+  if (!tb.members.some(m => m.fileId === fileId) && !LOCAL_ID.test(fileId)) return;
   for (const pt of tb.parties) pt.members = pt.members.filter(id => id !== fileId);
   const pt = tb.parties.find(p => p.id === partyId);
   if (pt) pt.members.push(fileId);
@@ -167,6 +171,34 @@ export const saveSettings = (tableId, patch) => editTable(tableId, tb => {
   return tb.settings;
 });
 export const deleteResource = (tableId, id) => editTable(tableId, tb => { tb.resources = tb.resources.filter(r => r.id !== id); });
+
+// ---------- Local sheets: the GM's NPCs and copies, edited freely, never sent to anyone ----------
+// sheet.gm = { table: tableId, npc: true|false, from: fileId of the shared sheet it was copied from (optional) }.
+// They live with the GM's other sheets (so the GM's own Drive backup keeps them) but stay off the home list.
+export const localSheets = async tableId => (await db.list('sheets')).filter(s => s.gm?.table === tableId);
+
+/** A separate snapshot of a shared sheet that the GM can edit. The player's file is only read, never touched. */
+export async function copyToLocal(tableId, fileId, { name } = {}) {
+  const c = await cached(tableId, fileId);
+  if (!c?.sheet) throw new Error('SHARE_INVALID');
+  const sheet = structuredClone(c.sheet);
+  const now = new Date().toISOString();
+  Object.assign(sheet, { id: newId(), name: cleanText(name || sheet.name, 120), created: now, updated: now, gm: { table: tableId, npc: false, from: fileId } });
+  await db.put('sheets', sheet);
+  return sheet;
+}
+
+/** Deletes a local sheet and takes it out of the table's parties. */
+export async function removeLocal(tableId, sheetId) {
+  await db.remove('sheets', sheetId);
+  const key = localKey(sheetId);
+  const list = await tables();
+  const tb = list.find(t => t.id === tableId);
+  if (tb && (tb.parties || []).some(p => p.members.includes(key))) {
+    for (const pt of tb.parties) pt.members = pt.members.filter(id => id !== key);
+    await saveTables(list);
+  }
+}
 
 async function getJSON(url) {
   const r = await sync.driveRequest(url);

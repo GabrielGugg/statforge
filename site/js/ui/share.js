@@ -22,7 +22,7 @@ export async function joinScreen(app, hash) {
     app.append(h('div.card', h('h2', t('share.joinTitle')), h('div.alert.error', t('share.badInvite')), h('a.button', { href: '#/' }, t('common.back'))));
     return;
   }
-  const all = (await db.list('sheets')).sort((a, b) => byName(a.name || '', b.name || ''));
+  const all = (await db.list('sheets')).filter(s => !s.gm).sort((a, b) => byName(a.name || '', b.name || ''));
   const shared = await share.shares();
   const fits = s => !inv.system || s.system === inv.system;
   let chosen = all.find(s => fits(s) && !shared[s.id])?.id || null;

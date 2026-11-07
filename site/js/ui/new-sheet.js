@@ -9,12 +9,20 @@ import { t } from '../i18n.js';
 import { h, toast, uid, byName } from './util.js';
 import { languageBadge } from './packages.js';
 import { creationWizard } from './creation.js';
+import * as gm from '../gm.js';
 
-export async function newSheetScreen(app) {
+/** gmTableId: a local sheet of that GM table (its system is the table's; it stays off the home list). */
+export async function newSheetScreen(app, gmTableId = null) {
   const inst = await pk.installed();
+  const gmTable = gmTableId ? await gm.table(gmTableId) : null;
+  const back = gmTable ? `#/gm/${encodeURIComponent(gmTable.id)}` : '#/';
   const order = await pk.order();
   const systems = Object.values(inst).filter(p => p.type === 'system').sort((a, b) => byName(a.name, b.name));
-  const tables = Object.values(inst).filter(p => p.type === 'table' && inst[p._system]);
+  const tables = gmTable ? [] : Object.values(inst).filter(p => p.type === 'table' && inst[p._system]);
+  if (gmTable && !inst[gmTable.system]) {
+    app.append(h('div.card.empty', h('p', t('gm.missingSystem', { id: gmTable.system })), h('a.button', { href: back }, t('gm.backToTable'))));
+    return;
+  }
 
   if (!systems.length) {
     app.append(h('div.card.empty', h('p', t('new.needSystem')), h('a.button.primary', { href: '#/packages' }, t('new.goPackages'))));
@@ -26,6 +34,8 @@ export async function newSheetScreen(app) {
   const extBox = h('div');
   const warnBox = h('div');
   const useWizard = h('input', { type: 'checkbox', checked: true });
+  const npcBox = h('input', { type: 'checkbox', checked: true });
+  if (gmTable) { selSystem.value = gmTable.system; selSystem.disabled = true; }
   const wizardRow = h('label.check', useWizard, h('span', t('new.useWizard')));
   const updateWizardRow = () => { wizardRow.hidden = !inst[selSystem.value]?.creation?.steps?.length; };
   let checked = new Set();
@@ -59,7 +69,7 @@ export async function newSheetScreen(app) {
 
   async function create(e) {
     e.preventDefault();
-    const sid = selSystem.value;
+    const sid = gmTable ? gmTable.system : selSystem.value;
     const active = order.filter(id => checked.has(id));
     try {
       const { rules } = await pk.rulesForSheet({ system: sid, extensions: active });
@@ -67,6 +77,7 @@ export async function newSheetScreen(app) {
         id: uid(), name: name.value.trim(), system: sid, extensions: active,
         versions: Object.fromEntries([sid, ...active].map(id => [id, inst[id]?.version || '0'])),
         created: new Date().toISOString(), updated: new Date().toISOString(),
+        ...(gmTable ? { gm: { table: gmTable.id, npc: npcBox.checked } } : {}),
       });
       const save = async sheet => {
         try {
@@ -82,15 +93,17 @@ export async function newSheetScreen(app) {
   }
 
   app.append(h('form.card.narrow', { onsubmit: create },
-    h('h1', t('new.title')),
+    h('h1', gmTable ? t('gm.local.newTitle') : t('new.title')),
+    gmTable ? h('p.muted.small', t('gm.local.newHint', { table: gmTable.name })) : null,
     h('label.field', h('span', t('new.name')), name),
     selTable ? h('label.field', h('span', t('new.table')), selTable) : null,
     h('label.field', h('span', t('type.system')), selSystem),
     h('fieldset', { style: { border: 0, padding: 0, margin: '0 0 .75rem' } },
       h('legend.muted.small', t('new.extensionsLegend')), extBox),
+    gmTable ? h('label.check', npcBox, h('span', t('gm.local.npc'))) : null,
     wizardRow,
     warnBox,
-    h('div.row', h('button.primary', { type: 'submit' }, t('new.create')), h('a.button', { href: '#/' }, t('common.cancel')))));
+    h('div.row', h('button.primary', { type: 'submit' }, t('new.create')), h('a.button', { href: back }, t('common.cancel')))));
   drawExtensions();
   updateWizardRow();
   name.focus();

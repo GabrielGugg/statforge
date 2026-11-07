@@ -8,7 +8,10 @@ import { h, toast, pickFiles, byName, ask } from './util.js';
 import { installLinkWithFeedback, exampleUrl } from './packages.js';
 
 export async function homeScreen(app) {
-  const [sheets, inst] = await Promise.all([db.list('sheets'), installed()]);
+  const [all, inst, gmTables] = await Promise.all([db.list('sheets'), installed(), db.getConfig('gmTables', null)]);
+  // The GM's local sheets (NPCs, copies) live in their table, not here. One whose table is gone shows up again.
+  const tableIds = new Set((gmTables || []).map(tb => tb.id));
+  const sheets = all.filter(s => !(s.gm && tableIds.has(s.gm.table)));
   const systems = Object.values(inst).filter(p => p.type === 'system');
   sheets.sort((a, b) => String(b.updated || '').localeCompare(String(a.updated || '')));
   const reload = () => { app.replaceChildren(); homeScreen(app); };
@@ -58,6 +61,7 @@ async function importSheet() {
     if (!s?.system || !s?.id) throw new Error(t('home.notSheet'));
     const inst = await installed();
     if (await db.get('sheets', s.id)) s.id = `${s.id}-${Date.now().toString(36)}`;
+    delete s.gm; // an imported sheet is always one of yours
     s.updated = new Date().toISOString();
     await db.put('sheets', s);
     const missing = [s.system, ...(s.extensions || [])].filter(id => !inst[id]);

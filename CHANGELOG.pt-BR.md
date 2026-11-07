@@ -2,6 +2,13 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.11.0 — 07/11/2026
+
+- Modo Mestre: **fichas locais**. Numa mesa, **Nova ficha local** cria uma ficha sua (um NPC, uma criatura, um personagem reserva) com o sistema da mesa e o assistente de criação de sempre; marque **NPC** se quiser. Ela abre no editor completo da ficha, com uma barra para voltar à mesa.
+- **Cópia local**, no cartão de uma ficha compartilhada, tira um retrato separado que você pode editar. A ficha do jogador só é lida, nunca alterada.
+- As fichas locais aparecem na mesa com a etiqueta "local" ou "NPC", entram nas parties e contam nos recursos da equipe como as compartilhadas. Elas não aparecem na tela inicial, não podem ser compartilhadas e são apagadas junto com a mesa.
+- A seção de fichas da mesa agora se chama **Fichas**.
+
 ## 1.10.0 — 07/11/2026
 
 - Modo Mestre: a mesa agora abre em abas. **Personagens** tem o link de convite, os recursos da equipe, as parties e as fichas compartilhadas; **Configurações** tem o nome da mesa, de quanto em quanto tempo as fichas são conferidas, as opções de combate e Apagar mesa.

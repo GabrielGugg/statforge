@@ -91,6 +91,7 @@ async function lobby(app, tableId) {
     const invite = email ? makeInvite(base, { email, table: fresh.name, system: fresh.system }) : '';
     const loaded = [];
     for (const m of fresh.members) loaded.push(await loadMember(fresh, m, inst));
+    for (const ls of (await gm.localSheets(tableId)).sort((a, b) => byName(a.name || '', b.name || ''))) loaded.push(await loadLocal(ls, inst));
     const byId = Object.fromEntries(loaded.map(x => [x.m.fileId, x]));
     const parties = fresh.parties || [];
     const resources = teamResources(fresh, inst);
@@ -187,6 +188,7 @@ async function lobby(app, tableId) {
               const n = await ask(t('gm.newParty'), t('gm.partyName'), t('gm.partyDefault', { n: parties.length + 1 }));
               if (n) { try { await gm.createParty(tableId, n); draw(); } catch (e) { toast(errText(e), 'error'); } }
             } }, t('gm.newParty')),
+            h('button.mini', { onclick: () => { location.hash = `#/new/${encodeURIComponent(tableId)}`; } }, t('gm.local.new')),
             h('button.primary', { onclick: async () => {
               try {
                 const ids = await gm.pickSharedFiles();
@@ -310,6 +312,15 @@ function teamResources(tb, inst) {
   return [...fromPkg, ...(tb.resources || [])];
 }
 
+/** A GM's local sheet, shaped like a shared one so cards and parties treat both alike. */
+async function loadLocal(sheet, inst) {
+  let rules = null, calc = null;
+  if (inst[sheet.system]) {
+    try { ({ rules } = await pk.rulesForSheet(sheet)); calc = compute(rules, sheet); } catch { rules = calc = null; }
+  }
+  return { m: { fileId: gm.localKey(sheet.id), name: sheet.name }, c: { sheet, packages: [] }, rules, calc, local: sheet };
+}
+
 /** Reads the cached copy and calculates it once with the GM's packages. */
 async function loadMember(tb, m, inst) {
   const c = await gm.cached(tb.id, m.fileId);
@@ -346,11 +357,20 @@ function resourceDialog(tableId, r, onDone) {
   ] });
 }
 
-function memberCard(tb, { m, c, rules, calc }, parties, inst, redraw) {
-  const href = `#/gm/${encodeURIComponent(tb.id)}/${encodeURIComponent(m.fileId)}`;
-  const remove = h('button.mini', { onclick: async () => {
-    if (await confirm(t('gm.removeTitle'), t('gm.removeText'), { yes: t('gm.remove') })) { await gm.removeMember(tb.id, m.fileId); redraw(); }
-  } }, t('gm.remove'));
+function memberCard(tb, { m, c, rules, calc, local }, parties, inst, redraw) {
+  const href = local ? `#/sheet/${encodeURIComponent(local.id)}` : `#/gm/${encodeURIComponent(tb.id)}/${encodeURIComponent(m.fileId)}`;
+  const remove = local
+    ? h('button.mini.danger', { onclick: async () => {
+      if (await confirm(t('gm.local.deleteTitle'), t('gm.local.deleteText', { name: local.name || t('common.unnamed') }), { yes: t('gm.deleteShort'), danger: true })) { await gm.removeLocal(tb.id, local.id); redraw(); }
+    } }, t('gm.deleteShort'))
+    : h('button.mini', { onclick: async () => {
+      if (await confirm(t('gm.removeTitle'), t('gm.removeText'), { yes: t('gm.remove') })) { await gm.removeMember(tb.id, m.fileId); redraw(); }
+    } }, t('gm.remove'));
+  const copy = !local && c ? h('button.mini', { title: t('gm.local.copyHint'), onclick: async () => {
+    const n = await ask(t('gm.local.copy'), t('gm.local.copyName'), t('gm.local.copyDefault', { name: c.sheet.name || t('common.unnamed') }));
+    if (!n) return;
+    try { await gm.copyToLocal(tb.id, m.fileId, { name: n }); toast(t('gm.local.copied')); redraw(); } catch (e) { toast(errText(e), 'error'); }
+  } }, t('gm.local.copy')) : null;
   const current = gm.partyOf(tb, m.fileId)?.id || '';
   const move = parties.length ? h('select.mini', { 'aria-label': t('gm.moveTo'), onchange: async e => { await gm.assignMember(tb.id, m.fileId, e.target.value || null); e.target.blur(); redraw(); } },
     h('option', { value: '', selected: !current }, t('gm.noParty')),
@@ -360,7 +380,7 @@ function memberCard(tb, { m, c, rules, calc }, parties, inst, redraw) {
     return h('div.card.gm-card', drag, h('strong', m.name || t('gm.unknownSheet')), m.owner ? h('div.muted.small', m.owner) : null,
       h('span.badge.error', m.state === 'lost' ? t('gm.lost') : t('gm.notLoaded')), h('div.row', move, remove));
   }
-  const miss = packageMismatches(c.packages, inst);
+  const miss = local ? [] : packageMismatches(c.packages, inst);
   const chips = [];
   if (calc) {
     for (const key of cardStats(tb, rules)) {
@@ -376,12 +396,15 @@ function memberCard(tb, { m, c, rules, calc }, parties, inst, redraw) {
     }
   }
   return h('div.card.gm-card', drag,
-    h('div.row.spread', h('strong', c.sheet.name || t('common.unnamed')), m.state === 'lost' ? h('span.badge.error', t('gm.lost')) : m.state === 'error' ? h('span.badge.warning', t('gm.error')) : null),
-    h('div.muted.small', `${c.owner?.name || c.owner?.email || ''}${c.owner?.email && c.owner?.name ? ` · ${c.owner.email}` : ''}`),
-    h('div.muted.small', `${t('sheet.level')} ${fmt(c.sheet.level || 1)} · ${t('gm.updated', { when: ago(c.modifiedTime) })}`),
+    h('div.row.spread', h('strong', c.sheet.name || t('common.unnamed')),
+      local ? h('span.badge.local', local.gm?.npc ? t('gm.local.npcBadge') : t('gm.local.badge'))
+        : m.state === 'lost' ? h('span.badge.error', t('gm.lost')) : m.state === 'error' ? h('span.badge.warning', t('gm.error')) : null),
+    local ? h('div.muted.small', local.gm?.from ? t('gm.local.copyOf') : t('gm.local.yours'))
+      : h('div.muted.small', `${c.owner?.name || c.owner?.email || ''}${c.owner?.email && c.owner?.name ? ` · ${c.owner.email}` : ''}`),
+    h('div.muted.small', local ? `${t('sheet.level')} ${fmt(c.sheet.level || 1)}` : `${t('sheet.level')} ${fmt(c.sheet.level || 1)} · ${t('gm.updated', { when: ago(c.modifiedTime) })}`),
     !inst[c.sheet.system] ? h('div.badge.error', t('gm.missingSystem', { id: c.sheet.system })) : miss.length ? h('div.badge.warning', { title: miss.map(p => `${p.id}: ${p.version || '?'} / ${p.have || '—'}`).join('\n') }, t('gm.versionMismatch', { n: miss.length })) : null,
     chips.length ? h('div.stat-chips', chips) : null,
-    h('div.row', h('a.button.mini.primary', { href, target: '_blank', rel: 'noopener noreferrer' }, t('gm.open')), move, remove));
+    h('div.row', h('a.button.mini.primary', local ? { href } : { href, target: '_blank', rel: 'noopener noreferrer' }, local ? t('gm.local.edit') : t('gm.open')), copy, move, remove));
 }
 
 // ---------- One shared sheet, read-only ----------

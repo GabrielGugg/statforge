@@ -2,6 +2,13 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.11.0 — 2026-11-07
+
+- GM mode: **local sheets**. In a table, **New local sheet** creates a sheet of yours (an NPC, a creature, a spare character) with the table's system and the usual creation wizard; mark it as **NPC** if you like. It opens in the full sheet editor, with a bar to go back to the table.
+- **Local copy** on a shared sheet's card takes a separate snapshot that you can edit. The player's sheet is only read, never changed.
+- Local sheets show in the table with a "local" or "NPC" tag, join parties and count in team resources like shared sheets. They stay off the home list, cannot be shared and are deleted with their table.
+- The table's sheet section is now called **Sheets**.
+
 ## 1.10.0 — 2026-11-07
 
 - GM mode: a table now opens in tabs. **Characters** has the invite link, team resources, parties and shared sheets; **Settings** has the table's name, how often shared sheets are checked, combat options and Delete table.

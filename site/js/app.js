@@ -55,7 +55,7 @@ async function route() {
   const [, name, arg] = (location.hash || '#/').split('/');
   clear(app);
   try {
-    if (name === 'new') await newSheetScreen(app);
+    if (name === 'new') await newSheetScreen(app, arg ? decodeURIComponent(arg) : null);
     else if (name === 'sheet' && arg) await sheetScreen(app, decodeURIComponent(arg));
     else if (name === 'packages') await packagesScreen(app);
     else if (name === 'hub') await hubScreen(app);
