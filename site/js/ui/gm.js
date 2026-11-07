@@ -1,7 +1,8 @@
 // ============================================================
 // GM mode screens:
 //   #/gm                      tables
-//   #/gm/<table>              lobby: invite link, team resources, parties, shared sheets (live cards)
+//   #/gm/<table>              lobby, in tabs: Characters (invite link, team resources, parties, live cards)
+//                             and Settings (name, refresh rate, initiative, delete)
 //   #/gm/<table>/<file>       one shared sheet, read-only
 // Everything a player sent is shown with h() (textContent), never as HTML.
 // ============================================================
@@ -19,6 +20,7 @@ import { h, toast, confirm, ask, dialog, fmt, byName } from './util.js';
 import { sheetScreen } from './sheet.js';
 
 let poll = null;
+const lobbyTab = {}; // the tab open in each table's lobby, while the app is open
 window.addEventListener('hashchange', () => { clearTimeout(poll); poll = null; });
 
 const ago = iso => {
@@ -76,8 +78,9 @@ async function lobby(app, tableId) {
   const tb = await gm.table(tableId);
   if (!tb) { app.append(h('div.card', h('p', t('gm.notFound')), h('a.button', { href: '#/gm' }, t('common.back')))); return; }
   let inst = await pk.installed();
-  const every = await gm.interval();
+  let every = await gm.interval(tableId);
   let last = null;
+  lobbyTab[tableId] ||= 'characters';
 
   async function draw() {
     const fresh = await gm.table(tableId);
@@ -142,14 +145,19 @@ async function lobby(app, tableId) {
         draw();
       } }, t('gm.updateMine'))) : null;
 
+    const tabs = [['characters', t('gm.tab.characters')], ['settings', t('gm.tab.settings')]];
+    const tabBar = h('div.tabs.gm-tabs', { role: 'tablist' }, tabs.map(([id, label]) => h('button', { role: 'tab', 'aria-selected': String(lobbyTab[tableId] === id),
+      onclick: () => { lobbyTab[tableId] = id; draw(); } }, label)));
+    const header = h('div.card.gm-head',
+      h('h2', fresh.name),
+      h('p.muted', inst[fresh.system]?.name || fresh.system),
+      tabBar);
+    if (lobbyTab[tableId] === 'settings') {
+      app.replaceChildren(header, ...settingsTab(fresh, await gm.interval(null), async () => { every = await gm.interval(tableId); draw(); }));
+      return;
+    }
     app.replaceChildren(
-      h('div.card',
-        h('div.row.spread', h('h2', fresh.name), h('div.row',
-          h('button.mini', { onclick: async () => { const n = await ask(t('gm.rename'), t('gm.tableName'), fresh.name); if (n) { await gm.renameTable(tableId, n); draw(); } } }, t('gm.rename')),
-          h('button.mini.danger', { onclick: async () => {
-            if (await confirm(t('gm.deleteTitle'), t('gm.deleteText', { name: fresh.name }), { yes: t('gm.delete'), danger: true })) { await gm.deleteTable(tableId); location.hash = '#/gm'; }
-          } }, t('gm.delete')))),
-        h('p.muted', inst[fresh.system]?.name || fresh.system)),
+      header,
       h('div.card',
         h('h3', t('gm.invite')),
         invite ? [
@@ -203,15 +211,51 @@ async function lobby(app, tableId) {
 
   async function refresh(now = false) {
     clearTimeout(poll);
+    every = await gm.interval(tableId);
     if (!location.hash.startsWith(`#/gm/${encodeURIComponent(tableId)}`) || location.hash.split('/').length > 3) return;
     if (now || document.visibilityState === 'visible') {
       try { const r = await gm.refreshTable(tableId); if (!r.offline) last = new Date().toISOString(); } catch (e) { toast(errText(e), 'error'); }
-      if (!document.activeElement?.matches('input:not([readonly]), textarea, select')) await draw();
+      if (lobbyTab[tableId] !== 'settings' && !document.activeElement?.matches('input:not([readonly]), textarea, select')) await draw();
     }
     poll = setTimeout(() => refresh(), every * 1000);
   }
   await draw();
   refresh();
+}
+
+/** The table's own settings: name, how often to check the sheets, initiative, delete. All saved per table. */
+function settingsTab(tb, fallback, redraw) {
+  const st = gm.settingsOf(tb);
+  const saved = () => toast(t('settings.saved'));
+  const intervalInput = h('input', { type: 'number', min: gm.MIN_INTERVAL, max: gm.MAX_INTERVAL, step: 5, value: st.interval ?? '',
+    placeholder: String(fallback), 'aria-label': t('gm.set.interval'),
+    onchange: async e => {
+      const raw = e.target.value.trim();
+      const s = await gm.saveSettings(tb.id, { interval: raw === '' ? null : raw });
+      e.target.value = s.interval ?? '';
+      saved(); redraw();
+    } });
+  const initSel = h('select', { 'aria-label': t('gm.set.initiativeAuto'), onchange: async e => { await gm.saveSettings(tb.id, { initiativeAuto: e.target.value }); saved(); } },
+    gm.INITIATIVE_AUTO.map(v => h('option', { value: v, selected: v === st.initiativeAuto }, t(`gm.set.initiative.${v}`))));
+  return [
+    h('section.card.section',
+      h('h3', t('gm.set.table')),
+      h('div.row', h('span', h('strong', tb.name)), h('button.mini', { onclick: async () => { const n = await ask(t('gm.rename'), t('gm.tableName'), tb.name); if (n) { await gm.renameTable(tb.id, n); redraw(); } } }, t('gm.rename')))),
+    h('section.card.section',
+      h('h3', t('gm.set.sync')),
+      h('label.field', h('span', t('gm.set.interval')), intervalInput),
+      h('p.muted.small', t('gm.set.intervalHint', { min: gm.MIN_INTERVAL, max: gm.MAX_INTERVAL, def: fallback }))),
+    h('section.card.section',
+      h('h3', t('gm.set.combat')),
+      h('label.field', h('span', t('gm.set.initiativeAuto')), initSel),
+      h('p.muted.small', t('gm.set.initiativeHint'))),
+    h('section.card.section.danger-zone',
+      h('h3', t('gm.set.danger')),
+      h('p.small', t('gm.set.deleteHint')),
+      h('button.danger', { onclick: async () => {
+        if (await confirm(t('gm.deleteTitle'), t('gm.deleteText', { name: tb.name }), { yes: t('gm.delete'), danger: true })) { await gm.deleteTable(tb.id); location.hash = '#/gm'; }
+      } }, t('gm.delete'))),
+  ];
 }
 
 /** Updates the GM's own packages: from the link each was installed from, or else from the Hub. Returns the ids that failed. */
@@ -347,7 +391,6 @@ async function memberSheet(app, tableId, fileId) {
   if (!c) { app.append(h('div.card', h('p', t('gm.notLoaded')), h('a.button', { href: back }, t('gm.backToTable')))); return; }
   await sheetScreen(app, null, { readOnly: { sheet: c.sheet, owner: c.owner?.name || c.owner?.email, back } });
   // keep it fresh while it is open
-  const every = await gm.interval();
   const tick = async () => {
     if (location.hash !== `${back}/${encodeURIComponent(fileId)}`) return;
     const before = c.modifiedTime;
@@ -360,7 +403,7 @@ async function memberSheet(app, tableId, fileId) {
       window.scrollTo(0, y);
       Object.assign(c, now);
     }
-    poll = setTimeout(tick, every * 1000);
+    poll = setTimeout(tick, (await gm.interval(tableId)) * 1000);
   };
-  poll = setTimeout(tick, every * 1000);
+  poll = setTimeout(tick, (await gm.interval(tableId)) * 1000);
 }

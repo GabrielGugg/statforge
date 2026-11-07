@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.10.0 — 07/11/2026
+
+- Modo Mestre: a mesa agora abre em abas. **Personagens** tem o link de convite, os recursos da equipe, as parties e as fichas compartilhadas; **Configurações** tem o nome da mesa, de quanto em quanto tempo as fichas são conferidas, as opções de combate e Apagar mesa.
+- O intervalo de conferência agora é de cada mesa (saiu das Configurações do app). Mesas que nunca escolheram um continuam usando o valor escolhido antes.
+- Nova configuração por mesa **Rolar iniciativa automaticamente para**: todos, só NPCs (padrão) ou ninguém. O combate usa isso numa próxima versão.
+
 ## 1.9.1 — 07/11/2026
 
 - Ficha: a barra abaixo do nome ficou com **Subir de nível**, **Compartilhar com o mestre** e um menu **Mais ⋯** com Organizar, Pacotes, Exportar PDF, Exportar .json e Excluir. Enquanto você organiza os blocos, **Concluir** aparece na barra.

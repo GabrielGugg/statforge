@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.10.0 — 2026-11-07
+
+- GM mode: a table now opens in tabs. **Characters** has the invite link, team resources, parties and shared sheets; **Settings** has the table's name, how often shared sheets are checked, combat options and Delete table.
+- The check interval is now set per table (it left the app's Settings). Tables that never set one keep using the value chosen before.
+- New per-table setting **Roll initiative automatically for**: everyone, NPCs only (default) or nobody. Combat uses it in a later version.
+
 ## 1.9.1 — 2026-11-07
 
 - Sheet: the bar under the name now holds **Level up**, **Share with the GM** and a **More ⋯** menu with Arrange, Packages, Export PDF, Export .json and Delete. While you arrange the blocks, **Done** shows on the bar.

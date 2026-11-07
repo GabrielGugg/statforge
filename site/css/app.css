@@ -520,3 +520,7 @@ select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }
   .print-sheet textarea { resize: none; overflow: visible; }
   .print-sheet button.link { color: #000 !important; text-decoration: none; padding: 0; border: none; background: none; }
 }
+.gm-head { padding-bottom: 0; }
+.gm-head .tabs { margin-bottom: 0; margin-top: .5rem; border-bottom: 0; }
+.gm-head h2 { margin-bottom: 0; }
+.gm-head, .gm-head ~ .card:not(.section) { margin-bottom: .75rem; }

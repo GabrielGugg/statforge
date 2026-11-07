@@ -51,9 +51,24 @@ function normalizeTables(list) {
       .map(r => ({ id: r.id, name: cleanText(r.name, 60), formula: r.formula.slice(0, 500) }));
     return { id: t.id, name: cleanText(t.name, 80), system: cleanText(t.system, 80), created: cleanText(t.created, 40), members, parties,
       activeParty: parties.some(p => p.id === t.activeParty) ? t.activeParty : null, resources,
-      cardStats: Array.isArray(t.cardStats) ? t.cardStats.filter(x => typeof x === 'string' && /^[a-z]+\/[\w.-]{1,80}$/i.test(x)).slice(0, 40) : null };
+      cardStats: Array.isArray(t.cardStats) ? t.cardStats.filter(x => typeof x === 'string' && /^[a-z]+\/[\w.-]{1,80}$/i.test(x)).slice(0, 40) : null,
+      settings: normalizeSettings(t.settings) };
   });
 }
+
+// ---------- Per-table settings (the GM's own; players never see them) ----------
+// table.settings = { interval: seconds | null (null = the old app-wide value), initiativeAuto: 'all' | 'npcs' | 'none' }
+export const INITIATIVE_AUTO = ['all', 'npcs', 'none'];
+export const DEFAULT_SETTINGS = { interval: null, initiativeAuto: 'npcs' };
+const clampInterval = v => Math.min(MAX_INTERVAL, Math.max(MIN_INTERVAL, Math.round(Number(v)) || DEFAULT_INTERVAL));
+function normalizeSettings(s) {
+  s = s && typeof s === 'object' ? s : {};
+  return {
+    interval: s.interval === null || s.interval === undefined || s.interval === '' ? null : clampInterval(s.interval),
+    initiativeAuto: INITIATIVE_AUTO.includes(s.initiativeAuto) ? s.initiativeAuto : DEFAULT_SETTINGS.initiativeAuto,
+  };
+}
+export const settingsOf = tb => normalizeSettings(tb?.settings);
 
 const newId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
@@ -146,6 +161,11 @@ export const setCardStats = (tableId, list) => editTable(tableId, tb => {
     ? [...new Set(list.map(String).filter(x => /^[a-z]+\/[\w.-]{1,80}$/i.test(x) && CARD_SECTIONS.includes(x.split('/')[0])))].slice(0, 40)
     : null;
 });
+/** Changes some of the table's settings; unknown keys are ignored and values are checked. */
+export const saveSettings = (tableId, patch) => editTable(tableId, tb => {
+  tb.settings = normalizeSettings({ ...settingsOf(tb), ...(patch && typeof patch === 'object' ? patch : {}) });
+  return tb.settings;
+});
 export const deleteResource = (tableId, id) => editTable(tableId, tb => { tb.resources = tb.resources.filter(r => r.id !== id); });
 
 async function getJSON(url) {
@@ -225,7 +245,11 @@ export async function addMembers(tableId, fileIds) {
   return report;
 }
 
-export const interval = async () => Math.min(MAX_INTERVAL, Math.max(MIN_INTERVAL, Number(await db.getConfig('gmInterval', DEFAULT_INTERVAL)) || DEFAULT_INTERVAL));
+/** Seconds between checks for one table: its own setting, else the value from the app-wide setting older versions had. */
+export async function interval(tableId) {
+  const own = tableId ? settingsOf(await table(tableId)).interval : null;
+  return own ?? clampInterval(await db.getConfig('gmInterval', DEFAULT_INTERVAL));
+}
 export const pickerKey = async () => (await db.getConfig('gmPickerKey', '')) || DEFAULT_PICKER_KEY;
 
 // ---------- Google Picker (the GM chooses the shared files; this grants drive.file access to them only) ----------

@@ -8,7 +8,6 @@ import { VERSION } from '../version.js';
 import { DEFAULT_HUB } from './hub.js';
 import * as sync from '../sync.js';
 import { checkNow } from './updates.js';
-import { MIN_INTERVAL, MAX_INTERVAL, DEFAULT_INTERVAL } from '../gm.js';
 import { t, LANGUAGES, getLanguage, setLanguage } from '../i18n.js';
 import { h, toast, downloadJSON, pickFiles, confirm, byName, translateStatic } from './util.js';
 
@@ -108,10 +107,7 @@ export async function settingsScreen(app) {
       h('p.muted.small', t('settings.hubHint'))),
     h('section.card.section',
       h('h2', t('gm.title')),
-      h('label.field', h('span', t('settings.gmInterval')), h('input', { type: 'number', min: MIN_INTERVAL, max: MAX_INTERVAL, step: 5,
-        value: await db.getConfig('gmInterval', DEFAULT_INTERVAL),
-        onchange: async e => { const v = Math.min(MAX_INTERVAL, Math.max(MIN_INTERVAL, Number(e.target.value) || DEFAULT_INTERVAL)); e.target.value = v; await db.setConfig('gmInterval', v); toast(t('settings.saved')); } })),
-      h('p.muted.small', t('settings.gmIntervalHint', { min: MIN_INTERVAL, max: MAX_INTERVAL }))),
+      h('p.small', t('settings.gmMoved'), ' ', h('a', { href: '#/gm' }, t('settings.gmOpen')))),
     h('section.card.section',
       h('h2', t('settings.backup')),
       h('p', t('settings.backupText')),
