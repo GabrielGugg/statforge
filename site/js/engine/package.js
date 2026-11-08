@@ -117,6 +117,19 @@ export function validatePackage(p) {
         if (c.initiative !== undefined) checkFormula(String(c.initiative).replace(/(\d*)d(\d+)/gi, '1'), 'combat.initiative', errors);
         if (c.hp !== undefined && !(p.resources || []).some(r => r?.id === c.hp)) warnings.push(t('val.combatRef', { field: 'hp', id: c.hp }));
         if (c.conditions !== undefined && !p.collections?.[c.conditions]) warnings.push(t('val.combatRef', { field: 'conditions', id: c.conditions }));
+        const has = (sec, id) => (p[sec] || []).some(r => r?.id === id);
+        if (c.stats !== undefined) {
+          if (!Array.isArray(c.stats)) errors.push(t('val.notArrayAt', { where: 'combat.stats' }));
+          else c.stats.forEach(id => { if (!has('resources', id) && !has('derived', id)) warnings.push(t('val.combatRef', { field: 'stats', id: String(id) })); });
+        }
+        if (c.damage !== undefined) {
+          if (!Array.isArray(c.damage)) errors.push(t('val.notArrayAt', { where: 'combat.damage' }));
+          else c.damage.forEach(s => {
+            if (typeof s === 'string') { if (!has('resources', s)) warnings.push(t('val.combatRef', { field: 'damage', id: s })); }
+            else if (!s || typeof s.reduce !== 'string') errors.push(t('val.notObjectAt', { where: 'combat.damage' }));
+            else if (!has('derived', s.reduce) && !has('resources', s.reduce) && !has('attributes', s.reduce)) warnings.push(t('val.combatRef', { field: 'damage.reduce', id: s.reduce }));
+          });
+        }
       }
     }
     (p.auto_conditions || []).forEach((a, i) => { checkFormula(a?.when, `auto_conditions[${i}].when`, errors); if (!a?.ref?.includes('/')) errors.push(t('val.needs', { where: `auto_conditions[${i}]`, op: 'auto', field: 'ref' })); });

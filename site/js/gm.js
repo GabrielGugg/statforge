@@ -88,11 +88,14 @@ export const settingsOf = tb => normalizeSettings(tb?.settings);
 
 // ---------- Combat: encounters kept by the GM (players' sheets are never written) ----------
 // table.combat = { active: encounterId | null, encounters: [{ id, name, round, turn, started, participants: [
-//   { id, kind: 'member' | 'local' | 'comp', ref, name, npc, init, hp, hpMax, conditions: ['col/ref'], note }] }] }
+//   { id, kind: 'member' | 'local' | 'comp', ref, name, npc, init, hp, hpMax, vals: { valueId: { cur, max } }, conditions: ['col/ref'], note }] }] }
+// vals holds the other values of the fight (stamina, defense, damage threshold…), changed only in the encounter.
 // kind 'member': ref = the shared file id; 'local': the local sheet id; 'comp': 'compendiumId/entryId'.
 export const MAX_ENCOUNTERS = 50, MAX_PARTICIPANTS = 100;
 const PART_KINDS = ['member', 'local', 'comp'];
 const numOrNull = v => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? null : Math.round(Number(v) * 100) / 100);
+const cleanVals = v => Object.fromEntries(Object.entries(v && typeof v === 'object' && !Array.isArray(v) ? v : {})
+  .filter(([k, x]) => /^[\w.-]{1,80}$/.test(k) && x && typeof x === 'object').slice(0, 16).map(([k, x]) => [k, { cur: numOrNull(x.cur), max: numOrNull(x.max) }]));
 function normalizeCombat(c) {
   c = c && typeof c === 'object' ? c : {};
   const encounters = (Array.isArray(c.encounters) ? c.encounters : []).filter(e => e && ID.test(e.id)).slice(0, MAX_ENCOUNTERS).map(e => {
@@ -100,6 +103,7 @@ function normalizeCombat(c) {
       .slice(0, MAX_PARTICIPANTS).map(p => ({
         id: p.id, kind: p.kind, ref: p.ref.slice(0, 200), name: cleanText(p.name, 120) || '—', npc: !!p.npc,
         init: numOrNull(p.init), hp: numOrNull(p.hp), hpMax: numOrNull(p.hpMax),
+        vals: cleanVals(p.vals),
         conditions: (Array.isArray(p.conditions) ? p.conditions : []).filter(x => typeof x === 'string' && /^[\w.-]{1,80}\/[\w.-]{1,80}$/.test(x)).slice(0, 40),
         note: cleanText(p.note, 300),
       }));

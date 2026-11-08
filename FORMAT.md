@@ -211,14 +211,20 @@ In these formulas `members('x')` gives the value of `x` in each character (any f
 `combat` tells GM mode how a fight works in the system:
 
 ```json
-"combat": { "initiative": "1d20 + init", "hp": "hp", "conditions": "conditions" }
+"combat": {
+  "initiative": "1d20 + init", "hp": "hp", "conditions": "conditions",
+  "stats": ["hp", "sp", "ac", "dt"],
+  "damage": ["sp", { "reduce": "dt" }, "hp"]
+}
 ```
 
 - `initiative`: the roll, like the sheet's roller (dice plus any formula of the system, calculated for each character). Without it, `rolls.default` is used. The GM chooses in the table's Settings who the app rolls for (everyone, NPCs only, or nobody); ties are put in order by the GM.
 - `hp`: the resource that is the hit points (the first resource when missing).
 - `conditions`: the collection of conditions. Conditions a character already has on the sheet come into the fight, and the GM can add others from this collection.
+- `stats`: the values shown as columns in a fight, in order (up to 8). Resources show current/maximum; derived values one number. Without it, only the HP. Clicking a value, the GM types a number to replace it, `-N` to take off or `+N` to add (healing stops at the maximum).
+- `damage`: the order damage goes through. Each resource is emptied in turn and what is left goes to the next one; `{ "reduce": "dt" }` takes that value off what is left. In the example, damage comes off the SP first, what goes past them is reduced by the DT and the rest goes to the HP. Without it, damage goes straight to the HP.
 
-What changes in a fight (HP, conditions, notes) stays in the GM's encounter: the players' sheets do not change.
+What changes in a fight (the values, conditions, notes) stays in the GM's encounter: the players' sheets do not change.
 
 ### Layout
 

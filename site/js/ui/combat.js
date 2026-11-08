@@ -137,7 +137,7 @@ export async function combatTab({ tb, inst, loaded, redraw }) {
         await edit(e => {
           for (const name of cb.numberedNames(entry.name, n, existingNames())) {
             if (e.participants.length >= gm.MAX_PARTICIPANTS) break;
-            e.participants.push({ id: gm.newCombatId(), kind: 'comp', ref: `${comp.id}/${chosen}`, name, npc: true, init: null, ...v, conditions: [...v.conditions], note: '' });
+            e.participants.push({ id: gm.newCombatId(), kind: 'comp', ref: `${comp.id}/${chosen}`, name, npc: true, init: null, ...v, vals: structuredClone(v.vals || {}), conditions: [...v.conditions], note: '' });
           }
         });
       } },
@@ -163,27 +163,93 @@ export async function combatTab({ tb, inst, loaded, redraw }) {
   const condOptions = condCol ? Object.values(sysRules.entities[condCol] || {}).sort((a, b) => byName(a.name || a.id, b.name || b.id)) : [];
   const shown = previewOf[tableId] && enc.participants.some(p => p.id === previewOf[tableId]) ? previewOf[tableId] : null;
 
+  // ---------- Values (HP, stamina, defense…): one column each ----------
+  // Without the system installed, only the HP.
+  const R = sysRules || { resources: { hp: { name: t('combat.hp'), abbr: t('combat.hp') } }, derived: {}, attributes: {}, combat: { hp: 'hp' } };
+  const hpKey = cb.hpId(R);
+  const cols = cb.statColumns(R);
+  const needed = sysRules ? cb.neededIds(sysRules) : [];
+  // Participants added before a value existed get it from their sheet once (saved in the encounter).
+  const fills = {};
+  for (const p of enc.participants) {
+    if (!needed.some(id => !(p.vals && id in p.vals))) continue;
+    const src = sourceOf(p);
+    if (!src?.calc) continue;
+    const v = cb.fromSheet(src.rules, src.sheet, src.calc).vals;
+    const add = Object.fromEntries(needed.filter(id => !(p.vals && id in p.vals) && v[id]).map(id => [id, v[id]]));
+    if (Object.keys(add).length) { fills[p.id] = add; p.vals = { ...(p.vals || {}), ...add }; }
+  }
+  if (Object.keys(fills).length) {
+    gm.editCombat(tableId, c => { const e = c.encounters.find(x => x.id === enc.id); for (const x of e?.participants || []) if (fills[x.id]) x.vals = { ...x.vals, ...fills[x.id] }; }).catch(() => {});
+  }
+  const showVal = (p, c) => { const v = cb.getVal(p, c.id, hpKey); return v.cur === null ? '—' : c.resource && v.max !== null ? `${fmt(v.cur)}/${fmt(v.max)}` : fmt(v.cur); };
+  const describe = (p, plan) => plan.map(x => {
+    const c = cols.find(y => y.id === x.id);
+    const name = c?.abbr || R.derived?.[x.id]?.abbr || R.resources?.[x.id]?.abbr || x.id;
+    return 'reduce' in x ? t('combat.reduced', { name, n: fmt(x.reduce) }) : `${name} ${x.from === null ? '—' : fmt(x.from)} → ${fmt(x.to)}`;
+  }).join(' · ');
+
+  const valueDialog = (p, c) => {
+    const v = cb.getVal(p, c.id, hpKey);
+    const steps = cb.damageSteps(R);
+    const at = steps.indexOf(c.id);
+    const chain = at >= 0 && steps.slice(at + 1).some(x => typeof x === 'string');
+    const order = steps.map(x => (typeof x === 'string' ? cols.find(y => y.id === x)?.abbr || x : cols.find(y => y.id === x.reduce)?.abbr || x.reduce)).join(' → ');
+    const input = h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', placeholder: t('combat.valuePh'), 'aria-label': t('combat.valueChange', { name: c.name }) });
+    const cascade = chain ? h('input', { type: 'checkbox', checked: true }) : null;
+    const preview = h('p.small.muted', { 'aria-live': 'polite' });
+    const plan = () => cb.planChange(R, p, c.id, cb.parseChange(input.value), { cascade: !!cascade?.checked });
+    const update = () => {
+      const ch = cb.parseChange(input.value);
+      preview.textContent = !input.value.trim() ? t('combat.valueHelp') : !ch ? t('combat.valueBad') : describe(p, plan()) || t('combat.valueSame');
+      preview.className = input.value.trim() && !ch ? 'small warning-text' : 'small muted';
+    };
+    input.addEventListener('input', update);
+    cascade?.addEventListener('change', update);
+    update();
+    const apply = async () => {
+      const ch = cb.parseChange(input.value);
+      if (!ch) { input.focus(); return false; }
+      const pl = plan();
+      await set(p, x => cb.applyPlan(R, x, pl));
+      toast(describe(p, pl) || t('combat.valueSame'));
+    };
+    const d = dialog(`${c.name} · ${p.name}`, [
+      h('p', h('span.muted', `${t('combat.valueNow')} `), h('strong', showVal(p, c))),
+      h('label.field', h('span', t('combat.valueLabel')), input),
+      chain ? h('label.check', cascade, h('span', t('combat.cascade', { order }))) : null,
+      preview,
+    ], { actions: [{ text: t('common.cancel') }, { text: t('combat.apply'), primary: true, action: apply }] });
+    input.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); d.body.closest('.dialog')?.querySelector('.dialog-actions button.primary')?.click(); } });
+    if (v.cur === null && !c.resource) input.placeholder = '0';
+  };
+  const set = (p, fn) => edit(e => { const x = e.participants.find(y => y.id === p.id); if (x) fn(x, e); });
+
+  const head = cols.length ? h('div.combat-row.combat-head', { 'aria-hidden': 'true' },
+    h('span.turn-mark'), h('span.init-input.small.muted', t('combat.initiativeShort')), h('span.combat-who.small.muted', t('combat.who')),
+    h('div.combat-stats', { style: { gridTemplateColumns: `repeat(${cols.length}, var(--stat-w))` } }, cols.map(c => h('span.small.muted', { title: c.name }, c.abbr)))) : null;
+
   const row = (p, i) => {
     const current = enc.started && i === enc.turn;
-    const set = fn => edit(e => { const x = e.participants.find(y => y.id === p.id); if (x) fn(x, e); });
-    const hpInput = h('input.num.hp-input', { type: 'number', value: p.hp ?? '', 'aria-label': t('combat.hp'), onchange: ev => set(x => { x.hp = ev.target.value === '' ? null : Number(ev.target.value); }) });
+    const setP = fn => set(p, fn);
     const el = h('div.combat-row', { class: [current ? 'current' : '', shown === p.id ? 'shown' : '', p.hp !== null && p.hp <= 0 ? 'down' : ''].join(' '), draggable: 'true', 'data-id': p.id },
       h('span.turn-mark', { 'aria-label': current ? t('combat.currentTurn') : null }, current ? '▶' : ''),
       h('input.num.init-input', { type: 'number', value: p.init ?? '', placeholder: '—', 'aria-label': t('combat.initiative'), title: t('combat.initiative'),
-        onchange: ev => set(x => { x.init = ev.target.value === '' ? null : Number(ev.target.value); }) }),
+        onchange: ev => setP(x => { x.init = ev.target.value === '' ? null : Number(ev.target.value); }) }),
       h('div.combat-who',
         h('button.link.combat-name', { onclick: () => { previewOf[tableId] = shown === p.id ? null : p.id; redraw(); } }, p.name),
         h('span.muted.small', p.kind === 'member' ? t('combat.kind.member') : p.kind === 'local' ? (p.npc ? t('gm.local.npcBadge') : t('gm.local.badge')) : t('combat.kind.comp')),
         h('div.cond-chips',
-          p.conditions.map(k => h('span.cond-chip', condName(k), h('button.icon', { 'aria-label': t('combat.removeCondition', { name: condName(k) }), onclick: () => set(x => { x.conditions = x.conditions.filter(c => c !== k); }) }, '×'))),
-          condOptions.length ? h('select.mini.cond-add', { 'aria-label': t('combat.addCondition'), onchange: ev => { const v = ev.target.value; if (v) set(x => { if (!x.conditions.includes(v)) x.conditions.push(v); }); } },
+          p.conditions.map(k => h('span.cond-chip', condName(k), h('button.icon', { 'aria-label': t('combat.removeCondition', { name: condName(k) }), onclick: () => setP(x => { x.conditions = x.conditions.filter(c => c !== k); }) }, '×'))),
+          condOptions.length ? h('select.mini.cond-add', { 'aria-label': t('combat.addCondition'), onchange: ev => { const v = ev.target.value; if (v) setP(x => { if (!x.conditions.includes(v)) x.conditions.push(v); }); } },
             h('option', { value: '' }, `+ ${t('combat.condition')}`), condOptions.filter(c => !p.conditions.includes(`${condCol}/${c.id}`)).map(c => h('option', { value: `${condCol}/${c.id}` }, c.name || c.id))) : null)),
-      h('div.hp-box',
-        h('button.mini', { 'aria-label': t('combat.hpMinus'), onclick: () => set(x => { x.hp = (x.hp ?? x.hpMax ?? 0) - 1; }) }, '−'),
-        hpInput,
-        h('span.muted.small', p.hpMax !== null ? `/ ${fmt(p.hpMax)}` : ''),
-        h('button.mini', { 'aria-label': t('combat.hpPlus'), onclick: () => set(x => { x.hp = (x.hp ?? x.hpMax ?? 0) + 1; }) }, '+')),
-      h('input.combat-note', { type: 'text', maxlength: 300, value: p.note, placeholder: t('combat.note'), 'aria-label': t('combat.note'), onchange: ev => set(x => { x.note = ev.target.value; }) }),
+      h('div.combat-stats', { style: { gridTemplateColumns: `repeat(${cols.length}, var(--stat-w))` } }, cols.map(c => {
+        const v = cb.getVal(p, c.id, hpKey);
+        return h('button.stat-val', { class: c.resource && v.cur !== null && v.cur <= 0 ? 'zero' : '', title: c.name,
+          'aria-label': t('combat.valueEdit', { stat: c.name, name: p.name, value: showVal(p, c) }), onclick: () => valueDialog(p, c) },
+          h('span.stat-abbr', c.abbr), h('span.stat-num', showVal(p, c)));
+      })),
+      h('input.combat-note', { type: 'text', maxlength: 300, value: p.note, placeholder: t('combat.note'), 'aria-label': t('combat.note'), onchange: ev => setP(x => { x.note = ev.target.value; }) }),
       // Touch screens cannot drag: up and down buttons there.
       h('div.move-btns',
         h('button.icon', { 'aria-label': t('combat.moveUp', { name: p.name }), disabled: i === 0, onclick: () => edit(e => cb.move(e, p.id, i - 1)) }, '▲'),
@@ -215,7 +281,7 @@ export async function combatTab({ tb, inst, loaded, redraw }) {
         enc.started ? h('button.mini', { onclick: async () => { if (await confirm(t('combat.endTitle'), t('combat.endText'), { yes: t('combat.end') })) edit(e => { e.started = false; e.round = 1; e.turn = 0; }); } }, t('combat.end')) : null)),
     h('p.muted.small', t('combat.help', { roll: sysRules ? cb.initiativeExpr(sysRules) : '1d20' })));
 
-  const listBox = h('div.combat-list', enc.participants.length ? enc.participants.map(row) : h('p.muted', t('combat.empty')));
+  const listBox = h('div.combat-list', enc.participants.length ? [head, ...enc.participants.map(row)] : h('p.muted', t('combat.empty')));
   const panel = h('aside.combat-preview');
   const layout = h('div.combat-layout', { class: shown ? 'with-preview' : '' }, h('div.card', listBox), shown ? panel : null);
   if (shown) {

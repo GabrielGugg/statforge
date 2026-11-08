@@ -2,7 +2,14 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
-## 1.16.1 — 2026-11-08
+## 1.17.0 — 2026-11-08
+
+- GM mode, Combat: the participants' values are now columns (the system chooses which with `combat.stats`; Fallout: HP, SP, AC and DT). Resources show current/maximum.
+- Click a value to change it: a number replaces it, `-N` takes off and `+N` adds (healing stops at the maximum). Defense, damage threshold and the like can be adjusted for the fight too.
+- Damage follows the system's order (`combat.damage`): in Fallout, `-20` on someone with 14 SP empties the SP, the 6 left are reduced by the DT and the rest comes off the HP. The pop-up shows what will change before applying, and the cascade can be turned off.
+- Encounters made before this version get the new values from the sheets when opened.
+
+ — 2026-11-08
 
 - Pop-ups no longer close when a text selection is dragged past their edge: they close on an outside click only when the press also started outside.
 - When a pop-up opens with a suggested name (like "Encounter 1"), the text comes selected, so typing replaces it.

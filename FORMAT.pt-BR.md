@@ -211,14 +211,20 @@ Nessas fórmulas `members('x')` dá o valor de `x` em cada personagem (qualquer 
 `combat` diz ao Modo Mestre como funciona um combate no sistema:
 
 ```json
-"combat": { "initiative": "1d20 + iniciativa", "hp": "pv", "conditions": "condicoes" }
+"combat": {
+  "initiative": "1d20 + iniciativa", "hp": "pv", "conditions": "condicoes",
+  "stats": ["pv", "pe", "df", "td"],
+  "damage": ["pe", { "reduce": "td" }, "pv"]
+}
 ```
 
 - `initiative`: a rolagem, como no rolador da ficha (dados mais qualquer fórmula do sistema, calculada para cada personagem). Sem ele, vale `rolls.default`. O Mestre escolhe nas Configurações da mesa para quem o app rola (todos, só NPCs ou ninguém); empates ficam na ordem que o Mestre escolher.
 - `hp`: o recurso que é a vida (sem ele, o primeiro recurso).
 - `conditions`: a coleção de condições. As condições que o personagem já tem na ficha entram no combate, e o Mestre pode adicionar outras dessa coleção.
+- `stats`: os valores que viram colunas no combate, na ordem (até 8). Recursos aparecem como atual/máximo; valores derivados, como um número só. Sem ele, só a vida. Clicando num valor, o Mestre digita um número para trocar, `-N` para tirar ou `+N` para somar (a cura para no máximo).
+- `damage`: a ordem do dano. Cada recurso é esvaziado por vez e o que sobra passa para o próximo; `{ "reduce": "td" }` tira esse valor do que sobrou. No exemplo, o dano tira primeiro dos PE, o que passar é reduzido pela TD e o resto vai para os PV. Sem ele, o dano vai direto para a vida.
 
-O que muda no combate (PV, condições, notas) fica no encontro do Mestre: as fichas dos jogadores não mudam.
+O que muda no combate (os valores, condições, notas) fica no encontro do Mestre: as fichas dos jogadores não mudam.
 
 ### Layout
 

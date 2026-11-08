@@ -2,7 +2,14 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
-## 1.16.1 — 08/11/2026
+## 1.17.0 — 08/11/2026
+
+- Modo Mestre, Combate: os valores dos participantes agora são colunas (o sistema escolhe quais com `combat.stats`; Fallout: PV, PE, DF e TD). Recursos aparecem como atual/máximo.
+- Clique num valor para mudar: um número troca o valor, `-N` tira e `+N` soma (a cura para no máximo). DF, TD e parecidos também podem ser ajustados para o combate.
+- O dano segue a ordem do sistema (`combat.damage`): no Fallout, `-20` em alguém com 14 PE zera os PE, os 6 que sobram são reduzidos pela TD e o resto sai dos PV. A janela mostra o que vai mudar antes de aplicar, e dá para desligar a passagem do dano.
+- Encontros criados antes desta versão pegam os novos valores das fichas ao abrir.
+
+ — 08/11/2026
 
 - Os pop-ups não fecham mais quando a seleção de um texto passa da borda deles: só fecham com um clique fora que também começou fora.
 - Quando um pop-up abre com um nome sugerido (como "Encontro 1"), o texto já vem selecionado, então é só digitar para trocar.
