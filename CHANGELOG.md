@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.16.1 — 2026-11-08
+
+- Pop-ups no longer close when a text selection is dragged past their edge: they close on an outside click only when the press also started outside.
+- When a pop-up opens with a suggested name (like "Encounter 1"), the text comes selected, so typing replaces it.
+
 ## 1.16.0 — 2026-11-07
 
 - GM mode, new **Shield** tab: the GM's screen for the session, in pages (sub-tabs). Each page scrolls down (grid) or sideways (one row).

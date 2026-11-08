@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.16.1 — 08/11/2026
+
+- Os pop-ups não fecham mais quando a seleção de um texto passa da borda deles: só fecham com um clique fora que também começou fora.
+- Quando um pop-up abre com um nome sugerido (como "Encontro 1"), o texto já vem selecionado, então é só digitar para trocar.
+
 ## 1.16.0 — 07/11/2026
 
 - Modo Mestre, nova aba **Escudo**: a tela do mestre para a sessão, em páginas (sub-abas). Cada página rola para baixo (grade) ou para o lado (uma fileira).

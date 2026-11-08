@@ -67,10 +67,15 @@ export function dialog(title, content, { actions = [], width } = {}) {
       onclick: async () => { if ((await a.action?.()) !== false) close(); },
     }, a.text))) : null);
   backdrop.append(box);
-  backdrop.addEventListener('click', e => { if (e.target === backdrop) close(); });
+  // Closes on a click outside only when the press also started outside: a text selection dragged past the edge keeps it open.
+  let downOutside = false;
+  backdrop.addEventListener('pointerdown', e => { downOutside = e.target === backdrop; });
+  backdrop.addEventListener('click', e => { if (downOutside && e.target === backdrop) close(); downOutside = false; });
   document.addEventListener('keydown', esc);
   document.body.append(backdrop);
-  box.querySelector('input, select, textarea, button.primary')?.focus();
+  const first = box.querySelector('input, select, textarea, button.primary');
+  first?.focus();
+  if (first?.matches('input[type=text], input:not([type])') && first.value) first.select(); // a suggested name ("Encontro 1") is replaced by typing
   return { close, body };
 }
 
