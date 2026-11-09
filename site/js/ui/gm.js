@@ -365,7 +365,8 @@ function compendiumDialog(tb, inst, onDone) {
         h('span.choice-desc', [t(`gm.comp.kind.${e.kind}`), `${t('sheet.level')} ${fmt(e.level)}`, ...e.tags].join(' · '))))) : [h('p.muted.small', t('gm.comp.none'))]),
       all.length > shown.length ? h('p.muted.small', t('gm.comp.more', { n: all.length - shown.length })) : '');
     const e = all.find(x => x.id === chosen);
-    detail.replaceChildren(e?.description ? h('p.pre-line', e.description) : '');
+    detail.replaceChildren(e?.description ? h('p.pre-line', e.description) : '',
+      ...(e?.sections || []).map(sec => h('p', sec.title ? h('strong', `${sec.title}: `) : null, sec.items.map(it => it.name || it.text.slice(0, 60)).join(' · '))));
   };
   selComp.addEventListener('change', () => { chosen = null; draw(); });
   selKind.addEventListener('change', draw);

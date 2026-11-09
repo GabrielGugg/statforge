@@ -65,7 +65,7 @@ export async function sheetScreen(app, id, opts = {}) {
 // ---------- GM's read-only view ----------
 function readOnlyHeader(st) {
   const { sheet, readOnly } = st;
-  if (readOnly.panel) return h('div.muted.small.ro-panel-note', t('gm.readOnly'));
+  if (readOnly.panel) return h('div', h('div.muted.small.ro-panel-note', t('gm.readOnly')), gmTextCard(st, false));
   return h('div',
     h('div.alert', h('strong', t('gm.readOnly')), ' ', t('gm.readOnlyOf', { owner: readOnly.owner || '—' })),
     h('div.sheet-header',
@@ -73,6 +73,46 @@ function readOnlyHeader(st) {
       h('div.field', h('span', t('sheet.level')), h('strong', fmt(sheet.level || 1))),
       h('div.field', h('span', 'XP'), h('strong', fmt(sheet.xp || 0)))),
     readOnly.back ? h('p', h('a.button.mini', { href: readOnly.back }, `← ${t('gm.backToTable')}`)) : null);
+}
+
+/**
+ * A compendium entry's text on an NPC sheet: the description, the stat block's sections (traits, actions,
+ * loot…) and, on the GM's own local sheet, the fixed values, which can be changed or given back to the rules.
+ * Everything is shown as text.
+ */
+function gmTextCard(st, editable) {
+  const { sheet, rules } = st;
+  const g = sheet.gm || {};
+  const sections = Array.isArray(g.sections) ? g.sections : [];
+  const fixedIds = editable ? Object.keys(sheet.fixed || {}).filter(id => rules.skills[id] || rules.derived[id] || rules.resources[id]) : [];
+  if (!g.description && !sections.length && !fixedIds.length) return null;
+  const nameOf = id => (rules.skills[id] || rules.derived[id] || rules.resources[id]).name;
+  const setFixed = (id, v) => {
+    if (v === null) { delete sheet.fixed[id]; if (!Object.keys(sheet.fixed).length) delete sheet.fixed; }
+    else sheet.fixed[id] = v;
+    st.change();
+  };
+  return h('details.card.gm-desc', { open: sections.length ? true : null },
+    h('summary', sections.length ? t('gm.comp.statblock') : t('gm.comp.description')),
+    g.description ? h('p.pre-line', String(g.description)) : null,
+    sections.map(sec => h('div.gm-section',
+      sec.title ? h('h4', String(sec.title)) : null,
+      (sec.items || []).map(it => h('p.gm-section-item.pre-line', it.name ? h('strong', String(it.name)) : null, it.name && it.text ? ' ' : null, it.text ? String(it.text) : null)))),
+    fixedIds.length ? h('div.gm-section',
+      h('h4', t('gm.fixed.title')),
+      h('p.muted.small', t('gm.fixed.hint')),
+      h('div.gm-fixed', fixedIds.map(id => h('label.gm-fixed-row',
+        h('span', nameOf(id)),
+        h('input.num', { type: 'number', inputmode: 'numeric', value: sheet.fixed[id], 'aria-label': nameOf(id),
+          onchange: e => { const n = Number(e.target.value); if (e.target.value !== '' && Number.isFinite(n)) setFixed(id, n); } }),
+        h('button.mini', { type: 'button', title: t('gm.fixed.ruleHint', { n: fmt(ruleValue(st, id)) }), onclick: ev => { ev.preventDefault(); setFixed(id, null); } }, t('gm.fixed.useRule')))))) : null);
+}
+
+/** What the system's rules would give for a value, without its fixed number. */
+function ruleValue(st, id) {
+  const copy = { ...st.sheet, fixed: { ...(st.sheet.fixed || {}) } };
+  delete copy.fixed[id];
+  return compute(st.rules, copy).value(id);
 }
 
 /** Disables every control except the tabs (navigation only). */
@@ -198,7 +238,7 @@ function header(st) {
       h('a.button.mini', { href: tableHref }, `← ${t('gm.backToTable')}`),
       h('span.muted.small', t('gm.local.of', { table: tb.name })),
       h('label.check.small', h('input', { type: 'checkbox', checked: !!sheet.gm.npc, onchange: e => { sheet.gm.npc = e.target.checked; st.save(); } }), h('span', t('gm.local.npc')))) : null,
-    tb && sheet.gm.description ? h('details.card.gm-desc', h('summary', t('gm.comp.description')), h('p.pre-line', String(sheet.gm.description))) : null,
+    tb ? gmTextCard(st, true) : null,
     h('div.sheet-header',
       h('label.field.field-name', h('span', st.system.name), name),
       numField(t('sheet.level'), 'level'),
@@ -662,7 +702,8 @@ function debugText(st, id) {
   if (!x) return '';
   const def = ['attributes', 'skills', 'derived', 'resources'].map(s => st.rules[s][id]).find(Boolean);
   const lines = [`ƒ ${def?.name || id} = ${fmt(x.total)}`];
-  if (x.formula === null) lines.push(t('debug.sheetValue', { n: fmt(x.base) }));
+  if (x.fixed) lines.push(t('debug.fixedValue', { n: fmt(x.base) }));
+  else if (x.formula === null) lines.push(t('debug.sheetValue', { n: fmt(x.base) }));
   else if (/^-?\d+(\.\d+)?$/.test(x.formula.trim())) lines.push(x.formula);
   else lines.push(x.formula, x.filled !== x.formula ? `= ${x.filled} = ${fmt(x.base)}` : `= ${fmt(x.base)}`);
   for (const p of x.parts) {

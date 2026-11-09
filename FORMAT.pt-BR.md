@@ -368,8 +368,13 @@ Um compendium traz fichas prontas para um sistema: criaturas, NPCs e inimigos. E
         "attributes": { "FOR": 6, "AGI": 7 },
         "skills": { "corpo_a_corpo": 2 },
         "items": [{ "collection": "armas", "ref": "armas_cortantes_faca", "qty": 1, "equipped": true }],
-        "notes": { "notas": "Foge com metade dos PV." }
-      }
+        "notes": { "notas": "Foge com metade dos PV." },
+        "fixed": { "pv": 14, "pe": 14, "df": 10 }
+      },
+      "sections": [
+        { "title": "Traços", "items": [{ "name": "Poucos Recursos", "text": "Role 1d6 para saber qual arma o Saqueador tem." }] },
+        { "title": "Ações", "items": [{ "name": "Soco Inglês (4 PA)", "text": "Corpo a Corpo +4, alcance 1u, alvo único, dano 1d4+3 contusão." }] }
+      ]
     }
   ]
 }
@@ -377,6 +382,8 @@ Um compendium traz fichas prontas para um sistema: criaturas, NPCs e inimigos. E
 
 - `system`: o id do sistema das entradas. O Mestre só vê o compendium em mesas desse sistema.
 - `kind`: `creature` (criatura), `npc`, `enemy` (inimigo) ou `other` (outro, o padrão). `tags` são palavras livres para a busca.
-- `sheet` só traz o que difere de uma ficha vazia. Os valores (PV, defesa, iniciativa…) **não** são escritos na entrada: as regras do próprio sistema calculam, então uma entrada funciona como qualquer ficha. Ids que o sistema não conhece são ignorados; um item cuja entidade não existe fica de fora, e o Mestre é avisado de qual.
+- `sheet` só traz o que difere de uma ficha vazia. Os valores (PV, defesa, iniciativa…) são calculados pelas regras do próprio sistema, então uma entrada funciona como qualquer ficha (a não ser que `fixed` diga outra coisa). Ids que o sistema não conhece são ignorados; um item cuja entidade não existe fica de fora, e o Mestre é avisado de qual.
+- `sheet.fixed`: para blocos de estatísticas cujos números não seguem as fórmulas do sistema. Cada chave é o id de uma perícia, valor calculado ou recurso (o máximo dele) e o número substitui a fórmula. Efeitos (condições, itens) continuam somando por cima, então uma condição que tira DF também tira de uma DF fixa. Na ficha local o Mestre pode trocar esses números ou clicar em **Usar a regra** para voltar à fórmula.
 - `description` é texto simples (as quebras de linha são mantidas). Como tudo num pacote, é mostrado como texto, nunca como HTML.
-- Previsto para próximas versões: itens e ataques do próprio compendium (usados só pelas entradas dele) e tabelas prontas (`tables`). Por enquanto, os itens precisam ser entidades do sistema.
+- `sections`: o texto do bloco, na ordem (traços, ações, espólios…). Cada seção tem `title` e `items` com `name` e `text` (até 20 seções de 60 itens). Aparecem na ficha do NPC, na prévia do combate e na escolha do Do compendium.
+- Previsto para próximas versões: itens e ataques do próprio compendium (usados só pelas entradas dele) e tabelas prontas (`tables`). Por enquanto, os itens precisam ser entidades do sistema (um item pode trazer `wear`, o desgaste); ataques vão em `sections` como texto.

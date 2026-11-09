@@ -107,6 +107,12 @@ export function compute(rules, sheet) {
   const modFormula = rules.rolls?.modifier || 'value';
   const items = sheet.items || [];
   const matches = (i, ref) => i.ref === ref || key(i.collection, i.ref) === ref;
+  // A fixed value (a compendium stat block) replaces the formula of a skill, derived value or resource maximum;
+  // effects still go on top.
+  const fixedOf = id => {
+    const v = sheet.fixed?.[id];
+    return v === undefined || v === null || v === '' || !Number.isFinite(Number(v)) ? null : Number(v);
+  };
 
   const functions = {
     mod: v => num(run(modFormula, { value: num(v) })),
@@ -171,12 +177,13 @@ export function compute(rules, sheet) {
       if (sec === 'attributes') v = applyEffects(id, num(sheet.attributes?.[id] ?? def.default ?? def.min ?? 0));
       else if (sec === 'skills') {
         const points = num(sheet.skills?.[id]);
-        const base = def.total
+        const fx = fixedOf(id);
+        const base = fx !== null ? fx : def.total
           ? run(def.total, { points })
           : points + skillMod(def);
         v = applyEffects(id, num(base));
-      } else if (sec === 'derived') v = applyEffects(id, num(run(def.formula))) + (def.editable_bonus ? num(sheet.bonus?.[id]) : 0);
-      else if (sec === 'resources') v = applyEffects(id, num(run(def.max)));
+      } else if (sec === 'derived') v = applyEffects(id, fixedOf(id) ?? num(run(def.formula))) + (def.editable_bonus ? num(sheet.bonus?.[id]) : 0);
+      else if (sec === 'resources') v = applyEffects(id, fixedOf(id) ?? num(run(def.max)));
       else if (sec === 'counters') v = num(sheet.counters?.[id]);
     } catch (e) {
       warn(`"${id}": ${e.message}`);
@@ -234,6 +241,8 @@ export function compute(rules, sheet) {
     } else if (sec === 'derived') formula = def.formula;
     else if (sec === 'resources') formula = def.max;
     else return null;
+    const fixed = sec !== 'attributes' ? fixedOf(id) : null;
+    if (fixed !== null) { formula = null; base = fixed; }
     if (formula !== null) base = num(safe(formula, vars));
     const parts = (byTarget[id] || []).map(({ ef, f }) => {
       let on = true, v = 0;
@@ -241,7 +250,7 @@ export function compute(rules, sheet) {
       return { source: f.ent.name || f.k, type: ef.type, formula: String(ef.value), filled: fill(ef.value, f.vars), if: ef.if, on, value: v };
     });
     return { formula: formula === null ? null : String(formula ?? 0), filled: formula === null ? null : fill(formula, vars), base, parts,
-      bonus: sec === 'derived' && def.editable_bonus ? num(sheet.bonus?.[id]) : 0, total: value(id) };
+      bonus: sec === 'derived' && def.editable_bonus ? num(sheet.bonus?.[id]) : 0, fixed: fixed !== null, total: value(id) };
   }
   function safe(f, vars) { try { return run(f, vars); } catch { return 0; } }
   // The formula with each value it names replaced by its number (quoted text is left alone).
@@ -262,6 +271,7 @@ export function compute(rules, sheet) {
 
   return {
     value, formula, visible, immune, explain, errors, lists, sources, active,
+    fixed: id => fixedOf(id) !== null,
     mod: v => functions.mod(v),
     blocked: sources.filter(blocked),
   };

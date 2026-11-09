@@ -367,8 +367,13 @@ A compendium brings ready-made sheets for one system: creatures, NPCs and enemie
         "attributes": { "STR": 6, "AGI": 7 },
         "skills": { "melee_weapons": 2 },
         "items": [{ "collection": "weapons", "ref": "combat_knife", "qty": 1, "equipped": true }],
-        "notes": { "notes": "Flees at half HP." }
-      }
+        "notes": { "notes": "Flees at half HP." },
+        "fixed": { "hp": 14, "sp": 14, "ac": 10 }
+      },
+      "sections": [
+        { "title": "Traits", "items": [{ "name": "Scarce Resources", "text": "Roll 1d6 for the raider's weapon." }] },
+        { "title": "Actions", "items": [{ "name": "Knuckles (4 AP)", "text": "Melee +4, reach 1u, single target, damage 1d4+3 bludgeoning." }] }
+      ]
     }
   ]
 }
@@ -376,6 +381,8 @@ A compendium brings ready-made sheets for one system: creatures, NPCs and enemie
 
 - `system`: the id of the system the entries are for. The GM only sees the compendium in tables of that system.
 - `kind`: `creature`, `npc`, `enemy` or `other` (the default). `tags` are free words for the search.
-- `sheet` holds only what differs from an empty sheet. The values (HP, defense, initiative…) are **not** written in the entry: the system's own rules calculate them, so an entry works like any sheet. Ids the system does not know are ignored; an item whose entity does not exist is left out, and the GM is told which.
+- `sheet` holds only what differs from an empty sheet. The values (HP, defense, initiative…) are calculated by the system's own rules, so an entry works like any sheet (unless `fixed` says otherwise). Ids the system does not know are ignored; an item whose entity does not exist is left out, and the GM is told which.
+- `sheet.fixed`: for stat blocks whose numbers do not follow the system's formulas. Each key is the id of a skill, derived value or resource (its maximum) and the number replaces the formula. Effects (conditions, items) still go on top, so a condition that lowers defense still lowers a fixed defense. On the local sheet the GM can change these numbers or click **Use the rule** to go back to the formula.
 - `description` is plain text (line breaks are kept). Like everything in a package, it is shown as text, never as HTML.
-- Planned for later versions: items and attacks of the compendium's own (used only by its entries) and ready-made tables (`tables`). For now, items must refer to the system's entities.
+- `sections`: the stat block's text, in order (traits, actions, loot…). Each section has a `title` and `items` with `name` and `text` (up to 20 sections of 60 items). They show on the NPC's sheet, in the combat preview and in the From compendium picker.
+- Planned for later versions: items and attacks of the compendium's own (used only by its entries) and ready-made tables (`tables`). For now, items must refer to the system's entities (an item may bring `wear`); attacks go in `sections` as text.

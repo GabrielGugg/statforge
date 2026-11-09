@@ -2,6 +2,14 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.18.0 — 08/11/2026
+
+- Entradas de compendium podem trazer um bloco de estatísticas: `sheet.fixed` define perícias, valores calculados e máximos de recursos que não seguem as fórmulas do sistema (um saqueador com 14 PV e DF 10), e `sections` guarda o texto dele (traços, ações, espólios). Efeitos como condições continuam valendo por cima de um valor fixo.
+- O bloco aparece na ficha local do NPC (aberto), na prévia do combate e na escolha do Do compendium.
+- Na ficha local, **Valores fixos** deixa o Mestre trocar esses números ou clicar em **Usar a regra** para voltar a calcular pelo sistema. O modo debug avisa quando um valor é fixo.
+- Itens do compendium podem trazer o desgaste (`wear`).
+- Veja "Compendium" no FORMAT.pt-BR.md.
+
 ## 1.17.0 — 08/11/2026
 
 - Modo Mestre, Combate: os valores dos participantes agora são colunas (o sistema escolhe quais com `combat.stats`; Fallout: PV, PE, DF e TD). Recursos aparecem como atual/máximo.

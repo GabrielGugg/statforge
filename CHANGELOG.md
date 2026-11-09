@@ -2,6 +2,14 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.18.0 — 2026-11-08
+
+- Compendium entries can bring a stat block: `sheet.fixed` sets skills, derived values and resource maximums that do not follow the system's formulas (a raider with 14 HP and DF 10), and `sections` holds its text (traits, actions, loot). Effects such as conditions still apply on top of a fixed value.
+- The stat block shows on the NPC's local sheet (open by default), in the combat preview and in the From compendium picker.
+- On a local sheet, **Fixed values** lets the GM change those numbers or click **Use the rule** to calculate them with the system again. Debug mode says when a value is fixed.
+- Compendium items can bring their wear (`wear`).
+- See "Compendium" in FORMAT.md.
+
 ## 1.17.0 — 2026-11-08
 
 - GM mode, Combat: the participants' values are now columns (the system chooses which with `combat.stats`; Fallout: HP, SP, AC and DT). Resources show current/maximum.

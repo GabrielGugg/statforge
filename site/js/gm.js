@@ -303,11 +303,12 @@ export async function localFromEntry(tableId, rules, compendium, entryId, { vers
   const tb = await table(tableId);
   if (!tb || compendium?.type !== 'compendium' || compendium.system !== tb.system) throw new Error('ENTRY_NOT_FOUND');
   const now = new Date().toISOString();
-  const { sheet, missing, description } = entrySheet(rules, compendium, entryId, {
+  const { sheet, missing, description, sections } = entrySheet(rules, compendium, entryId, {
     id: newId(), system: tb.system, extensions: [], versions: versions || {}, created: now, updated: now,
     gm: { table: tableId, npc: true, compendium: { id: compendium.id, entry: entryId, version: cleanText(compendium.version, 40) } },
   });
   if (description) sheet.gm.description = description;
+  if (sections.length) sheet.gm.sections = sections;
   await db.put('sheets', sheet);
   return { sheet, missing };
 }

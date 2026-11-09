@@ -622,3 +622,10 @@ select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }
 .shield-init .init-val { display: inline-block; min-width: 2ch; font-variant-numeric: tabular-nums; }
 .shield-bar select, .shield-card .block-tools select { padding-right: 1.8rem; }
 .shield-stat-row:first-child { border-top: 0; padding-top: 0; }
+.gm-section { margin-top: .6rem; }
+.gm-section h4 { margin: .4rem 0 .25rem; font-size: .95rem; }
+.gm-section-item { margin: 0 0 .4rem; }
+.gm-fixed { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .35rem .75rem; }
+.gm-fixed-row { display: flex; align-items: center; gap: .4rem; }
+.gm-fixed-row span { flex: 1; min-width: 0; }
+.gm-fixed-row input { width: 4.5rem; }

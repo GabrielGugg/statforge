@@ -40,7 +40,9 @@ export async function combatTab({ tb, inst, loaded, redraw }) {
       let out = null;
       try {
         if (sysRules && inst[compId]) {
-          const { sheet } = entrySheet(sysRules, inst[compId], entryId, { id: `comp-${entryId}`, system: tb.system, extensions: [] });
+          const { sheet, description, sections } = entrySheet(sysRules, inst[compId], entryId, { id: `comp-${entryId}`, system: tb.system, extensions: [] });
+          // The stat block's text shows in the read-only preview, like on a local sheet.
+          sheet.gm = { npc: true, ...(description ? { description } : {}), ...(sections.length ? { sections } : {}) };
           out = { sheet, rules: sysRules, calc: compute(sysRules, sheet) };
         }
       } catch { out = null; }
