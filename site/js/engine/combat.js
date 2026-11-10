@@ -134,14 +134,33 @@ export function rollInitiative(rules, calc, random = Math.random) {
 /** Who the app rolls for, by the table setting: 'all' | 'npcs' | 'none'. */
 export const autoRolls = (mode, p) => mode === 'all' || (mode === 'npcs' && (p.npc || p.kind === 'comp'));
 
+/** A player's character (shared or local sheet that is not marked NPC), as opposed to an NPC or a creature. */
+export const isPlayer = p => !(p?.npc || p?.kind === 'comp');
+
 /**
- * Highest initiative first. Ties (and blanks, which go last) keep their current order, so the GM decides
- * them by dragging. The one whose turn it is stays the one whose turn it is.
+ * How ties in initiative are broken (table setting):
+ *   'manual'  — they keep their current order; the GM drags them.
+ *   'players' — player characters go before NPCs and creatures.
+ *   'formula' — the higher value of a formula on each sheet goes first (e.g. "AGI").
+ * Whatever is still tied keeps its current order.
  */
-export function sortByInitiative(enc) {
+export const TIE_BREAKS = ['manual', 'players', 'formula'];
+
+/**
+ * Highest initiative first; blanks go last. Ties follow options.tieBreak (see TIE_BREAKS);
+ * with 'formula', options.tieValue(p) gives each participant's value (null when it has no sheet).
+ * The one whose turn it is stays the one whose turn it is.
+ */
+export function sortByInitiative(enc, { tieBreak = 'manual', tieValue = null } = {}) {
   const current = enc.participants[enc.turn]?.id;
-  const keyed = enc.participants.map((p, i) => ({ p, i }));
-  keyed.sort((a, b) => (b.p.init ?? -Infinity) - (a.p.init ?? -Infinity) || a.i - b.i);
+  const tie = p => {
+    if (tieBreak === 'players') return isPlayer(p) ? 1 : 0;
+    if (tieBreak === 'formula' && tieValue) { const v = Number(tieValue(p)); return Number.isFinite(v) ? v : -Infinity; }
+    return 0;
+  };
+  const keyed = enc.participants.map((p, i) => ({ p, i, t: tie(p) }));
+  const diff = (x, y) => (x === y ? 0 : x > y ? 1 : -1);
+  keyed.sort((a, b) => diff(b.p.init ?? -Infinity, a.p.init ?? -Infinity) || diff(b.t, a.t) || a.i - b.i);
   enc.participants = keyed.map(x => x.p);
   enc.turn = Math.max(0, enc.participants.findIndex(p => p.id === current));
 }

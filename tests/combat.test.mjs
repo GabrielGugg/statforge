@@ -109,3 +109,20 @@ test('validator checks combat.stats and combat.damage', () => {
   assert.ok(bad.warnings.some(w => w.includes('combat.damage.reduce') && w.includes('qq')));
   assert.ok(bad.errors.some(e => e.includes('combat.damage')));
 });
+
+test('initiative ties: manual keeps order, players first, or a formula', () => {
+  const mk = () => ({ round: 1, turn: 0, started: false, participants: [
+    P('npc', 10), P('pc', 10, { kind: 'member', npc: false }), P('fast', 10, { kind: 'local', npc: true }), P('top', 15), P('blank', null),
+  ] });
+  let enc = mk(); cb.sortByInitiative(enc);
+  assert.deepEqual(enc.participants.map(p => p.id), ['top', 'npc', 'pc', 'fast', 'blank'], 'manual: ties keep their order');
+  enc = mk(); cb.sortByInitiative(enc, { tieBreak: 'players' });
+  assert.deepEqual(enc.participants.map(p => p.id), ['top', 'pc', 'npc', 'fast', 'blank'], 'players before NPCs');
+  const agi = { npc: 3, pc: 5, fast: 9 };
+  enc = mk(); cb.sortByInitiative(enc, { tieBreak: 'formula', tieValue: p => agi[p.id] ?? null });
+  assert.deepEqual(enc.participants.map(p => p.id), ['top', 'fast', 'pc', 'npc', 'blank'], 'higher formula value first');
+  enc = mk(); cb.sortByInitiative(enc, { tieBreak: 'formula', tieValue: p => (p.id === 'pc' ? 1 : null) });
+  assert.deepEqual(enc.participants.map(p => p.id), ['top', 'pc', 'npc', 'fast', 'blank'], 'no sheet: after those with a value, order kept');
+  assert.equal(cb.isPlayer({ kind: 'member', npc: false }), true);
+  assert.equal(cb.isPlayer({ kind: 'comp' }), false);
+});

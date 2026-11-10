@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.20.0 — 09/11/2026
+
+- Modo Mestre, Configurações da mesa: nova opção **Empates na iniciativa**. **Manual** deixa os empates na ordem em que você os arrasta (como antes); **Personagens dos jogadores antes dos NPCs** põe os personagens dos jogadores (fichas compartilhadas e locais não marcadas como NPC) na frente de NPCs e criaturas; **Personalizado** usa uma fórmula calculada na ficha de cada participante, o maior primeiro (por exemplo `AGI`, ou `mod(AGI) * 10 + mod(PER)` para Agilidade e depois Percepção). O que continuar empatado fica na ordem que você escolher.
+- **Rolar iniciativa** e **Ordenar pela iniciativa** usam a regra da mesa.
+
 ## 1.19.0 — 09/11/2026
 
 - **Termos cuja regra depende do item.** Um termo com link (uma propriedade de arma, por exemplo) pode ter `variants`: em cada item, a dica e os detalhes mostram a regra para aquele tipo de item. No Fallout, "Lento" num explosivo agora explica o atraso do detonador em vez da regra de arma à distância. Aberto pela lista de propriedades, o termo mostra todas as variantes.

@@ -147,6 +147,15 @@ export async function combatTab({ tb, inst, loaded, redraw }) {
   };
 
   // ---------- Initiative and turns ----------
+  // Ties: the table's rule. A tie formula is worked out on each participant's own sheet; no sheet, no value.
+  const tieOptions = {
+    tieBreak: settings.tieBreak,
+    tieValue: settings.tieBreak === 'formula' && settings.tieFormula ? p => {
+      const src = sourceOf(p);
+      if (!src?.calc) return null;
+      try { return src.calc.formula(settings.tieFormula); } catch { return null; }
+    } : null,
+  };
   const rollAll = () => edit(e => {
     let rolled = 0;
     for (const p of e.participants) {
@@ -155,7 +164,7 @@ export async function combatTab({ tb, inst, loaded, redraw }) {
       const r = src?.calc ? cb.rollInitiative(src.rules, src.calc) : null;
       if (r) { p.init = r.total; rolled++; }
     }
-    cb.sortByInitiative(e);
+    cb.sortByInitiative(e, tieOptions);
     toast(rolled ? t('combat.rolled', { n: rolled }) : t('combat.rolledNone'));
   });
 
@@ -277,7 +286,7 @@ export async function combatTab({ tb, inst, loaded, redraw }) {
         h('button.mini', { onclick: sheetsDialog }, t('combat.addSheets')),
         h('button.mini', { onclick: compDialog }, t('combat.addComp')),
         h('button.mini', { onclick: rollAll, title: t(`gm.set.initiative.${settings.initiativeAuto}`) }, t('combat.rollInit')),
-        h('button.mini', { onclick: () => edit(e => cb.sortByInitiative(e)) }, t('combat.sort')),
+        h('button.mini', { onclick: () => edit(e => cb.sortByInitiative(e, tieOptions)), title: t(`gm.set.tie.${settings.tieBreak}`) }, t('combat.sort')),
         enc.started ? h('button.mini', { onclick: () => edit(e => cb.prevTurn(e)) }, t('combat.prev')) : null,
         h('button.mini.primary', { onclick: () => edit(e => cb.nextTurn(e)), disabled: !enc.participants.length }, enc.started ? t('combat.next') : t('combat.start')),
         enc.started ? h('button.mini', { onclick: async () => { if (await confirm(t('combat.endTitle'), t('combat.endText'), { yes: t('combat.end') })) edit(e => { e.started = false; e.round = 1; e.turn = 0; }); } }, t('combat.end')) : null)),

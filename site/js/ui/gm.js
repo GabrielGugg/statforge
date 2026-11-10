@@ -14,6 +14,7 @@ import { makeInvite, packageMismatches } from '../engine/share.js';
 import { compareVersions } from '../engine/package.js';
 import { findUpdates } from './updates.js';
 import { compute } from '../engine/calc.js';
+import { parse as parseFormula } from '../engine/formula.js';
 import { partyValue, checkPartyFormula } from '../engine/party.js';
 import { entries as compendiumEntries, ENTRY_KINDS } from '../engine/compendium.js';
 import { t } from '../i18n.js';
@@ -270,6 +271,21 @@ function settingsTab(tb, fallback, redraw) {
     } });
   const initSel = h('select', { 'aria-label': t('gm.set.initiativeAuto'), onchange: async e => { await gm.saveSettings(tb.id, { initiativeAuto: e.target.value }); saved(); } },
     gm.INITIATIVE_AUTO.map(v => h('option', { value: v, selected: v === st.initiativeAuto }, t(`gm.set.initiative.${v}`))));
+  // Ties in initiative: manual (drag), players first, or a formula on each sheet.
+  const formulaMsg = h('p.small');
+  const checkTie = text => {
+    if (!text.trim()) { formulaMsg.className = 'small muted'; formulaMsg.textContent = t('gm.set.tieFormulaEmpty'); return false; }
+    try { parseFormula(text); formulaMsg.className = 'small muted'; formulaMsg.textContent = t('gm.set.tieFormulaOk'); return true; }
+    catch (e) { formulaMsg.className = 'small'; formulaMsg.style.color = 'var(--danger)'; formulaMsg.textContent = e.message; return false; }
+  };
+  const tieInput = h('input', { type: 'text', value: st.tieFormula, placeholder: 'AGI', maxlength: 200, 'aria-label': t('gm.set.tieFormula'), spellcheck: 'false',
+    oninput: e => checkTie(e.target.value),
+    onchange: async e => { if (checkTie(e.target.value) || !e.target.value.trim()) { await gm.saveSettings(tb.id, { tieFormula: e.target.value.trim() }); saved(); } } });
+  const tieBox = h('div', { hidden: st.tieBreak !== 'formula' },
+    h('label.field', h('span', t('gm.set.tieFormula')), tieInput), formulaMsg, h('p.muted.small', t('gm.set.tieFormulaHint')));
+  if (st.tieFormula) checkTie(st.tieFormula);
+  const tieSel = h('select', { 'aria-label': t('gm.set.tieBreak'), onchange: async e => { await gm.saveSettings(tb.id, { tieBreak: e.target.value }); tieBox.hidden = e.target.value !== 'formula'; saved(); } },
+    gm.TIE_BREAKS.map(v => h('option', { value: v, selected: v === st.tieBreak }, t(`gm.set.tie.${v}`))));
   return [
     h('section.card.section',
       h('h3', t('gm.set.table')),
@@ -281,7 +297,9 @@ function settingsTab(tb, fallback, redraw) {
     h('section.card.section',
       h('h3', t('gm.set.combat')),
       h('label.field', h('span', t('gm.set.initiativeAuto')), initSel),
-      h('p.muted.small', t('gm.set.initiativeHint'))),
+      h('p.muted.small', t('gm.set.initiativeHint')),
+      h('label.field', h('span', t('gm.set.tieBreak')), tieSel),
+      tieBox),
     h('section.card.section.danger-zone',
       h('h3', t('gm.set.danger')),
       h('p.small', t('gm.set.deleteHint')),

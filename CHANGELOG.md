@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.20.0 — 2026-11-09
+
+- GM mode, table Settings: new **Ties in initiative** option. **Manual** keeps ties in the order you drag them (as before); **Player characters before NPCs** puts the players' characters (shared and local sheets not marked NPC) ahead of NPCs and creatures; **Custom** uses a formula worked out on each participant's sheet, higher first (for example `AGI`, or `mod(AGI) * 10 + mod(PER)` for Agility and then Perception). Whatever is still tied keeps the order you choose.
+- **Roll initiative** and **Sort by initiative** use the table's rule.
+
 ## 1.19.0 — 2026-11-09
 
 - **Terms whose rule depends on the item.** A linked term (a weapon property, say) can have `variants`: on each item, its tooltip and details show the rule for that kind of item. In Fallout, "Lento" on an explosive now explains the fuse delay instead of the ranged-weapon rule. Opened from the property list, a term shows every variant.

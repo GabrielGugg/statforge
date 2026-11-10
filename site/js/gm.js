@@ -11,6 +11,7 @@ import * as sync from './sync.js';
 import { validateShare, driveReason, cleanText } from './engine/share.js';
 import { entrySheet } from './engine/compendium.js';
 import { normalizeTable as normalizeRollTable, MAX_TABLES as MAX_ROLL_TABLES } from './engine/rolltable.js';
+import { TIE_BREAKS as TIES } from './engine/combat.js';
 
 const API = 'https://www.googleapis.com/drive/v3/files';
 const APP_FILE = 'statforge-gm.json';
@@ -73,15 +74,19 @@ export function normalizeTables(list) {
 }
 
 // ---------- Per-table settings (the GM's own; players never see them) ----------
-// table.settings = { interval: seconds | null (null = the old app-wide value), initiativeAuto: 'all' | 'npcs' | 'none' }
+// table.settings = { interval: seconds | null (null = the old app-wide value), initiativeAuto: 'all' | 'npcs' | 'none',
+//   tieBreak: 'manual' | 'players' | 'formula', tieFormula: text (a formula on each sheet, for 'formula') }
 export const INITIATIVE_AUTO = ['all', 'npcs', 'none'];
-export const DEFAULT_SETTINGS = { interval: null, initiativeAuto: 'npcs' };
+export { TIE_BREAKS } from './engine/combat.js';
+export const DEFAULT_SETTINGS = { interval: null, initiativeAuto: 'npcs', tieBreak: 'manual', tieFormula: '' };
 const clampInterval = v => Math.min(MAX_INTERVAL, Math.max(MIN_INTERVAL, Math.round(Number(v)) || DEFAULT_INTERVAL));
 function normalizeSettings(s) {
   s = s && typeof s === 'object' ? s : {};
   return {
     interval: s.interval === null || s.interval === undefined || s.interval === '' ? null : clampInterval(s.interval),
     initiativeAuto: INITIATIVE_AUTO.includes(s.initiativeAuto) ? s.initiativeAuto : DEFAULT_SETTINGS.initiativeAuto,
+    tieBreak: TIES.includes(s.tieBreak) ? s.tieBreak : DEFAULT_SETTINGS.tieBreak,
+    tieFormula: typeof s.tieFormula === 'string' ? s.tieFormula.slice(0, 200) : '',
   };
 }
 export const settingsOf = tb => normalizeSettings(tb?.settings);
