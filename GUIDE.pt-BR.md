@@ -112,7 +112,7 @@ O caderno do Mestre, com busca. Só você vê.
 
 ### Configurações da mesa
 
-O nome, de quanto em quanto tempo as fichas são conferidas, para quem a iniciativa é rolada, a regra de desempate e **Apagar mesa**.
+O nome, de quanto em quanto tempo as fichas são conferidas, para quem a iniciativa é rolada, a regra de desempate, se os **nomes e e-mails dos jogadores** aparecem (escondidos até passar o mouse, nunca ou sempre; útil para mostrar a tela ou tirar um print) e **Apagar mesa**.
 
 > Tudo do Mestre fica no aparelho dele e na pasta escondida do app no Drive dele. Os jogadores nunca veem a mesa nem as fichas uns dos outros.
 

@@ -25,6 +25,7 @@ StatForge is a static site: there is no StatForge server and no account. Everyth
 - The player's app only writes to that copy and never reads it back, so nothing done to the copy can change the real sheet.
 - Before each update, the permissions are checked again. If anyone else got access, updates stop and the player is warned. **Stop sharing** deletes the copy, which removes every access.
 - The GM's app only reads (Google refuses writes from a reader anyway). It shows the sheet read-only, never saves it as a GM sheet, and deletes its local copy when the player stops sharing.
+- On the GM's screens, players' names and e-mails are blurred until pointed at by default, so a shown screen or a screenshot does not give them away (table Settings › Privacy).
 - Tables, parties and team resources stay on the GM's device and in the GM's hidden app folder. Players never see them, and players never see each other's sheets.
 
 **The page limits what it can load.** A Content Security Policy allows scripts only from the site itself and Google's sign-in and file picker, and blocks plugins and inline scripts. Data, images and fonts may load over https because packages and themes can come from any link.

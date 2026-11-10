@@ -75,10 +75,12 @@ export function normalizeTables(list) {
 
 // ---------- Per-table settings (the GM's own; players never see them) ----------
 // table.settings = { interval: seconds | null (null = the old app-wide value), initiativeAuto: 'all' | 'npcs' | 'none',
-//   tieBreak: 'manual' | 'players' | 'formula', tieFormula: text (a formula on each sheet, for 'formula') }
+//   tieBreak: 'manual' | 'players' | 'formula', tieFormula: text (a formula on each sheet, for 'formula'),
+//   ownerDisplay: 'hover' | 'never' | 'always' (players' names and e-mails on the GM's screens, see ui/privacy.js) }
 export const INITIATIVE_AUTO = ['all', 'npcs', 'none'];
 export { TIE_BREAKS } from './engine/combat.js';
-export const DEFAULT_SETTINGS = { interval: null, initiativeAuto: 'npcs', tieBreak: 'manual', tieFormula: '' };
+export const OWNER_DISPLAY = ['hover', 'never', 'always'];
+export const DEFAULT_SETTINGS = { interval: null, initiativeAuto: 'npcs', tieBreak: 'manual', tieFormula: '', ownerDisplay: 'hover' };
 const clampInterval = v => Math.min(MAX_INTERVAL, Math.max(MIN_INTERVAL, Math.round(Number(v)) || DEFAULT_INTERVAL));
 function normalizeSettings(s) {
   s = s && typeof s === 'object' ? s : {};
@@ -87,6 +89,7 @@ function normalizeSettings(s) {
     initiativeAuto: INITIATIVE_AUTO.includes(s.initiativeAuto) ? s.initiativeAuto : DEFAULT_SETTINGS.initiativeAuto,
     tieBreak: TIES.includes(s.tieBreak) ? s.tieBreak : DEFAULT_SETTINGS.tieBreak,
     tieFormula: typeof s.tieFormula === 'string' ? s.tieFormula.slice(0, 200) : '',
+    ownerDisplay: OWNER_DISPLAY.includes(s.ownerDisplay) ? s.ownerDisplay : DEFAULT_SETTINGS.ownerDisplay,
   };
 }
 export const settingsOf = tb => normalizeSettings(tb?.settings);

@@ -3,6 +3,7 @@
 // ============================================================
 import * as db from '../storage.js';
 import { termVariant, termDescription } from '../engine/terms.js';
+import { withOwner } from './privacy.js';
 import * as pk from '../packages.js';
 import { checkSet } from '../engine/package.js';
 import { compute, roll, isBroken, effectiveWear } from '../engine/calc.js';
@@ -16,7 +17,7 @@ import { h, toast, dialog, confirm, ask, downloadJSON, uid, fmt, signed, byName,
 const rollHistory = [];
 
 /**
- * opts.readOnly = { sheet, owner, back }: a sheet shared with the GM. Shown with the GM's own packages,
+ * opts.readOnly = { sheet, owner, ownerDisplay, back }: a sheet shared with the GM (ownerDisplay: see ui/privacy.js). Shown with the GM's own packages,
  * every control disabled, nothing ever saved or sent anywhere.
  */
 export async function sheetScreen(app, id, opts = {}) {
@@ -68,7 +69,7 @@ function readOnlyHeader(st) {
   const { sheet, readOnly } = st;
   if (readOnly.panel) return h('div', h('div.muted.small.ro-panel-note', t('gm.readOnly')), gmTextCard(st, false));
   return h('div',
-    h('div.alert', h('strong', t('gm.readOnly')), ' ', t('gm.readOnlyOf', { owner: readOnly.owner || '—' })),
+    h('div.alert', h('strong', t('gm.readOnly')), ' ', withOwner('gm.readOnlyOf', readOnly.owner, readOnly.ownerDisplay || 'hover')),
     h('div.sheet-header',
       h('div.field.field-name', h('span', st.system.name), h('strong.ro-name', sheet.name || t('common.unnamed'))),
       h('div.field', h('span', t('sheet.level')), h('strong', fmt(sheet.level || 1))),

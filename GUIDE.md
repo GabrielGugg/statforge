@@ -112,7 +112,7 @@ The GM's notebook, with search. Only you see it.
 
 ### Table settings
 
-The name, how often shared sheets are checked, who initiative is rolled for, the tie rule, and **Delete table**.
+The name, how often shared sheets are checked, who initiative is rolled for, the tie rule, whether **players' names and e-mails** show (hidden until you point at them, never, or always; handy when you show your screen or take a screenshot), and **Delete table**.
 
 > Everything of the GM's stays on their device and in their hidden app folder in Drive. Players never see the table or each other's sheets.
 

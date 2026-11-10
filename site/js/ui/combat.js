@@ -6,6 +6,7 @@
 // Names and texts that came from players or packages are shown with h() (textContent), never as HTML.
 // ============================================================
 import * as pk from '../packages.js';
+import { ownerTag } from './privacy.js';
 import * as gm from '../gm.js';
 import { compute } from '../engine/calc.js';
 import { entries as compendiumEntries, entrySheet } from '../engine/compendium.js';
@@ -99,7 +100,7 @@ export async function combatTab({ tb, inst, loaded, redraw }) {
     const inFight = new Set(enc.participants.filter(p => p.kind !== 'comp').map(p => (p.kind === 'local' ? gm.localKey(p.ref) : p.ref)));
     const options = loaded.filter(x => x.c?.sheet && !inFight.has(x.m.fileId));
     const boxes = options.map(x => h('label.check', h('input', { type: 'checkbox', value: x.m.fileId, onchange: e => { if (e.target.checked) chosen.add(x.m.fileId); else chosen.delete(x.m.fileId); } }),
-      h('span', x.c.sheet.name || t('common.unnamed'), ' ', h('span.muted.small', x.local ? (x.local.gm?.npc ? t('gm.local.npcBadge') : t('gm.local.badge')) : x.c.owner?.name || x.c.owner?.email || ''))));
+      h('span', x.c.sheet.name || t('common.unnamed'), ' ', h('span.muted.small', x.local ? (x.local.gm?.npc ? t('gm.local.npcBadge') : t('gm.local.badge')) : ownerTag(x.c.owner?.name || x.c.owner?.email, settings.ownerDisplay)))));
     dialog(t('combat.addSheets'), options.length ? [
       active ? h('button.mini', { onclick: () => { for (const b of boxes) { const i = b.querySelector('input'); if (active.members.includes(i.value)) { i.checked = true; chosen.add(i.value); } } } }, t('combat.addParty', { name: active.name })) : null,
       h('div.combat-pick', boxes),

@@ -25,6 +25,7 @@ O StatForge é um site estático: não existe servidor do StatForge nem conta. T
 - O app do jogador só escreve nessa cópia e nunca lê de volta, então nada feito nela muda a ficha de verdade.
 - Antes de cada atualização, as permissões são conferidas de novo. Se outra pessoa ganhou acesso, as atualizações param e o jogador é avisado. **Parar de compartilhar** apaga a cópia, o que tira todos os acessos.
 - O app do mestre só lê (o Google recusa escrita de um leitor de qualquer forma). Ele mostra a ficha só leitura, nunca salva como ficha do mestre e apaga a cópia local quando o jogador para de compartilhar.
+- Nas telas do mestre, os nomes e e-mails dos jogadores ficam borrados até o mouse passar por cima, por padrão, para uma tela mostrada ou um print não entregarem esses dados (Configurações da mesa › Privacidade).
 - Mesas, parties e recursos da equipe ficam no aparelho do mestre e na pasta oculta do app no Drive dele. Os jogadores nunca veem isso, nem as fichas uns dos outros.
 
 **A página limita o que pode carregar.** Uma Content Security Policy só permite scripts do próprio site e do login e seletor de arquivos do Google, e bloqueia plugins e scripts embutidos. Dados, imagens e fontes podem vir por https porque pacotes e temas podem vir de qualquer link.

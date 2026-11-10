@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.23.0 — 2026-11-09
+
+- GM mode, table Settings: new **Privacy › Players' names and e-mails** option, for when you show your screen or take a screenshot. **Hidden, shown when the pointer is over them** (the default) blurs them until you point at them, focus them or tap them; **Never shown** leaves them out ("Sheet of a player"); **Always shown** is how it was before.
+- It applies to the sheet cards, the read-only sheet and the list of sheets to add to a combat. Printing keeps them blurred unless they are always shown.
+
 ## 1.22.0 — 2026-11-09
 
 - **Guide.** A user guide covering everything the app does, from the first package to GM mode: `GUIDE.md` (and `GUIDE.pt-BR.md`) on GitHub, and in the app in **Settings › Guide**.

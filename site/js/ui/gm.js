@@ -15,6 +15,7 @@ import { compareVersions } from '../engine/package.js';
 import { findUpdates } from './updates.js';
 import { compute } from '../engine/calc.js';
 import { parse as parseFormula } from '../engine/formula.js';
+import { ownerTag } from './privacy.js';
 import { partyValue, checkPartyFormula } from '../engine/party.js';
 import { entries as compendiumEntries, ENTRY_KINDS } from '../engine/compendium.js';
 import { t } from '../i18n.js';
@@ -300,6 +301,12 @@ function settingsTab(tb, fallback, redraw) {
       h('p.muted.small', t('gm.set.initiativeHint')),
       h('label.field', h('span', t('gm.set.tieBreak')), tieSel),
       tieBox),
+    h('section.card.section',
+      h('h3', t('gm.set.privacy')),
+      h('label.field', h('span', t('gm.set.ownerDisplay')),
+        h('select', { 'aria-label': t('gm.set.ownerDisplay'), onchange: async e => { await gm.saveSettings(tb.id, { ownerDisplay: e.target.value }); saved(); } },
+          gm.OWNER_DISPLAY.map(v => h('option', { value: v, selected: v === st.ownerDisplay }, t(`gm.set.owner.${v}`))))),
+      h('p.muted.small', t('gm.set.ownerHint'))),
     h('section.card.section.danger-zone',
       h('h3', t('gm.set.danger')),
       h('p.small', t('gm.set.deleteHint')),
@@ -471,6 +478,13 @@ function statChips(tb, { c, rules, calc }) {
   return chips;
 }
 
+/** The player's name · e-mail line of a card, following the table's ownerDisplay setting (null when hidden). */
+function ownerLine(owner, mode) {
+  const text = owner?.name && owner?.email ? `${owner.name} · ${owner.email}` : owner?.name || owner?.email || '';
+  const tag = ownerTag(text, mode);
+  return tag ? h('div.muted.small', tag) : h('div.muted.small', '\u00a0');
+}
+
 function memberCard(tb, { m, c, rules, calc, local }, parties, inst, redraw) {
   const href = local ? `#/sheet/${encodeURIComponent(local.id)}` : `#/gm/${encodeURIComponent(tb.id)}/${encodeURIComponent(m.fileId)}`;
   const remove = local
@@ -490,8 +504,10 @@ function memberCard(tb, { m, c, rules, calc, local }, parties, inst, redraw) {
     h('option', { value: '', selected: !current }, t('gm.noParty')),
     parties.map(p => h('option', { value: p.id, selected: p.id === current }, p.name))) : null;
   const drag = { draggable: 'true', ondragstart: e => { e.dataTransfer.setData('text/statforge-member', m.fileId); e.dataTransfer.effectAllowed = 'move'; } };
+  const ownerMode = gm.settingsOf(tb).ownerDisplay;
   if (!c) {
-    return h('div.card.gm-card', drag, h('strong', m.name || t('gm.unknownSheet')), m.owner ? h('div.muted.small', m.owner) : null,
+    const who = ownerTag(m.owner, ownerMode);
+    return h('div.card.gm-card', drag, h('strong', m.name || t('gm.unknownSheet')), who ? h('div.muted.small', who) : null,
       h('span.badge.error', m.state === 'lost' ? t('gm.lost') : t('gm.notLoaded')), h('div.row', move, remove));
   }
   const miss = local ? [] : packageMismatches(c.packages, inst);
@@ -501,7 +517,7 @@ function memberCard(tb, { m, c, rules, calc, local }, parties, inst, redraw) {
       local ? h('span.badge.local', local.gm?.npc ? t('gm.local.npcBadge') : t('gm.local.badge'))
         : m.state === 'lost' ? h('span.badge.error', t('gm.lost')) : m.state === 'error' ? h('span.badge.warning', t('gm.error')) : null),
     local ? h('div.muted.small', local.gm?.from ? t('gm.local.copyOf') : local.gm?.compendium ? t('gm.local.fromComp', { name: inst[local.gm.compendium.id]?.name || local.gm.compendium.id }) : t('gm.local.yours'))
-      : h('div.muted.small', `${c.owner?.name || c.owner?.email || ''}${c.owner?.email && c.owner?.name ? ` · ${c.owner.email}` : ''}`),
+      : ownerLine(c.owner, ownerMode),
     h('div.muted.small', local ? `${t('sheet.level')} ${fmt(c.sheet.level || 1)}` : `${t('sheet.level')} ${fmt(c.sheet.level || 1)} · ${t('gm.updated', { when: ago(c.modifiedTime) })}`),
     !inst[c.sheet.system] ? h('div.badge.error', t('gm.missingSystem', { id: c.sheet.system })) : miss.length ? h('div.badge.warning', { title: miss.map(p => `${p.id}: ${p.version || '?'} / ${p.have || '—'}`).join('\n') }, t('gm.versionMismatch', { n: miss.length })) : null,
     chips.length ? h('div.stat-chips', chips) : null,
@@ -513,7 +529,8 @@ async function memberSheet(app, tableId, fileId) {
   const c = await gm.cached(tableId, fileId);
   const back = `#/gm/${encodeURIComponent(tableId)}`;
   if (!c) { app.append(h('div.card', h('p', t('gm.notLoaded')), h('a.button', { href: back }, t('gm.backToTable')))); return; }
-  await sheetScreen(app, null, { readOnly: { sheet: c.sheet, owner: c.owner?.name || c.owner?.email, back } });
+  const ownerDisplay = gm.settingsOf(await gm.table(tableId)).ownerDisplay;
+  await sheetScreen(app, null, { readOnly: { sheet: c.sheet, owner: c.owner?.name || c.owner?.email, ownerDisplay, back } });
   // keep it fresh while it is open
   const tick = async () => {
     if (location.hash !== `${back}/${encodeURIComponent(fileId)}`) return;
@@ -523,7 +540,7 @@ async function memberSheet(app, tableId, fileId) {
     if (now && now.modifiedTime !== before && !document.querySelector('.dialog-backdrop')) {
       const y = window.scrollY;
       app.replaceChildren();
-      await sheetScreen(app, null, { readOnly: { sheet: now.sheet, owner: now.owner?.name || now.owner?.email, back } });
+      await sheetScreen(app, null, { readOnly: { sheet: now.sheet, owner: now.owner?.name || now.owner?.email, ownerDisplay, back } });
       window.scrollTo(0, y);
       Object.assign(c, now);
     }

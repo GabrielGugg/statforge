@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.23.0 — 09/11/2026
+
+- Modo Mestre, Configurações da mesa: nova opção **Privacidade › Nomes e e-mails dos jogadores**, para quando você mostra a tela ou tira um print. **Escondidos, aparecem com o mouse em cima** (o padrão) borra os dados até você passar o mouse, focar ou tocar neles; **Nunca mostrar** tira os dados ("Ficha de um jogador"); **Sempre mostrar** é como era antes.
+- Vale nos cartões das fichas, na ficha só leitura e na lista de fichas para adicionar a um combate. Na impressão eles continuam borrados, a menos que estejam em "Sempre mostrar".
+
 ## 1.22.0 — 09/11/2026
 
 - **Guia.** Um guia de uso com tudo o que o app faz, do primeiro pacote ao Modo Mestre: `GUIDE.pt-BR.md` (e `GUIDE.md`) no GitHub, e no app em **Configurações › Guia**.

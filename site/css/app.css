@@ -629,3 +629,9 @@ select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }
 .gm-fixed-row { display: flex; align-items: center; gap: .4rem; }
 .gm-fixed-row span { flex: 1; min-width: 0; }
 .gm-fixed-row input { width: 4.5rem; }
+
+/* Players' names and e-mails on the GM's screens (table setting "Players' names and e-mails"): blurred until hovered, focused or tapped. */
+.owner.spoiler { filter: blur(5px); cursor: pointer; border-radius: 4px; transition: filter .15s; user-select: none; }
+.owner.spoiler:hover, .owner.spoiler:focus-visible, .owner.spoiler.revealed { filter: none; user-select: text; }
+@media (prefers-reduced-motion: reduce) { .owner.spoiler { transition: none; } }
+@media print { .owner.spoiler { filter: blur(5px) !important; } }
