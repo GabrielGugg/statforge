@@ -54,7 +54,7 @@ const FILE_ID = /^[\w-]{10,200}$/, ID = /^[\w-]{1,40}$/;
 export const LOCAL_ID = /^local:[\w-]{1,120}$/;
 export const localKey = sheetId => `local:${sheetId}`;
 /** Keeps only well-formed tables (the copy in Drive is the GM's own, but it is checked like anything that comes in). */
-function normalizeTables(list) {
+export function normalizeTables(list) {
   return list.filter(t => t && ID.test(t.id) && typeof t.system === 'string').slice(0, 100).map(t => {
     const members = (Array.isArray(t.members) ? t.members : []).filter(m => m && FILE_ID.test(m.fileId))
       .map(m => ({ fileId: m.fileId, added: cleanText(m.added, 40), name: cleanText(m.name, 120), owner: cleanText(m.owner, 254) }));

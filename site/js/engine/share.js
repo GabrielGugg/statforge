@@ -21,7 +21,7 @@ const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
 // Conservative e-mail check: one @, no spaces, quotes or angle brackets, a dot in the domain.
 const EMAIL = /^[^\s@<>"'`()\\,;:]{1,64}@[a-z0-9.-]{1,190}\.[a-z]{2,24}$/i;
 export const validEmail = e => typeof e === 'string' && e.length <= 254 && EMAIL.test(e);
-const SYSTEM_ID = /^[a-z0-9][a-z0-9._-]{0,79}$/i;
+export const SYSTEM_ID = /^[a-z0-9][a-z0-9._-]{0,79}$/i;
 // Control and bidirectional-override characters could disguise what is shown (for example an e-mail
 // that reads differently than it is), so they are removed from any text that comes in.
 export const cleanText = (s, max) => String(s ?? '').replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁦-⁩]/g, '').trim().slice(0, max);
@@ -190,7 +190,7 @@ export async function checkShare(api, fileId, email) {
 
 const BAD_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
 /** Plain-JSON copy with no prototype tricks and a depth limit; anything else is dropped. */
-function cleanJSON(v, depth = 0) {
+export function cleanJSON(v, depth = 0) {
   if (depth > 40) throw new Error('SHARE_INVALID');
   if (v === null || typeof v === 'boolean' || typeof v === 'string') return v;
   if (typeof v === 'number') return Number.isFinite(v) ? v : 0;

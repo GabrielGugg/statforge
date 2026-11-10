@@ -2,6 +2,16 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.18.1 — 09/11/2026
+
+Versão de segurança.
+
+- **Restaurar um backup agora é conferido como qualquer instalação.** Cada pacote passa pelo validador (os inválidos são ignorados e listados pelo nome), cada ficha é limpa (chaves de protótipo, caracteres escondidos, ids malformados), e só entram configurações inofensivas (idioma, tema, unidades, modos de exibição, ordem das extensões, arranjo das fichas e mesas do mestre, depois da conferência de sempre). O login do Google, a sincronização, os compartilhamentos com o mestre, as cópias das fichas dos jogadores, as exclusões e os endereços do hub, do Client ID e do seletor do Google nunca vêm de um arquivo. Antes, um backup feito por outra pessoa podia ligar a sincronização com o acesso dela e mandar as suas fichas para o Drive dela.
+- **O arquivo de backup não leva mais** os dados do seu login do Google (e-mail, estado da sincronização), os compartilhamentos com o mestre nem as cópias das fichas de outros jogadores. A sincronização entre os seus aparelhos continua levando tudo.
+- O link de um pacote só aparece como link quando é `https`, e abre com `noopener noreferrer`. Pacotes instalados por link só guardam o link quando ele é `https`.
+- O workflow de deploy fixa cada GitHub Action num commit e não guarda mais o token de acesso no checkout.
+- Veja SECURITY.pt-BR.md.
+
 ## 1.18.0 — 08/11/2026
 
 - Entradas de compendium podem trazer um bloco de estatísticas: `sheet.fixed` define perícias, valores calculados e máximos de recursos que não seguem as fórmulas do sistema (um saqueador com 14 PV e DF 10), e `sections` guarda o texto dele (traços, ações, espólios). Efeitos como condições continuam valendo por cima de um valor fixo.

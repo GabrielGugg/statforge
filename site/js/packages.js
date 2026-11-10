@@ -5,6 +5,7 @@
 import * as db from './storage.js';
 import { validatePackage, buildRules, checkSet, compareVersions } from './engine/package.js';
 import { t } from './i18n.js';
+import { safeLink } from './engine/backup.js';
 
 /** All installed packages, as an id → package map. */
 export async function installed() {
@@ -56,7 +57,7 @@ export async function install(pkg, source = null) {
   }
   const old = await db.get('packages', pkg.id);
   if (old && old.type !== pkg.type) throw new Error(t('pkg.otherType', { id: pkg.id, type: old.type }));
-  const record = { ...pkg, _source: source || old?._source || null, _installed: new Date().toISOString() };
+  const record = { ...pkg, _source: safeLink(source) || safeLink(old?._source) || null, _installed: new Date().toISOString() };
   await db.put('packages', record);
   if (pkg.type === 'extension') {
     const o = await order();

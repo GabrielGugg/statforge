@@ -4,6 +4,7 @@
 // ============================================================
 import * as pk from '../packages.js';
 import { checkSet, buildRules, suggestOrder } from '../engine/package.js';
+import { safeLink } from '../engine/backup.js';
 import * as db from '../storage.js';
 import { applyTheme } from './theme.js';
 import { t, getLanguage, languageName } from '../i18n.js';
@@ -194,7 +195,8 @@ function details(p, inst) {
     lines.push(h('p.small', `${t('type.system')}: ${inst[p._system]?.name || p._system || '?'}`));
     lines.push(h('p.small', `${t('pkgs.extensions')}: ${(p._extensions || []).map(id => inst[id]?.name || id).join(', ') || t('pkgs.noneShort')}`));
   }
-  if (p._source) lines.push(h('p.small', `${t('pkgs.link')}: `, h('a', { href: p._source, target: '_blank', rel: 'noopener' }, p._source)));
+  // Only https links become links; anything else (from an old backup, say) shows as plain text.
+  if (p._source) lines.push(h('p.small', `${t('pkgs.link')}: `, safeLink(p._source) ? h('a', { href: p._source, target: '_blank', rel: 'noopener noreferrer' }, p._source) : String(p._source)));
   dialog(p.name, lines, {
     actions: [{ text: t('pkgs.downloadJson'), action: () => {
       const clean = Object.fromEntries(Object.entries(p).filter(([k]) => !k.startsWith('_')));

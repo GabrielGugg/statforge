@@ -8,6 +8,7 @@ import { VERSION } from '../version.js';
 import { DEFAULT_HUB } from './hub.js';
 import * as sync from '../sync.js';
 import { checkNow } from './updates.js';
+import { normalizeTables } from '../gm.js';
 import { t, LANGUAGES, getLanguage, setLanguage } from '../i18n.js';
 import { h, toast, downloadJSON, pickFiles, confirm, byName, translateStatic } from './util.js';
 
@@ -112,16 +113,19 @@ export async function settingsScreen(app) {
       h('h2', t('settings.backup')),
       h('p', t('settings.backupText')),
       h('div.row',
-        h('button', { onclick: async () => downloadJSON(await db.exportAll(), `statforge-backup-${new Date().toISOString().slice(0, 10)}.json`) }, t('settings.downloadBackup')),
+        h('button', { onclick: async () => downloadJSON(await db.exportAll({ forFile: true }), `statforge-backup-${new Date().toISOString().slice(0, 10)}.json`) }, t('settings.downloadBackup')),
         h('button', { onclick: async () => {
           const [f] = await pickFiles({ multiple: false });
           if (!f) return;
           try {
             const b = JSON.parse(await f.text());
             if (!(await confirm(t('settings.restoreTitle'), t('settings.restoreAsk', { packages: b.packages?.length || 0, sheets: b.sheets?.length || 0 })))) return;
-            await db.importAll(b);
+            const r = await db.importAll(b, { normalizeTables });
             await applyTheme();
-            toast(t('settings.restored'));
+            const { skipped } = r;
+            if (skipped.packages.length || skipped.sheets) {
+              toast(t('settings.restoredSkipped', { packages: r.packages, sheets: r.sheets, names: [...skipped.packages, ...(skipped.sheets ? [t('settings.skippedSheets', { n: skipped.sheets })] : [])].join(', ') }), 'warning');
+            } else toast(t('settings.restored'));
           } catch (e) { toast(e.message, 'error'); }
         } }, t('settings.restoreBackup')))),
     h('section.card.section',

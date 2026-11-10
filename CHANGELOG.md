@@ -2,6 +2,16 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.18.1 — 2026-11-09
+
+Security release.
+
+- **Restoring a backup is checked like any install.** Every package is validated (invalid ones are skipped and named), every sheet is cleaned (prototype keys, hidden characters, malformed ids), and only harmless settings come in (language, theme, units, views, extension order, sheet layouts, GM tables after their usual check). Google sign-in, sync, shares with the GM, the GM's copies of players' sheets, deletions, and the hub, Client ID and Picker addresses are never taken from a file. Before, a backup made by someone else could turn on sync with their Google access and send your sheets to their Drive.
+- **Backup files no longer carry** your Google sign-in data (e-mail, sync state), your shares with the GM or the copies of other players' sheets. Sync between your own devices still brings everything.
+- A package's link is shown as a link only when it is `https`, and it opens with `noopener noreferrer`. Packages installed from a link keep it only when it is `https`.
+- The deploy workflow pins every GitHub Action to a commit and no longer keeps the access token in the checkout.
+- See SECURITY.md.
+
 ## 1.18.0 — 2026-11-08
 
 - Compendium entries can bring a stat block: `sheet.fixed` sets skills, derived values and resource maximums that do not follow the system's formulas (a raider with 14 HP and DF 10), and `sections` holds its text (traits, actions, loot). Effects such as conditions still apply on top of a fixed value.

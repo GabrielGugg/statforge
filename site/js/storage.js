@@ -3,6 +3,7 @@
 // Everything stays in the browser; nothing is sent to a server.
 // ============================================================
 import { t } from './i18n.js';
+import { cleanBackup, configForFile } from './engine/backup.js';
 
 const DB_NAME = 'statforge';
 const DB_VERSION = 1;
@@ -72,8 +73,12 @@ export async function replaceSynced({ sheets, packages, config, deleted }) {
   await setConfig('deleted', deleted || {});
 }
 
-/** Full backup (packages + sheets + settings) as an object. */
-export async function exportAll() {
+/**
+ * Full backup (packages + sheets + settings) as an object.
+ * forFile: for a backup file someone may hand on. It leaves out Google access, shares
+ * and the GM's copies of players' sheets (other people's data); cloud sync keeps them.
+ */
+export async function exportAll({ forFile = false } = {}) {
   const db = await open();
   const config = await new Promise((ok, fail) => {
     const tx = db.transaction('config', 'readonly');
@@ -86,13 +91,19 @@ export async function exportAll() {
     tx.oncomplete = () => ok(out);
     tx.onerror = () => fail(tx.error);
   });
-  return { app: 'statforge', backup: 1, date: new Date().toISOString(), packages: await list('packages'), sheets: await list('sheets'), config };
+  return { app: 'statforge', backup: 1, date: new Date().toISOString(), packages: await list('packages'), sheets: await list('sheets'), config: forFile ? configForFile(config) : config };
 }
 
-/** Restores a backup, merging with what already exists. */
-export async function importAll(b) {
-  if (b?.app !== 'statforge') throw new Error(t('backup.notBackup'));
-  for (const p of b.packages || []) await put('packages', p);
-  for (const s of b.sheets || []) await put('sheets', s);
-  for (const [k, v] of Object.entries(b.config || {})) await setConfig(k, v);
+/**
+ * Restores a backup file, merging with what already exists. The file is checked first
+ * (engine/backup.js): invalid packages and sheets are skipped, and only harmless settings come in.
+ * Returns what was skipped, for the screen.
+ */
+export async function importAll(b, options = {}) {
+  let clean;
+  try { clean = cleanBackup(b, options); } catch { throw new Error(t('backup.notBackup')); }
+  for (const p of clean.packages) await put('packages', p);
+  for (const s of clean.sheets) await put('sheets', s);
+  for (const [k, v] of Object.entries(clean.config)) await setConfig(k, v);
+  return { packages: clean.packages.length, sheets: clean.sheets.length, skipped: clean.skipped };
 }

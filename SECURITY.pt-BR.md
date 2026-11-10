@@ -8,11 +8,14 @@ O StatForge é um site estático: não existe servidor do StatForge nem conta. T
 
 **Pacotes e fichas compartilhadas são dados, nunca código.** Pacotes, links de mesa e fichas compartilhadas com o mestre são JSON. As fórmulas rodam num interpretador pequeno do próprio StatForge (números, comparações e uma lista fixa de funções), nunca com `eval`. Texto de fora é sempre mostrado como texto, nunca como HTML. Fichas compartilhadas são conferidas antes do uso: tamanho até 2 MB, limite de profundidade, chaves de protótipo (`__proto__`, `constructor`, `prototype`) descartadas, caracteres de controle e de inversão de direção removidos de nomes e e-mails.
 
+**Um arquivo de backup é conferido como um link de pacote.** Um backup pode vir de qualquer pessoa, então restaurar um confere cada pacote, limpa cada ficha e aceita só configurações inofensivas. O login e a sincronização do Google, os compartilhamentos com o mestre, as cópias das fichas dos jogadores, as exclusões e os endereços personalizados (hub, Client ID, chave do seletor) nunca vêm de um arquivo. O arquivo de backup não leva os dados do seu login do Google, os seus compartilhamentos nem as fichas de outros jogadores; entregar o arquivo a alguém não entrega o seu acesso nem os dados de outras pessoas.
+
 **O acesso ao Google é o menor que funciona.**
 
 - A sincronização usa `drive.appdata`: uma pasta oculta que só o StatForge vê.
 - Compartilhar com o mestre usa `drive.file`: o StatForge só vê os arquivos que ele criou, ou os que a pessoa escolheu no seletor do próprio Google. Ele não consegue ver mais nada do Drive.
-- Os tokens de acesso ficam no aparelho e só vão para o Google.
+- Os tokens de acesso ficam no aparelho e só vão para o Google. Um token dura cerca de uma hora e fica guardado no armazenamento do navegador só deste site, para o app continuar sincronizando ao ser reaberto; ele nunca vai para um arquivo de backup nem para a cópia na nuvem.
+- As chaves do Google no código (Client ID do OAuth e a chave do seletor) são públicas por natureza. Elas são restritas no Google Cloud ao endereço deste site e, no caso da chave do seletor, à Picker API.
 
 **Compartilhar com o mestre é só leitura por construção.**
 
@@ -23,6 +26,8 @@ O StatForge é um site estático: não existe servidor do StatForge nem conta. T
 - Mesas, parties e recursos da equipe ficam no aparelho do mestre e na pasta oculta do app no Drive dele. Os jogadores nunca veem isso, nem as fichas uns dos outros.
 
 **A página limita o que pode carregar.** Uma Content Security Policy só permite scripts do próprio site e do login e seletor de arquivos do Google, e bloqueia plugins e scripts embutidos. Dados, imagens e fontes podem vir por https porque pacotes e temas podem vir de qualquer link.
+
+**A publicação é fixada.** O workflow de deploy usa GitHub Actions fixadas num commit, sem deixar o token de acesso no checkout.
 
 ## Relatar um problema
 
