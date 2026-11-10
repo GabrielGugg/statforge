@@ -7,6 +7,7 @@
 //   #/hub          package collection (install with one tap)
 //   #/settings     settings
 //   #/guide        user guide (GUIDE.md)
+//   #/convert-2.2  TEMPORARY: converts Fallout 2.2 sheets to 2.1 + Gugg's Revision (no button)
 //   #/gm[/<table>[/<file>]]  GM mode: tables, shared sheets (read-only)
 //   #/join?gm=…    GM's invite: share a sheet with them (read-only, through Google Drive)
 //   ?table=<link>  installs a table package on open
@@ -24,6 +25,7 @@ import { hubScreen } from './ui/hub.js';
 import { joinScreen } from './ui/share.js';
 import { gmScreen } from './ui/gm.js';
 import { guideScreen } from './ui/guide.js';
+import { convertScreen } from './ui/convert.js'; // TEMPORARY: 2.2 → 2.1 + Gugg's Revision
 import { startShareUpdates, flushPending } from './share.js';
 import * as sync from './sync.js';
 import { autoCheck } from './ui/updates.js';
@@ -63,6 +65,7 @@ async function route() {
     else if (name === 'hub') await hubScreen(app);
     else if (name === 'settings') await settingsScreen(app);
     else if (name === 'guide') await guideScreen(app);
+    else if (name === 'convert-2.2') await convertScreen(app); // TEMPORARY, no button: the GM sends the link
     else if (name.startsWith('join?')) await joinScreen(app, location.hash);
     else if (name === 'gm') await gmScreen(app, arg, location.hash.split('/')[3]);
     else await homeScreen(app);

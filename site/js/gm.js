@@ -205,6 +205,14 @@ export async function renameTable(id, name) {
   const tb = list.find(t => t.id === id);
   if (tb) { tb.name = String(name).trim().slice(0, 80); await saveTables(list); }
 }
+/** TEMPORARY (with ui/convert.js): moves tables to another system id ({ old: new }). Returns how many changed. */
+export async function retargetTables(map) {
+  const list = await tables();
+  let n = 0;
+  for (const tb of list) if (Object.hasOwn(map, tb.system)) { tb.system = map[tb.system]; n++; }
+  if (n) await saveTables(list);
+  return n;
+}
 export async function deleteTable(id) {
   const list = await tables();
   const tb = list.find(t => t.id === id);

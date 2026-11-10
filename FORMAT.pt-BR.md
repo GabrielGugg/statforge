@@ -42,7 +42,7 @@ A estrutura do arquivo (chaves como `name`, `effects`, `type`) é sempre em ingl
 
 Um pacote sem nenhum texto (um tema, por exemplo) pode usar `"language": "*"`: ele serve para qualquer idioma e aparece no Hub seja qual for o idioma escolhido.
 
-Uma tradução é um pacote separado, com `id` próprio, por exemplo `fallout-2.2` e `fallout-2.2-pt`. O app mostra o idioma de cada pacote numa etiqueta, destacada quando é diferente do idioma da interface.
+Uma tradução é um pacote separado, com `id` próprio, por exemplo `fallout-2.1-en` e `fallout-2.1-pt`. O app mostra o idioma de cada pacote numa etiqueta, destacada quando é diferente do idioma da interface.
 
 Fórmulas são código, então as funções e palavras-chave delas (`floor`, `sum`, `and`...) ficam em inglês em qualquer idioma. Os ids que você cria (`FOR`, `carga_max`) podem estar em qualquer idioma.
 
@@ -348,7 +348,7 @@ Variáveis: `--bg` (fundo), `--surface` (cartões), `--surface-2`, `--text`, `--
 ```json
 {
   "format": 1, "id": "mesa-vault-texas", "name": "Vault Texas", "version": "1.0.0", "language": "pt-BR", "type": "table",
-  "system": { "url": "https://…/fallout-2.2-pt.json" },
+  "system": { "url": "https://…/fallout-2.1-pt.json" },
   "packages": [{ "url": "https://…/regras-da-casa.json" }],
   "theme": { "url": "https://…/tema-pipboy.json" }
 }
@@ -367,7 +367,7 @@ Um compendium traz fichas prontas para um sistema: criaturas, NPCs e inimigos. E
 ```json
 {
   "format": 1, "id": "bestiario-ermo", "name": "Bestiário do Ermo", "version": "1.0.0", "language": "pt-BR", "type": "compendium",
-  "system": "fallout-2.2-pt",
+  "system": "fallout-2.1-pt",
   "entries": [
     {
       "id": "saqueador",

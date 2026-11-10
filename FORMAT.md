@@ -42,7 +42,7 @@ The structure of the file (keys like `name`, `effects`, `type`) is always in Eng
 
 A package with no text at all (a theme, for example) can use `"language": "*"`: it fits every language and shows in the Hub whatever language is picked.
 
-A translation is a separate package with its own `id`, for example `fallout-2.2` and `fallout-2.2-pt`. The app shows each package's language as a badge, and highlights it when it differs from the interface language.
+A translation is a separate package with its own `id`, for example `fallout-2.1-en` and `fallout-2.1-pt`. The app shows each package's language as a badge, and highlights it when it differs from the interface language.
 
 Formulas are code, so their functions and keywords (`floor`, `sum`, `and`...) are in English in every language. The ids you create (`STR`, `FOR`, `carga_max`) can be in any language.
 
@@ -347,7 +347,7 @@ Variables: `--bg`, `--surface`, `--surface-2`, `--text`, `--text-muted`, `--bord
 ```json
 {
   "format": 1, "id": "table-vault-texas", "name": "Vault Texas", "version": "1.0.0", "language": "en", "type": "table",
-  "system": { "url": "https://…/fallout-2.2.json" },
+  "system": { "url": "https://…/fallout-2.1-en.json" },
   "packages": [{ "url": "https://…/house-rules.json" }],
   "theme": { "url": "https://…/theme-pipboy.json" }
 }
@@ -366,7 +366,7 @@ A compendium brings ready-made sheets for one system: creatures, NPCs and enemie
 ```json
 {
   "format": 1, "id": "bestiary-wasteland", "name": "Wasteland Bestiary", "version": "1.0.0", "language": "en", "type": "compendium",
-  "system": "fallout-2.2-en",
+  "system": "fallout-2.1-en",
   "entries": [
     {
       "id": "raider",

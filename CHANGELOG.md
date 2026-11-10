@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.24.0 — 2026-11-10
+
+- **Fallout 2.2 sheets converter** (temporary). The old "Fallout TTRPG 2.2" packages left the hub: they are now **Fallout TTRPG 2.1 (EN/BR)** plus the **Gugg's Revision / Revisão por Gugg** extension. The page `#/convert-2.2` (no button; the GM sends the link) downloads a backup, installs the 2.1 system and the revision from the Hub, and moves this device's 2.2 sheets and GM tables to them. Only the system and extensions change; a sheet whose numbers would change is left as it is. The Pip-Boy and Vault-Tec themes, now `theme-pipboy` and `theme-vault-tec`, are switched too. The page will be removed once the players have moved.
+- Docs: the examples in `FORMAT.md` now use the hub's current packages, `fallout-2.1-en` and `fallout-2.1-pt`.
+
 ## 1.23.0 — 2026-11-09
 
 - GM mode, table Settings: new **Privacy › Players' names and e-mails** option, for when you show your screen or take a screenshot. **Hidden, shown when the pointer is over them** (the default) blurs them until you point at them, focus them or tap them; **Never shown** leaves them out ("Sheet of a player"); **Always shown** is how it was before.

@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.24.0 — 10/11/2026
+
+- **Conversor de fichas do Fallout 2.2** (temporário). Os antigos pacotes "Fallout TTRPG 2.2" saíram do hub: agora são o **Fallout TTRPG 2.1 (EN/BR)** com a extensão **Gugg's Revision / Revisão por Gugg**. A página `#/convert-2.2` (sem botão; o Mestre manda o link) baixa um backup, instala pelo Hub o sistema 2.1 e a revisão, e passa para eles as fichas e mesas do Mestre da 2.2 deste aparelho. Só mudam o sistema e as extensões; uma ficha cujos números mudariam fica como está. Os temas Pip-Boy e Vault-Tec, agora `theme-pipboy` e `theme-vault-tec`, também são trocados. A página sai quando os jogadores tiverem migrado.
+- Documentação: os exemplos do `FORMAT.pt-BR.md` agora usam os pacotes atuais do hub, `fallout-2.1-en` e `fallout-2.1-pt`.
+
 ## 1.23.0 — 09/11/2026
 
 - Modo Mestre, Configurações da mesa: nova opção **Privacidade › Nomes e e-mails dos jogadores**, para quando você mostra a tela ou tira um print. **Escondidos, aparecem com o mouse em cima** (o padrão) borra os dados até você passar o mouse, focar ou tocar neles; **Nunca mostrar** tira os dados ("Ficha de um jogador"); **Sempre mostrar** é como era antes.
