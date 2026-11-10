@@ -180,6 +180,8 @@ Operações: `+ - * / %`, comparações `< <= > >= == !=`, `and` (e), `or` (ou),
 
 Uma fórmula que se refere a si mesma (direta ou indiretamente) vira aviso na ficha, e o valor fica 0.
 
+Uma fórmula pode ter até 5.000 caracteres e 100 níveis de aninhamento (parênteses dentro de parênteses); as maiores ou mais profundas são apontadas pelo validador.
+
 ### Condições automáticas
 
 `auto_conditions` lista condições que o app consegue perceber sozinho. Quando `when` passa a valer, um aviso pequeno no topo da ficha oferece adicionar a entidade (`ref`, no formato `colecao/id`); quando deixa de valer com a entidade na ficha, oferece remover. O aviso tem os botões Aplicar e Dispensar e some sozinho depois de 10 segundos. Um aviso dispensado só volta depois que a situação mudar. Um efeito `immunity` ativo para a entidade (um talento, por exemplo) impede o aviso.

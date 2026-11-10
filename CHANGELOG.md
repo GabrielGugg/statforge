@@ -2,6 +2,18 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.18.2 — 2026-11-09
+
+Fixes.
+
+- **Your data is kept by the browser.** When you save a sheet, the app asks the browser for persistent storage, so it is not cleared to free space (Safari clears sites after about 7 days without a visit). Settings › Backup says whether this browser keeps your data, with a button to ask again.
+- GM mode: a shared sheet is no longer dropped after a single "403" from Google Drive, which Drive sometimes answers for a moment. The copy stays and shows an error; it goes only after 3 in a row, or at once when the file is gone (404).
+- Sync: deletion marks older than 90 days are dropped after they are applied, so the synced data stops growing with every deletion. A device that stays away longer than that could bring a deleted item back once.
+- Pop-ups keep the keyboard inside them: Tab and Shift+Tab go round their buttons and fields, focus moves into the pop-up when it opens and goes back to what opened it when it closes, and Esc closes only the top one.
+- Formulas have limits: up to 5,000 characters and 100 levels of nesting. A formula past them is reported instead of freezing the sheet.
+- The 1.16.1 entry of this changelog had lost its title.
+- The repository keeps LF line endings on every system (`.gitattributes`).
+
 ## 1.18.1 — 2026-11-09
 
 Security release.
@@ -27,7 +39,7 @@ Security release.
 - Damage follows the system's order (`combat.damage`): in Fallout, `-20` on someone with 14 SP empties the SP, the 6 left are reduced by the DT and the rest comes off the HP. The pop-up shows what will change before applying, and the cascade can be turned off.
 - Encounters made before this version get the new values from the sheets when opened.
 
- — 2026-11-08
+## 1.16.1 — 2026-11-08
 
 - Pop-ups no longer close when a text selection is dragged past their edge: they close on an outside click only when the press also started outside.
 - When a pop-up opens with a suggested name (like "Encounter 1"), the text comes selected, so typing replaces it.

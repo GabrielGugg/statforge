@@ -51,8 +51,23 @@ async function markDeleted(store, id, on) {
   await setConfig('deleted', all);
 }
 
+// Browsers may clear a site's storage to free space (Safari after about 7 days without a visit).
+// Once there is a sheet worth keeping, the app asks for persistent storage: Chrome and Edge decide
+// by themselves, Firefox asks the person once. Asked at most once per session.
+let protectAsked = false;
+export async function protectStorage() {
+  if (protectAsked || typeof navigator === 'undefined' || !navigator.storage?.persist) return null;
+  protectAsked = true;
+  try { return (await navigator.storage.persisted()) || (await navigator.storage.persist()); } catch { return null; }
+}
+/** true: the browser keeps the data; false: it may clear it; null: unknown. */
+export async function storageProtected() {
+  try { return navigator.storage?.persisted ? await navigator.storage.persisted() : null; } catch { return null; }
+}
+
 export async function put(store, obj) {
   const r = await run(store, 'readwrite', s => s.put(obj));
+  if (store === 'sheets') protectStorage();
   if (SYNCED.includes(store)) { await markDeleted(store, obj.id, false); changed(store, obj.id); }
   return r;
 }

@@ -2,6 +2,18 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.18.2 — 09/11/2026
+
+Correções.
+
+- **O navegador guarda os seus dados.** Ao salvar uma ficha, o app pede ao navegador armazenamento persistente, para ele não apagar os dados para liberar espaço (o Safari apaga sites depois de uns 7 dias sem uso). Configurações › Backup mostra se este navegador guarda os seus dados, com um botão para pedir de novo.
+- Modo Mestre: uma ficha compartilhada não some mais depois de um único "403" do Google Drive, que às vezes responde isso por um instante. A cópia fica e aparece com erro; ela só sai depois de 3 seguidos, ou na hora quando o arquivo não existe mais (404).
+- Sincronização: as marcas de exclusão com mais de 90 dias são descartadas depois de aplicadas, então os dados sincronizados param de crescer a cada exclusão. Um aparelho que fique mais tempo que isso sem sincronizar pode trazer de volta um item apagado, uma vez.
+- Os pop-ups prendem o teclado dentro deles: Tab e Shift+Tab circulam pelos botões e campos, o foco entra no pop-up quando ele abre e volta para o que o abriu quando ele fecha, e o Esc fecha só o de cima.
+- As fórmulas têm limites: até 5.000 caracteres e 100 níveis de aninhamento. Uma fórmula acima disso é apontada em vez de travar a ficha.
+- A entrada 1.16.1 deste changelog tinha perdido o título.
+- O repositório guarda finais de linha LF em todos os sistemas (`.gitattributes`).
+
 ## 1.18.1 — 09/11/2026
 
 Versão de segurança.
@@ -27,7 +39,7 @@ Versão de segurança.
 - O dano segue a ordem do sistema (`combat.damage`): no Fallout, `-20` em alguém com 14 PE zera os PE, os 6 que sobram são reduzidos pela TD e o resto sai dos PV. A janela mostra o que vai mudar antes de aplicar, e dá para desligar a passagem do dano.
 - Encontros criados antes desta versão pegam os novos valores das fichas ao abrir.
 
- — 08/11/2026
+## 1.16.1 — 08/11/2026
 
 - Os pop-ups não fecham mais quando a seleção de um texto passa da borda deles: só fecham com um clique fora que também começou fora.
 - Quando um pop-up abre com um nome sugerido (como "Encontro 1"), o texto já vem selecionado, então é só digitar para trocar.

@@ -12,6 +12,22 @@ import { normalizeTables } from '../gm.js';
 import { t, LANGUAGES, getLanguage, setLanguage } from '../i18n.js';
 import { h, toast, downloadJSON, pickFiles, confirm, byName, translateStatic } from './util.js';
 
+/** Whether the browser keeps this site's data, with a button to ask when it may clear it. */
+async function storageLine() {
+  const line = h('p.small');
+  const draw = state => {
+    line.replaceChildren(
+      state === true ? t('settings.storageKept') : state === false ? t('settings.storageMayClear') : t('settings.storageUnknown'),
+      state === false ? h('button.mini', { style: { marginLeft: '.5rem' }, onclick: async () => {
+        const ok = await navigator.storage.persist().catch(() => false);
+        draw(ok);
+        if (!ok) toast(t('settings.storageDenied'), 'warning');
+      } }, t('settings.storageAsk')) : null);
+  };
+  draw(await db.storageProtected());
+  return line;
+}
+
 export async function settingsScreen(app) {
   const inst = await installed();
   const themes = Object.values(inst).filter(p => p.type === 'theme').sort((a, b) => byName(a.name, b.name));
@@ -112,6 +128,7 @@ export async function settingsScreen(app) {
     h('section.card.section',
       h('h2', t('settings.backup')),
       h('p', t('settings.backupText')),
+      await storageLine(),
       h('div.row',
         h('button', { onclick: async () => downloadJSON(await db.exportAll({ forFile: true }), `statforge-backup-${new Date().toISOString().slice(0, 10)}.json`) }, t('settings.downloadBackup')),
         h('button', { onclick: async () => {

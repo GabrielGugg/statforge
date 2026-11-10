@@ -15,7 +15,7 @@ test('newest sheet wins, deletions win over older copies, settings stay local', 
     config: { theme: 'light', unit: 'ft' },
     deleted: { 'sheets/b': '2026-10-31T00:00:00Z', 'packages/old': '2026-10-02T00:00:00Z' },
   };
-  const m = mergeData(local, remote);
+  const m = mergeData(local, remote, Date.parse('2026-11-01T00:00:00Z'));
   const byId = Object.fromEntries(m.sheets.map(s => [s.id, s.name]));
   assert.deepEqual(byId, { a: 'A remote', d: 'D' });
   assert.deepEqual(m.packages.map(p => `${p.id}@${p.version}`), ['sys@1.10.0']);
@@ -27,4 +27,13 @@ test('first sync with an empty cloud keeps everything', () => {
   const m = mergeData({ sheets: [{ id: 'a', updated: '2026-10-31T10:00:00Z' }], packages: [{ id: 'p', version: '1.0.0' }], config: {} }, null);
   assert.equal(m.sheets.length, 1);
   assert.equal(m.packages.length, 1);
+});
+
+test('deletion marks older than 90 days are dropped after they are applied', () => {
+  const now = Date.parse('2026-11-09T00:00:00Z');
+  const m = mergeData(
+    { sheets: [{ id: 'old', updated: '2026-01-01T00:00:00Z' }], packages: [], config: {}, deleted: { 'sheets/old': '2026-02-01T00:00:00Z', 'sheets/new': '2026-11-01T00:00:00Z' } },
+    { sheets: [], packages: [], config: {}, deleted: { 'sheets/ancient': '2025-01-01T00:00:00Z' } }, now);
+  assert.equal(m.sheets.length, 0, 'the old mark still deleted the older copy');
+  assert.deepEqual(Object.keys(m.deleted), ['sheets/new']);
 });

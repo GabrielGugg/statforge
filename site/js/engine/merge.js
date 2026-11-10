@@ -9,15 +9,20 @@ const LOCAL_ONLY = /^(sync|deleted$)/;
 
 const time = s => Date.parse(s || '') || 0;
 
+// Deletion marks older than this are dropped, so the list does not grow forever.
+// A device that stays away longer than this could bring a deleted item back once.
+export const KEEP_DELETED_DAYS = 90;
+
 /**
  * Merges two backups ({ sheets, packages, config, deleted }).
  * Sheets: the most recently updated copy wins. Packages: the higher version wins.
  * deleted: { "sheets/<id>": ISO date } — a deletion wins over copies older than it.
  * Settings: this device's value wins; keys it does not have come from the other side.
  */
-export function mergeData(local, remote) {
+export function mergeData(local, remote, now = Date.now()) {
   const deleted = { ...(remote?.deleted || {}) };
   for (const [k, v] of Object.entries(local?.deleted || {})) if (time(v) > time(deleted[k])) deleted[k] = v;
+  const cutoff = now - KEEP_DELETED_DAYS * 86400e3;
 
   const sheets = new Map();
   for (const s of [...(remote?.sheets || []), ...(local?.sheets || [])]) {
@@ -37,5 +42,8 @@ export function mergeData(local, remote) {
   for (const [k, v] of Object.entries(remote?.config || {})) if (!LOCAL_ONLY.test(k)) config[k] = v;
   for (const [k, v] of Object.entries(local?.config || {})) if (!LOCAL_ONLY.test(k)) config[k] = v;
 
-  return { app: 'statforge', sync: 1, date: new Date().toISOString(), sheets: [...sheets.values()], packages: [...packages.values()], config, deleted };
+  // Old marks have done their job (applied above); they are not carried any further.
+  for (const [k, v] of Object.entries(deleted)) if (time(v) < cutoff) delete deleted[k];
+
+  return { app: 'statforge', sync: 1, date: new Date(now).toISOString(), sheets: [...sheets.values()], packages: [...packages.values()], config, deleted };
 }

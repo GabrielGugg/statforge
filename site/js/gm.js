@@ -335,15 +335,27 @@ async function getJSON(url) {
  * Reads one member's file if it changed. Returns 'same' | 'updated' | 'lost' (access gone: copy deleted locally).
  * Only metadata is fetched each round; the content only when modifiedTime changed.
  */
+// A 403 that is not a rate limit usually means the player stopped sharing, but Drive also
+// answers 403 for a moment now and then. The copy is only dropped after this many in a row.
+export const LOST_AFTER = 3;
+const strikes = new Map(); // "<table>:<file>" → consecutive 403s (this session)
+
 async function refreshMember(tableId, m) {
   let meta;
+  const key = `${tableId}:${m.fileId}`;
   try {
     meta = await (await getJSON(`${API}/${m.fileId}?fields=id,name,modifiedTime,trashed,size,owners(emailAddress,displayName)`)).json();
   } catch (e) {
-    // 404, or 403 that is not a rate limit: the player stopped sharing.
-    if (e.status === 404 || (e.status === 403 && !/rate|quota/i.test(e.detail || ''))) { await db.setConfig(cacheKey(tableId, m.fileId), null); return 'lost'; }
+    // 404: the copy is gone (the player stopped sharing, which deletes it).
+    if (e.status === 404) { strikes.delete(key); await db.setConfig(cacheKey(tableId, m.fileId), null); return 'lost'; }
+    if (e.status === 403 && !/rate|quota/i.test(e.detail || '')) {
+      const n = (strikes.get(key) || 0) + 1;
+      strikes.set(key, n);
+      if (n >= LOST_AFTER) { strikes.delete(key); await db.setConfig(cacheKey(tableId, m.fileId), null); return 'lost'; }
+    }
     throw e;
   }
+  strikes.delete(key);
   if (meta.trashed) { await db.setConfig(cacheKey(tableId, m.fileId), null); return 'lost'; }
   const prev = await cached(tableId, m.fileId);
   if (prev && prev.modifiedTime === meta.modifiedTime) return 'same';

@@ -57,8 +57,18 @@ export function toast(msg, kind = 'ok') {
 /** Opens a modal dialog. Returns { close, body }. */
 export function dialog(title, content, { actions = [], width } = {}) {
   const backdrop = h('div.dialog-backdrop');
-  const close = () => { backdrop.remove(); document.removeEventListener('keydown', esc); };
-  const esc = e => { if (e.key === 'Escape') close(); };
+  // Focus goes back to whatever opened the dialog (keyboard and screen-reader users keep their place).
+  const opener = document.activeElement;
+  const close = () => {
+    backdrop.remove(); document.removeEventListener('keydown', esc);
+    if (opener?.isConnected && typeof opener.focus === 'function') opener.focus();
+  };
+  const esc = e => {
+    // Only the dialog on top reacts (a dialog can open another).
+    if (backdrop !== [...document.querySelectorAll('.dialog-backdrop')].pop()) return;
+    if (e.key === 'Escape') close();
+    else if (e.key === 'Tab') trapTab(e, box);
+  };
   const body = h('div.dialog-body', content);
   const box = h('div.dialog', { role: 'dialog', 'aria-modal': 'true', 'aria-label': title, style: width ? { maxWidth: width } : null },
     h('div.dialog-head', h('h2', title), h('button.icon', { 'aria-label': t('common.close'), onclick: close }, '✕')),
@@ -74,9 +84,20 @@ export function dialog(title, content, { actions = [], width } = {}) {
   document.addEventListener('keydown', esc);
   document.body.append(backdrop);
   const first = box.querySelector('input, select, textarea, button.primary');
-  first?.focus();
+  (first || box.querySelector(FOCUSABLE))?.focus(); // focus always moves into the dialog
   if (first?.matches('input[type=text], input:not([type])') && first.value) first.select(); // a suggested name ("Encontro 1") is replaced by typing
   return { close, body };
+}
+
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+/** Keeps Tab inside the dialog: from the last control back to the first, and the reverse. */
+function trapTab(e, box) {
+  const items = [...box.querySelectorAll(FOCUSABLE)].filter(el => !el.hidden && el.offsetParent !== null);
+  if (!items.length) { e.preventDefault(); return; }
+  const first = items[0], last = items[items.length - 1];
+  if (!box.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+  else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 }
 
 /** Simple confirmation. Resolves true/false. */

@@ -180,6 +180,8 @@ Operators: `+ - * / %`, comparisons `< <= > >= == !=`, `and`, `or`, `not`, paren
 
 A formula that refers to itself (directly or indirectly) becomes a warning on the sheet, and its value is 0.
 
+A formula can have up to 5,000 characters and 100 levels of nesting (parentheses inside parentheses); longer or deeper ones are reported by the validator.
+
 ### Automatic conditions
 
 `auto_conditions` lists conditions the app can notice by itself. When `when` becomes true, a small popup at the top of the sheet offers to add the entity (`ref`, as `collection/id`); when it stops being true while the entity is on the sheet, it offers to remove it. The popup has Apply and Dismiss buttons and goes away by itself after 10 seconds. A dismissed warning only comes back after the situation changes. An active `immunity` effect for the entity (for example a perk) stops the warning.

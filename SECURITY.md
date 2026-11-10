@@ -6,7 +6,7 @@ StatForge is a static site: there is no StatForge server and no account. Everyth
 
 ## What protects people
 
-**Packages and shared sheets are data, never code.** Packages, table links and sheets shared with a GM are JSON. Formulas run in StatForge's own small interpreter (numbers, comparisons and a fixed list of functions), never through `eval`. Text from outside is always shown as text, never as HTML. Shared sheets are checked before use: size up to 2 MB, depth limit, prototype keys (`__proto__`, `constructor`, `prototype`) dropped, hidden control and right-to-left characters removed from names and e-mails.
+**Packages and shared sheets are data, never code.** Packages, table links and sheets shared with a GM are JSON. Formulas run in StatForge's own small interpreter (numbers, comparisons and a fixed list of functions, with length and nesting limits), never through `eval`. Text from outside is always shown as text, never as HTML. Shared sheets are checked before use: size up to 2 MB, depth limit, prototype keys (`__proto__`, `constructor`, `prototype`) dropped, hidden control and right-to-left characters removed from names and e-mails.
 
 **A backup file is checked like a package link.** A backup can come from anyone, so restoring one validates every package, cleans every sheet and accepts only harmless settings. Google sign-in and sync, shares with the GM, the GM's copies of players' sheets, deletions and custom addresses (hub, Client ID, Picker key) are never taken from a file. A backup file leaves out your Google sign-in data, your shares and other players' sheets, so handing it to someone does not hand them your access or other people's data.
 
