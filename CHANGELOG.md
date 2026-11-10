@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.19.0 — 2026-11-09
+
+- **Terms whose rule depends on the item.** A linked term (a weapon property, say) can have `variants`: on each item, its tooltip and details show the rule for that kind of item. In Fallout, "Lento" on an explosive now explains the fuse delay instead of the ranged-weapon rule. Opened from the property list, a term shows every variant.
+- The validator checks `variants`. See "Terms whose rule depends on the item" in FORMAT.md.
+
 ## 1.18.2 — 2026-11-09
 
 Fixes.

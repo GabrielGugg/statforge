@@ -2,6 +2,7 @@
 // Sheet: drawn from the system package's layout.
 // ============================================================
 import * as db from '../storage.js';
+import { termVariant, termDescription } from '../engine/terms.js';
 import * as pk from '../packages.js';
 import { checkSet } from '../engine/package.js';
 import { compute, roll, isBroken, effectiveWear } from '../engine/calc.js';
@@ -1060,7 +1061,7 @@ function equippedBlock(st, def) {
         (def.columns || []).filter(c => ent?.[c] !== undefined && ent[c] !== '').map(c => {
           const now = itemValue(st, colId, item, ent, c);
           return h('span.stat', { class: now !== ent[c] ? 'worn' : '', title: now !== ent[c] ? t('sheet.baseValue', { n: fmtField(ent[c], fields[c], st) }) : null },
-            h('span.muted.small', fields[c]?.label || c), h('strong', fmtField(now, fields[c], st)));
+            h('span.muted.small', fields[c]?.label || c), h('strong', fmtField(now, fields[c], st, { collection: colId, ent })));
         }),
         wearStats(item).map(x => h('span.stat.worn', h('span.muted.small', x.label), h('strong', x.value)))) : null,
       itemEffects(st, item),
@@ -1112,7 +1113,7 @@ function inventoryBlock(st, def) {
       h('td', col.equippable ? h('input', { type: 'checkbox', checked: !!i.equipped, 'aria-label': t('sheet.equipName', { name }), onchange: e => { i.equipped = e.target.checked; st.change(); } }) : null),
       h('td', h('button.mini.link', { onclick: () => entityDetails(st, i.collection, i.ref, i) }, name), wearBadge(col, i), h('div.small.muted', col.name), itemEffects(st, i),
         usesControl(st, i, rules.entities[i.collection]?.[i.ref], col)),
-      listCols.map(f => h('td.small.num', fieldsFor(def.list_fields, i.collection).includes(f) ? fmtField(rules.entities[i.collection]?.[i.ref]?.[f], col.fields?.[f], st) : '—')),
+      listCols.map(f => h('td.small.num', fieldsFor(def.list_fields, i.collection).includes(f) ? fmtField(rules.entities[i.collection]?.[i.ref]?.[f], col.fields?.[f], st, { collection: i.collection, ent: rules.entities[i.collection]?.[i.ref] }) : '—')),
       h('td.num', col.quantity ? h('input', { type: 'number', value: i.qty ?? 1, min: 0, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name }),
         onchange: e => { i.qty = Math.max(0, Number(e.target.value) || 0); st.change(); } }) : null),
       h('td.num', h('button.mini.danger', { 'aria-label': t('sheet.removeName', { name }), onclick: async () => {
@@ -1161,7 +1162,7 @@ function listBlock(st, def) {
         ent ? null : h('span.badge.error', t('sheet.notFoundBadge')),
         itemEffects(st, item),
         usesControl(st, item, ent, col)),
-      columns.map(c => h('td.small', fmtField(itemValue(st, colId, item, ent, c), fields[c], st))),
+      columns.map(c => h('td.small', fmtField(itemValue(st, colId, item, ent, c), fields[c], st, { collection: colId, ent }))),
       usesQty ? h('td.num', h('input', { type: 'number', value: item.qty ?? 1, min: 0, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name }),
         onchange: e => { item.qty = Math.max(0, Number(e.target.value) || 0); st.change(); } })) : null,
       wearMax ? h('td.num', h('div.row', { style: { flexWrap: 'nowrap', gap: '2px', justifyContent: 'flex-end' } },
@@ -1176,7 +1177,7 @@ function listBlock(st, def) {
   const granted = st.calc.active.filter(f => f.col === colId && !f.item && f.from && !owned.has(f.ent.id)).map(f => h('tr.granted',
     col?.equippable ? h('td') : null,
     h('td', h('button.mini.link', { onclick: () => entityDetails(st, colId, f.ent.id) }, f.ent.name)),
-    columns.map(c => h('td.small', fmtField(f.ent[c], fields[c], st))),
+    columns.map(c => h('td.small', fmtField(f.ent[c], fields[c], st, { collection: colId, ent: f.ent }))),
     usesQty ? h('td') : null,
     wearMax ? h('td') : null,
     h('td.num', h('span.badge', { title: t('sheet.grantedBy', { name: f.from }) }, f.from))));
@@ -1199,7 +1200,8 @@ function listBlock(st, def) {
 }
 
 /** Text whose terms (properties…) name entities of a collection: each one gets a tooltip and opens its details. */
-function linkTerms(text, colId, st) {
+// ctx = { collection, ent }: the item showing the terms, so a term's variant for it is used (engine/terms.js).
+function linkTerms(text, colId, st, ctx) {
   const ents = Object.values(st.rules.entities[colId]);
   const names = ents.map(e => ({ e, n: normalize(e.name) })).sort((a, b) => b.n.length - a.n.length);
   const out = []; let rest = String(text);
@@ -1208,7 +1210,7 @@ function linkTerms(text, colId, st) {
     const hit = names.find(x => normalize(part).startsWith(x.n));
     if (!hit) { out.push(part); continue; }
     const label = part.slice(0, hit.e.name.length), tail = part.slice(hit.e.name.length);
-    out.push(h('button.term', { type: 'button', title: String(hit.e.description || '').slice(0, 300), onclick: ev => { ev.stopPropagation(); entityDetails(st, colId, hit.e.id); } }, label), tail);
+    out.push(h('button.term', { type: 'button', title: String(termDescription(hit.e, ctx)).slice(0, 300), onclick: ev => { ev.stopPropagation(); entityDetails(st, colId, hit.e.id, null, { context: ctx }); } }, label), tail);
   }
   return h('span', out);
 }
@@ -1252,10 +1254,10 @@ function wearBadge(col, item) {
   return h(`span.badge.wear-badge.${broken ? 'error' : 'warning'}`, { title: col.wear.text || t('sheet.wear') }, broken ? t('sheet.broken') : t('sheet.wearShort', { n: item.wear }));
 }
 
-function fmtField(v, field, st) {
+function fmtField(v, field, st, ctx) {
   if (v === undefined || v === null || v === '') return '—';
   if (field?.type === 'range') return fmtRange(v, field, st);
-  if (field?.links && st?.rules?.entities?.[field.links] && typeof v === 'string') return linkTerms(v, field.links, st);
+  if (field?.links && st?.rules?.entities?.[field.links] && typeof v === 'string') return linkTerms(v, field.links, st, ctx);
   if (Array.isArray(v)) return v.join(', ');
   if (typeof v === 'boolean') return v ? t('common.yes') : t('common.no');
   const u = field?.unit ? ` ${field.unit}` : '';
@@ -1407,15 +1409,23 @@ function customItem(st, colIds, preferred, ent) {
   name.focus();
 }
 
-export function entityDetails(st, colId, id, item) {
+// options.context = { collection, ent }: opened from a term on that item, so the term's variant for it is shown.
+export function entityDetails(st, colId, id, item, { context = null } = {}) {
   const { rules } = st;
   const ent = rules.entities[colId]?.[id];
   if (!ent) { dialog(t('sheet.notFoundTitle'), h('p', t('sheet.notFoundText', { name: item?.name || id }))); return; }
   const fields = rules.collections[colId]?.fields || {};
-  const rows = Object.entries(fields).filter(([k]) => ent[k] !== undefined && ent[k] !== '').map(([k, c]) => h('tr', h('td.muted', c.label || k), h('td', fmtField(ent[k], c, st))));
+  const rows = Object.entries(fields).filter(([k]) => ent[k] !== undefined && ent[k] !== '').map(([k, c]) => h('tr', h('td.muted', c.label || k), h('td', fmtField(ent[k], c, st, { collection: colId, ent }))));
   const origin = rules.origin[`${colId}/${id}`];
+  const variant = termVariant(ent, context);
+  const description = variant ? variant.description : ent.description;
+  // Opened on its own (not from an item), a term lists its variants too.
+  const others = !context && Array.isArray(ent.variants) ? ent.variants.filter(v => v && typeof v.description === 'string') : [];
   const content = [
-    ent.description ? h('p', { style: { whiteSpace: 'pre-line' } }, ent.description) : null,
+    description ? h('p', { style: { whiteSpace: 'pre-line' } }, description) : null,
+    others.length ? others.map(v => h('div.small', { style: { marginTop: '.5rem' } },
+      h('strong', [v.collection ? rules.collections[v.collection]?.name || v.collection : null, ...Object.values(v.match || {}).flat()].filter(Boolean).join(' · ') + ': '),
+      h('span', { style: { whiteSpace: 'pre-line' } }, v.description))) : null,
     rows.length ? h('table.table', h('tbody', rows)) : null,
     Number(ent.uses) > 0 ? h('p.small', h('strong', `${t('sheet.uses')}: `), String(Math.floor(Number(ent.uses)))) : null,
     ent.effects?.length ? [h('h4', { style: { margin: '.8rem 0 .3rem' } }, t('sheet.effects')), h('ul.effects-list', ent.effects.map(ef => h('li', describeEffect(rules, ef))))] : null,

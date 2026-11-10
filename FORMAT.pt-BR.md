@@ -109,6 +109,16 @@ Uma coleção (`collections`) é um tipo de coisa (armas, traços, condições).
 
 Uma entidade com `"uses": 3` tem usos limitados: a ficha mostra uma caixinha por uso e guarda a contagem no item da ficha. Uma entidade também pode ter `requires`, uma fórmula que precisa valer para ela ser adicionada (por exemplo `"FOR >= 5 and level >= 3"`): a busca e os passos de escolha a mostram desativada, com a parte da fórmula que falha em palavras ("Requisito não atendido: Força ≥ 5"), até o jogador marcar "Ignorar requisitos não atendidos". `requires_text` substitui essas palavras quando o requisito é uma parte só (por exemplo, uma lista longa de "ou"). Com `requires`, o `match_field` do passo de escolha não vale para essa entidade. `repeat` diz quantas vezes ela pode ser pega.
 
+**Termos cuja regra depende do item.** Um campo com `"links"` transforma nomes em links para aquela coleção (propriedades de armas…). Quando o mesmo termo significa coisas diferentes em itens diferentes, dê à entidade dele `"variants"`: a primeira que servir para o item substitui a descrição na dica e nos detalhes. `"collection"` é a coleção do item; `"match"` lista campos do item e os valores que eles precisam ter (um valor ou uma lista). Aberto sozinho (pela lista de propriedades), o termo mostra a descrição e todas as variantes.
+
+```json
+{ "id": "lento", "name": "Lento", "description": "Armas à distância: o acerto acontece no início do seu próximo turno.",
+  "variants": [
+    { "collection": "explosivos", "description": "Explosivos: detona depois do tempo indicado ao lado da propriedade." },
+    { "collection": "armas", "match": { "pericia": ["Corpo a Corpo", "Pugilismo"] }, "description": "Armas corpo a corpo: …" }
+  ] }
+```
+
 | Opção da coleção | Efeito |
 | --- | --- |
 | `equippable` | Os itens têm uma caixa "equipado", e os efeitos só valem quando ela está marcada. |

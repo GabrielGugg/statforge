@@ -109,6 +109,16 @@ A collection is a kind of thing (weapons, traits, conditions). Entities are the 
 
 An entity with `"uses": 3` has limited uses: the sheet shows one box per use and keeps the count on the sheet item. An entity may also have `requires`, a formula that must hold to add it (for example `"STR >= 5 and level >= 3"`): search and pick steps list it disabled, with the part of the formula that fails in words ("Requirement not met: Strength ≥ 5"), until the player ticks "Ignore unmet requirements". `requires_text` replaces those words when the requirement is a single part (e.g. a long "or" list). With `requires`, a pick step's `match_field` is not used for that entity. `repeat` says how many times it can be taken.
 
+**Terms whose rule depends on the item.** A field with `"links"` turns names into links to that collection (weapon properties…). When the same term means different things on different items, give its entity `"variants"`: the first one that fits the item replaces the description in the tooltip and the details. `"collection"` is the item's collection; `"match"` lists item fields and the values they must have (one value or a list). Opened on its own (from the property list), the term shows its description and every variant.
+
+```json
+{ "id": "lento", "name": "Lento", "description": "Ranged weapons: the hit lands at the start of your next turn.",
+  "variants": [
+    { "collection": "explosivos", "description": "Explosives: goes off after the time shown next to the property." },
+    { "collection": "armas", "match": { "pericia": ["Corpo a Corpo", "Pugilismo"] }, "description": "Melee weapons: …" }
+  ] }
+```
+
 | Collection option | Effect |
 | --- | --- |
 | `equippable` | Items get an "equipped" box, and their effects only apply when it is ticked. |

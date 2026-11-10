@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.19.0 — 09/11/2026
+
+- **Termos cuja regra depende do item.** Um termo com link (uma propriedade de arma, por exemplo) pode ter `variants`: em cada item, a dica e os detalhes mostram a regra para aquele tipo de item. No Fallout, "Lento" num explosivo agora explica o atraso do detonador em vez da regra de arma à distância. Aberto pela lista de propriedades, o termo mostra todas as variantes.
+- O validador confere `variants`. Veja "Termos cuja regra depende do item" no FORMAT.pt-BR.md.
+
 ## 1.18.2 — 09/11/2026
 
 Correções.
