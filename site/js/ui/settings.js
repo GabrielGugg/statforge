@@ -9,6 +9,7 @@ import { DEFAULT_HUB } from './hub.js';
 import * as sync from '../sync.js';
 import { checkNow } from './updates.js';
 import { normalizeTables } from '../gm.js';
+import { markdown } from './markdown.js';
 import { t, LANGUAGES, getLanguage, setLanguage } from '../i18n.js';
 import { h, toast, downloadJSON, pickFiles, confirm, byName, translateStatic } from './util.js';
 
@@ -74,7 +75,7 @@ export async function settingsScreen(app) {
   const changelog = h('div.markdown.small', h('p.muted', t('common.loading')));
   const file = getLanguage() === 'en' ? 'CHANGELOG.md' : `CHANGELOG.${getLanguage()}.md`;
   fetch(file).then(r => (r.ok ? r.text() : fetch('CHANGELOG.md').then(x => (x.ok ? x.text() : Promise.reject()))))
-    .then(txt => changelog.replaceChildren(...simpleMarkdown(txt)))
+    .then(txt => changelog.replaceChildren(...markdown(txt)))
     .catch(() => changelog.replaceChildren(h('p.muted', t('settings.changelogOffline'))));
 
   // Cloud sync
@@ -110,6 +111,9 @@ export async function settingsScreen(app) {
 
   app.append(
     h('h1.section', t('settings.title')),
+    h('section.card.section.row.spread',
+      h('div', h('h2', { style: { margin: 0 } }, t('guide.title')), h('p.small.muted', { style: { margin: '.2rem 0 0' } }, t('guide.settingsText'))),
+      h('a.button.primary', { href: '#/guide' }, t('guide.open'))),
     h('section.card.section', h('h2', t('sync.title')), syncBox),
     h('section.card.section',
       h('h2', t('settings.appearance')),
@@ -157,31 +161,4 @@ export async function settingsScreen(app) {
       h('p.small', h('a', { href: 'privacy.html', target: '_blank', rel: 'noopener' }, t('legal.privacy')), ' · ',
         h('a', { href: 'terms.html', target: '_blank', rel: 'noopener' }, t('legal.terms'))),
       h('details', h('summary', t('settings.changelog')), changelog)));
-}
-
-/** Minimal Markdown for the changelog: headings, lists and paragraphs. */
-function simpleMarkdown(txt) {
-  const out = [];
-  let list = null;
-  const inline = s => {
-    const frag = document.createDocumentFragment();
-    String(s).split(/(\*\*[^*]+\*\*|`[^`]+`)/).forEach(p => {
-      if (/^\*\*.*\*\*$/.test(p)) frag.append(h('strong', p.slice(2, -2)));
-      else if (/^`.*`$/.test(p)) frag.append(h('code', p.slice(1, -1)));
-      else if (p) frag.append(p);
-    });
-    return frag;
-  };
-  for (const line of txt.split('\n')) {
-    const m = line.match(/^(#{1,3})\s+(.*)/);
-    if (m) { list = null; out.push(h(`h${Math.min(3, m[1].length + 1)}`, inline(m[2]))); continue; }
-    if (/^\s*[-*]\s+/.test(line)) {
-      if (!list) { list = h('ul'); out.push(list); }
-      list.append(h('li', inline(line.replace(/^\s*[-*]\s+/, ''))));
-      continue;
-    }
-    list = null;
-    if (line.trim()) out.push(h('p', inline(line)));
-  }
-  return out;
 }

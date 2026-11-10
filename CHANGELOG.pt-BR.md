@@ -2,6 +2,14 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.22.0 — 09/11/2026
+
+- **Guia.** Um guia de uso com tudo o que o app faz, do primeiro pacote ao Modo Mestre: `GUIDE.pt-BR.md` (e `GUIDE.md`) no GitHub, e no app em **Configurações › Guia**.
+- A tela inicial oferece o guia na primeira visita (**Ler o guia** ou **Agora não**) e sempre que nenhum pacote estiver instalado.
+- Segurança: **Importar ficha** agora confere o arquivo como as fichas de um backup (só dados, sem chaves de protótipo, ids bem formados, até 5 MB). Antes, um arquivo de ficha era salvo do jeito que vinha.
+- Privacidade: os e-mails de exemplo deste changelog (1.3.1), do código e dos testes não usam mais o endereço de uma pessoa real; os testes agora usam domínios reservados para exemplos.
+- O changelog e o guia usam um mesmo leitor de Markdown pequeno, que monta a página só com texto; os links dele só vão para páginas https ou para dentro do app.
+
 ## 1.21.0 — 09/11/2026
 
 - **Lembrete de backup.** Com a sincronização desligada, a tela inicial avisa quando o último backup tem mais de 14 dias, ou quando você tem fichas há 14 dias sem nenhum. **Baixar backup** faz na hora, **Ligar sincronização** abre as Configurações e **Lembrar depois** espera 7 dias. Com a sincronização ligada, não há lembrete.
@@ -184,7 +192,7 @@ Versão de segurança.
 
 ## 1.3.1 — 02/11/2026
 
-- Corrigido: compartilhar com um Gmail escrito diferente da conta (pontos, maiúsculas ou "+algo", como "Player.Example@gmail.com" para "playerexample@gmail.com") era tomado como acesso inesperado e cancelado. O Gmail trata os dois como a mesma conta, e agora o StatForge também.
+- Corrigido: compartilhar com um Gmail escrito diferente da conta (pontos, maiúsculas ou "+algo", como "Jogador.Exemplo@gmail.com" para "jogadorexemplo@gmail.com") era tomado como acesso inesperado e cancelado. O Gmail trata os dois como a mesma conta, e agora o StatForge também.
 - Compartilhar com o seu próprio e-mail é recusado com uma mensagem clara (não dá acesso nenhum), antes de criar qualquer coisa no Drive.
 - Quando o Google não dá acesso ao mestre, a mensagem diz isso, e os dois erros mostram as permissões que o Google informou (só os papéis, sem e-mails) para ajudar a achar a causa.
 

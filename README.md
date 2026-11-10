@@ -14,6 +14,7 @@ Character sheets for **any tabletop RPG**. The app ships with no game: each syst
 | --- | --- |
 | 🌐 **Open the app** | https://gabrielgugg.github.io/statforge/site/ |
 | 📦 **StatForge Hub** (packages to install) | https://github.com/GabrielGugg/statforge-hub |
+| 📖 **Guide: everything the app does** | [StatForge guide](GUIDE.md) (also in the app, Settings › Guide) |
 | 🧭 **Tutorial: using the app** | [How to use](#how-to-use) (below) |
 | 🎲 **Tutorial: GM mode** | [GM mode](#gm-mode-see-your-players-sheets) (below) |
 | 🛠️ **Tutorial: make a system or homebrew** | [Builder](https://gabrielgugg.github.io/statforge-hub/builder/) / [Format guide](FORMAT.md) and the [examples](examples/) |

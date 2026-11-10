@@ -4,7 +4,7 @@ import { fixShareMeta, validateShare, packageMismatches, sameAccount, parseInvit
 
 // A small fake Google Drive: files with an owner and permissions. Like the real one,
 // it refuses writes from anyone who is not the owner or a writer.
-function fakeDrive({ as = 'player@x.com', tamper = null, failPermission = false, canonical = null, noop = false } = {}) {
+function fakeDrive({ as = 'player@example.org', tamper = null, failPermission = false, canonical = null, noop = false } = {}) {
   const files = new Map();
   const calls = [];
   let n = 0;
@@ -45,14 +45,14 @@ const sheet = { id: 's1', name: 'Rex <img src=x onerror=alert(1)>', system: 'fal
 const inst = { 'fallout-2.2-pt': { version: '1.15.0' } };
 
 test('invite links: valid ones parse, anything odd is refused', () => {
-  const link = makeInvite('https://gabrielgugg.github.io/statforge/site/#/settings', { email: 'GM@Mesa.com', table: 'Vault Texas', system: 'fallout-2.2-pt' });
-  assert.match(link, /^https:\/\/gabrielgugg\.github\.io\/statforge\/site\/#\/join\?gm=gm%40mesa\.com/);
-  assert.deepEqual(parseInvite(link), { email: 'gm@mesa.com', table: 'Vault Texas', system: 'fallout-2.2-pt' });
-  for (const bad of ['', 'https://x/#/join?gm=notanemail', 'https://x/#/join?gm=a@b.com%20<script>', 'https://x/#/join?gm="a"@b.com', 'gm=a@b', 'x'.repeat(3000)]) assert.equal(parseInvite(bad), null, bad);
+  const link = makeInvite('https://gabrielgugg.github.io/statforge/site/#/settings', { email: 'GM@Mesa.example', table: 'Vault Texas', system: 'fallout-2.2-pt' });
+  assert.match(link, /^https:\/\/gabrielgugg\.github\.io\/statforge\/site\/#\/join\?gm=gm%40mesa\.example/);
+  assert.deepEqual(parseInvite(link), { email: 'gm@mesa.example', table: 'Vault Texas', system: 'fallout-2.2-pt' });
+  for (const bad of ['', 'https://x/#/join?gm=notanemail', 'https://x/#/join?gm=a@b.test%20<script>', 'https://x/#/join?gm="a"@b.com', 'gm=a@b', 'x'.repeat(3000)]) assert.equal(parseInvite(bad), null, bad);
   // hidden direction-override characters are stripped from the table name; a bad system id is dropped
-  const p = parseInvite('#/join?gm=a@b.com&t=Mesa‮evil&s=../../x');
+  const p = parseInvite('#/join?gm=a@b.test&t=Mesa‮evil&s=../../x');
   assert.equal(p.table, 'Mesaevil'); assert.equal(p.system, '');
-  assert.equal(validEmail('a@b.co'), true); assert.equal(validEmail('a@b'), false); assert.equal(validEmail('a b@c.com'), false);
+  assert.equal(validEmail('a@b.test'), true); assert.equal(validEmail('a@b'), false); assert.equal(validEmail('a b@c.test'), false);
 });
 
 test('snapshot carries the sheet and package versions, and refuses huge sheets', () => {
@@ -63,13 +63,13 @@ test('snapshot carries the sheet and package versions, and refuses huge sheets',
 
 test('sharing gives exactly one reader permission, and the GM cannot write', async () => {
   const api = fakeDrive();
-  const { fileId } = await createShare(api, { sheet, body: snapshot(sheet, inst, '1.3.0'), email: 'gm@mesa.com' });
+  const { fileId } = await createShare(api, { sheet, body: snapshot(sheet, inst, '1.3.0'), email: 'gm@mesa.example' });
   const perms = api.files.get(fileId).perms;
   assert.equal(perms.length, 2);
-  assert.deepEqual(perms[1], { id: perms[1].id, type: 'user', role: 'reader', emailAddress: 'gm@mesa.com' });
+  assert.deepEqual(perms[1], { id: perms[1].id, type: 'user', role: 'reader', emailAddress: 'gm@mesa.example' });
   assert.ok(!api.calls.some(c => /anyone|writer/.test(c.body || '')), 'never anyone/writer');
   // The GM (reader) tries to write or delete: Drive refuses.
-  api.as = 'gm@mesa.com';
+  api.as = 'gm@mesa.example';
   await assert.rejects(updateShare(api, fileId, '{"hacked":true}'), e => e.message === 'DRIVE_403' && e.detail === 'insufficientFilePermissions');
   await assert.rejects(fixShareMeta(api, fileId), /DRIVE_403/);
   await assert.rejects(deleteShare(api, fileId), /DRIVE_403/);
@@ -78,10 +78,10 @@ test('sharing gives exactly one reader permission, and the GM cannot write', asy
 
 test('unexpected access or a failed permission deletes the copy at once', async () => {
   const api = fakeDrive({ tamper: { id: 'x', type: 'anyone', role: 'reader' } });
-  await assert.rejects(createShare(api, { sheet, body: '{}', email: 'gm@mesa.com' }), /SHARE_UNEXPECTED_ACCESS/);
+  await assert.rejects(createShare(api, { sheet, body: '{}', email: 'gm@mesa.example' }), /SHARE_UNEXPECTED_ACCESS/);
   assert.equal(api.files.size, 0);
   const api2 = fakeDrive({ failPermission: true });
-  await assert.rejects(createShare(api2, { sheet, body: '{}', email: 'gm@mesa.com' }), /DRIVE_400/);
+  await assert.rejects(createShare(api2, { sheet, body: '{}', email: 'gm@mesa.example' }), /DRIVE_400/);
   assert.equal(api2.files.size, 0);
   const before = api2.calls.length;
   await assert.rejects(createShare(api2, { sheet, body: '{}', email: 'not an email' }), /INVALID_EMAIL/);
@@ -90,32 +90,32 @@ test('unexpected access or a failed permission deletes the copy at once', async 
 
 test('checking a share: ok, extra access, revoked, gone; stopping deletes the file', async () => {
   const api = fakeDrive();
-  const { fileId } = await createShare(api, { sheet, body: '{}', email: 'gm@mesa.com' });
-  assert.equal((await checkShare(api, fileId, 'gm@mesa.com')).state, 'ok');
-  api.files.get(fileId).perms.push({ id: 'z', type: 'user', role: 'reader', emailAddress: 'stranger@x.com' });
-  assert.equal((await checkShare(api, fileId, 'gm@mesa.com')).state, 'unsafe');
-  api.files.get(fileId).perms = api.files.get(fileId).perms.filter(p => p.emailAddress !== 'gm@mesa.com');
-  assert.equal((await checkShare(api, fileId, 'gm@mesa.com')).state, 'revoked');
+  const { fileId } = await createShare(api, { sheet, body: '{}', email: 'gm@mesa.example' });
+  assert.equal((await checkShare(api, fileId, 'gm@mesa.example')).state, 'ok');
+  api.files.get(fileId).perms.push({ id: 'z', type: 'user', role: 'reader', emailAddress: 'stranger@example.org' });
+  assert.equal((await checkShare(api, fileId, 'gm@mesa.example')).state, 'unsafe');
+  api.files.get(fileId).perms = api.files.get(fileId).perms.filter(p => p.emailAddress !== 'gm@mesa.example');
+  assert.equal((await checkShare(api, fileId, 'gm@mesa.example')).state, 'revoked');
   await deleteShare(api, fileId);
   assert.equal(api.files.size, 0);
-  assert.equal((await checkShare(api, fileId, 'gm@mesa.com')).state, 'gone');
+  assert.equal((await checkShare(api, fileId, 'gm@mesa.example')).state, 'gone');
   await deleteShare(api, fileId); // already gone: not an error
-  assert.equal(permissionsAreSafe([{ role: 'owner' }, { type: 'user', role: 'writer', emailAddress: 'gm@mesa.com' }], 'gm@mesa.com'), false);
+  assert.equal(permissionsAreSafe([{ role: 'owner' }, { type: 'user', role: 'writer', emailAddress: 'gm@mesa.example' }], 'gm@mesa.example'), false);
 });
 
 test('Gmail spellings count as the same account; self-share and silent no-ops are refused', async () => {
   assert.equal(sameAccount('Player.Example+rpg@gmail.com', 'playerexample@gmail.com'), true);
-  assert.equal(sameAccount('a.b@empresa.com', 'ab@empresa.com'), false);
+  assert.equal(sameAccount('a.b@empresa.example', 'ab@empresa.example'), false);
   // Drive answers with the account's own spelling: still the right reader, share is kept
   const api = fakeDrive({ canonical: 'playerexample@gmail.com' });
   const { fileId } = await createShare(api, { sheet, body: '{}', email: 'player.example@gmail.com' });
   assert.equal(api.files.size, 1);
   assert.equal((await checkShare(api, fileId, 'player.example@gmail.com')).state, 'ok');
   const api2 = fakeDrive();
-  await assert.rejects(createShare(api2, { sheet, body: '{}', email: 'Player@x.com', ownEmail: 'player@x.com' }), /SHARE_SELF/);
+  await assert.rejects(createShare(api2, { sheet, body: '{}', email: 'Player@example.org', ownEmail: 'player@example.org' }), /SHARE_SELF/);
   assert.equal(api2.calls.length, 0);
   const api3 = fakeDrive({ noop: true });
-  await assert.rejects(createShare(api3, { sheet, body: '{}', email: 'gm@mesa.com' }), e => e.message === 'SHARE_NOT_GRANTED' && e.detail === 'owner (user)');
+  await assert.rejects(createShare(api3, { sheet, body: '{}', email: 'gm@mesa.example' }), e => e.message === 'SHARE_NOT_GRANTED' && e.detail === 'owner (user)');
   assert.equal(api3.files.size, 0);
 });
 
@@ -137,7 +137,7 @@ test('GM side: shared files are validated and cleaned before anything is shown',
 
 test('new copies never block the GM from downloading; old ones are fixed by the owner', async () => {
   const api = fakeDrive();
-  const { fileId } = await createShare(api, { sheet, body: '{}', email: 'gm@mesa.com' });
+  const { fileId } = await createShare(api, { sheet, body: '{}', email: 'gm@mesa.example' });
   const meta = JSON.parse(api.calls[0].body.split('\r\n\r\n')[1].split('\r\n--')[0]);
   assert.equal(meta.copyRequiresWriterPermission, undefined);
   await fixShareMeta(api, fileId);

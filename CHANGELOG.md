@@ -2,6 +2,14 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.22.0 — 2026-11-09
+
+- **Guide.** A user guide covering everything the app does, from the first package to GM mode: `GUIDE.md` (and `GUIDE.pt-BR.md`) on GitHub, and in the app in **Settings › Guide**.
+- The home screen offers the guide on the first visit (**Read the guide** or **Not now**), and whenever no package is installed.
+- Security: **Import sheet** now checks the file like the sheets of a backup (plain data, no prototype keys, well-formed ids, at most 5 MB). Before, a sheet file was saved as it came.
+- Privacy: the example e-mail addresses in this changelog (1.3.1), the code and the tests no longer use a real person's address; the tests now use reserved example domains.
+- The changelog and the guide share one small Markdown reader that builds the page from text only; its links go only to https pages or inside the app.
+
 ## 1.21.0 — 2026-11-09
 
 - **Backup reminder.** With cloud sync off, the home screen reminds you when your last backup is more than 14 days old, or when you have had sheets for 14 days without one. **Download backup** does it right there, **Turn on sync** opens Settings, and **Remind me later** waits 7 days. With sync on, there is no reminder.

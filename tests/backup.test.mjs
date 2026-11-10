@@ -77,3 +77,11 @@ test('backup reminder: only with sync off, after 14 days without a backup, unles
   assert.equal(backupReminder({ syncEnabled: false, sheets, lastBackup: null, snoozedUntil: '2026-12-02T00:00:00Z', now }), null, 'snoozed');
   assert.equal(backupReminder({ syncEnabled: false, sheets: [{ created: '2026-11-25T00:00:00Z' }], lastBackup: null, now }), null, 'new sheets get 14 days first');
 });
+
+test('an imported sheet file is cleaned like a backup sheet', async () => {
+  const { cleanSheet } = await import('../site/js/engine/backup.js');
+  const s = cleanSheet(JSON.parse('{"id":"a","system":"fallout-2.2-pt","name":"Bob\\u202e","__proto__":{"x":1},"items":[]}'));
+  assert.equal(s.name, 'Bob');
+  assert.equal(Object.hasOwn(s, '__proto__'), false);
+  for (const bad of [null, [], { id: 'a' }, { id: 'a', system: '../x' }, { id: 'a', system: 's', extensions: ['ok', 3] }, 'x']) assert.equal(cleanSheet(bad), null, JSON.stringify(bad));
+});

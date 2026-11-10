@@ -59,6 +59,22 @@ function packageMeta(p) {
   return meta;
 }
 
+const sheetOk = s => s && typeof s === 'object' && !Array.isArray(s) && typeof s.id === 'string' && s.id && s.id.length <= 100
+  && typeof s.system === 'string' && SYSTEM_ID.test(s.system)
+  && (s.extensions == null || (Array.isArray(s.extensions) && s.extensions.every(x => typeof x === 'string' && SYSTEM_ID.test(x))));
+
+/**
+ * A single sheet file (Import sheet on the home screen), checked like the sheets of a backup:
+ * plain JSON with no prototype keys, an id, a well-formed system and extensions, a clean name.
+ * Returns the sheet, or null when it is not a sheet.
+ */
+export function cleanSheet(raw) {
+  let s;
+  try { s = cleanJSON(raw); } catch { return null; }
+  if (!sheetOk(s)) return null;
+  return { ...s, name: cleanText(s.name, 120) };
+}
+
 /**
  * Checks a backup and returns what may be restored:
  * { packages, sheets, config, skipped: { packages: [name], sheets: n, settings: [key] } }.
@@ -83,9 +99,7 @@ export function cleanBackup(raw, { normalizeTables = null } = {}) {
 
   const sheets = [];
   for (const s of Array.isArray(b.sheets) ? b.sheets.slice(0, 2000) : []) {
-    const ok = s && typeof s === 'object' && !Array.isArray(s) && typeof s.id === 'string' && s.id && s.id.length <= 100
-      && typeof s.system === 'string' && SYSTEM_ID.test(s.system)
-      && (s.extensions == null || (Array.isArray(s.extensions) && s.extensions.every(x => typeof x === 'string' && SYSTEM_ID.test(x))));
+    const ok = sheetOk(s);
     if (!ok) { skipped.sheets++; continue; }
     sheets.push({ ...s, name: cleanText(s.name, 120) });
   }

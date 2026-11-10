@@ -14,6 +14,7 @@ Ficha de personagem para **qualquer sistema de RPG**. O app não vem com nenhum 
 | --- | --- |
 | 🌐 **Abrir o app** | https://gabrielgugg.github.io/statforge/site/ |
 | 📦 **StatForge Hub** (pacotes para instalar) | https://github.com/GabrielGugg/statforge-hub |
+| 📖 **Guia: tudo o que o app faz** | [Guia do StatForge](GUIDE.pt-BR.md) (também no app, Configurações › Guia) |
 | 🧭 **Tutorial: usar o app** | [Como usar](#como-usar) (abaixo) |
 | 🎲 **Tutorial: Modo Mestre** | [Modo Mestre](#modo-mestre-ver-as-fichas-dos-jogadores) (abaixo) |
 | 🛠️ **Tutorial: criar um sistema ou homebrew** | [Construtor](https://gabrielgugg.github.io/statforge-hub/builder/) / [Guia do formato](FORMAT.pt-BR.md) e os [exemplos](examples/) |

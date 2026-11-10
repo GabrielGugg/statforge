@@ -8,6 +8,8 @@ import { h, toast, pickFiles, byName, ask } from './util.js';
 import { installLinkWithFeedback, exampleUrl } from './packages.js';
 import { backupReminder, SNOOZE_DAYS } from '../engine/backup.js';
 import { downloadBackup } from './settings.js';
+import { guideNotice } from './guide.js';
+import { cleanSheet } from '../engine/backup.js';
 
 export async function homeScreen(app) {
   const [all, inst, gmTables] = await Promise.all([db.list('sheets'), installed(), db.getConfig('gmTables', null)]);
@@ -17,6 +19,9 @@ export async function homeScreen(app) {
   const systems = Object.values(inst).filter(p => p.type === 'system');
   sheets.sort((a, b) => String(b.updated || '').localeCompare(String(a.updated || '')));
   const reload = () => { app.replaceChildren(); homeScreen(app); };
+
+  const notice = await guideNotice({ hasPackages: Object.keys(inst).length > 0 });
+  if (notice) app.append(notice);
 
   app.append(h('div.row.spread.section',
     h('h1', t('home.title')),
@@ -71,12 +76,16 @@ async function askLink() {
   return url ? installLinkWithFeedback(url) : false;
 }
 
+const MAX_SHEET_BYTES = 5 * 1024 * 1024;
+
 async function importSheet() {
   const [file] = await pickFiles({ multiple: false });
   if (!file) return;
   try {
-    const s = JSON.parse(await file.text());
-    if (!s?.system || !s?.id) throw new Error(t('home.notSheet'));
+    // A sheet file can come from anyone: it is checked like the sheets of a backup (engine/backup.js).
+    if (file.size > MAX_SHEET_BYTES) throw new Error(t('home.notSheet'));
+    const s = cleanSheet(JSON.parse(await file.text()));
+    if (!s) throw new Error(t('home.notSheet'));
     const inst = await installed();
     if (await db.get('sheets', s.id)) s.id = `${s.id}-${Date.now().toString(36)}`;
     delete s.gm; // an imported sheet is always one of yours
