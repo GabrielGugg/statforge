@@ -6,6 +6,8 @@ import { installed } from '../packages.js';
 import { t } from '../i18n.js';
 import { h, toast, pickFiles, byName, ask } from './util.js';
 import { installLinkWithFeedback, exampleUrl } from './packages.js';
+import { backupReminder, SNOOZE_DAYS } from '../engine/backup.js';
+import { downloadBackup } from './settings.js';
 
 export async function homeScreen(app) {
   const [all, inst, gmTables] = await Promise.all([db.list('sheets'), installed(), db.getConfig('gmTables', null)]);
@@ -38,6 +40,9 @@ export async function homeScreen(app) {
     return;
   }
 
+  const reminder = await backupBanner(all, reload);
+  if (reminder) app.append(reminder);
+
   app.append(h('div.grid', sheets.map(s => {
     const sys = inst[s.system];
     const exts = s.extensions || [];
@@ -46,6 +51,19 @@ export async function homeScreen(app) {
       h('div.muted.small', sys ? sys.name : t('home.systemMissing', { id: s.system })),
       exts.length ? h('div.muted.small', `${t('home.extensions', { n: exts.length })}: ${exts.map(id => inst[id]?.name || id).sort(byName).join(', ')}`) : null);
   })));
+}
+
+/** With cloud sync off, a reminder when the last backup (or the first sheet) is old. */
+async function backupBanner(sheets, reload) {
+  const [syncEnabled, lastBackup, snoozedUntil] = await Promise.all([db.getConfig('syncEnabled', false), db.getConfig('backupLast', null), db.getConfig('backupSnooze', null)]);
+  const due = backupReminder({ syncEnabled, sheets, lastBackup, snoozedUntil });
+  if (!due) return null;
+  return h('div.alert.row.spread.section', { role: 'status' },
+    h('span', due.never ? t('home.backupNever', { n: due.days }) : t('home.backupOld', { n: due.days })),
+    h('div.row',
+      h('button.mini.primary', { onclick: async () => { await downloadBackup(); toast(t('home.backupDone')); reload(); } }, t('settings.downloadBackup')),
+      h('a.button.mini', { href: '#/settings' }, t('home.backupSync')),
+      h('button.mini', { onclick: async () => { await db.setConfig('backupSnooze', new Date(Date.now() + SNOOZE_DAYS * 86400e3).toISOString()); reload(); } }, t('home.backupLater'))));
 }
 
 async function askLink() {

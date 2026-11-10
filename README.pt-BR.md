@@ -6,7 +6,7 @@ Ficha de personagem para **qualquer sistema de RPG**. O app não vem com nenhum 
 
 - Funciona no navegador, no celular e offline. Pode ser instalado como app (PWA).
 - Interface em inglês e português do Brasil. Cada pacote declara o próprio idioma.
-- Seus dados ficam no seu navegador. Para usar em vários aparelhos, ligue a sincronização com o Google Drive em Configurações (ela salva numa pasta escondida do app no seu próprio Drive), ou leve um backup na mão.
+- Seus dados ficam no seu navegador. Para usar em vários aparelhos, ligue a sincronização com o Google Drive em Configurações (ela salva numa pasta escondida do app no seu próprio Drive), ou leve um backup na mão. Com a sincronização desligada, o app lembra de baixar um backup quando o último tem mais de 14 dias.
 
 ## Links úteis
 

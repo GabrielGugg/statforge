@@ -101,3 +101,20 @@ export function cleanBackup(raw, { normalizeTables = null } = {}) {
   }
   return { packages, sheets, config, skipped };
 }
+
+// ---------- Backup reminder (only when cloud sync is off) ----------
+export const REMIND_DAYS = 14;  // a backup older than this, or none since the first sheet, is reminded
+export const SNOOZE_DAYS = 7;   // "Remind me later"
+const DAY = 86400e3;
+const when = s => Date.parse(s || '') || 0;
+
+/**
+ * Days since the last backup, or since the oldest sheet when there has never been one;
+ * null when no reminder is due. { syncEnabled, sheets: [{ created, updated }], lastBackup, snoozedUntil, now }
+ */
+export function backupReminder({ syncEnabled, sheets, lastBackup, snoozedUntil, now = Date.now() }) {
+  if (syncEnabled || !sheets?.length || now < when(snoozedUntil)) return null;
+  const since = when(lastBackup) || Math.min(...sheets.map(s => when(s.created) || when(s.updated) || now));
+  const days = Math.floor((now - since) / DAY);
+  return days >= REMIND_DAYS ? { days, never: !when(lastBackup) } : null;
+}

@@ -28,6 +28,12 @@ async function storageLine() {
   return line;
 }
 
+/** Downloads a backup file and remembers when (for the backup reminder on the home screen). */
+export async function downloadBackup() {
+  downloadJSON(await db.exportAll({ forFile: true }), `statforge-backup-${new Date().toISOString().slice(0, 10)}.json`);
+  await db.setConfig('backupLast', new Date().toISOString());
+}
+
 export async function settingsScreen(app) {
   const inst = await installed();
   const themes = Object.values(inst).filter(p => p.type === 'theme').sort((a, b) => byName(a.name, b.name));
@@ -130,7 +136,7 @@ export async function settingsScreen(app) {
       h('p', t('settings.backupText')),
       await storageLine(),
       h('div.row',
-        h('button', { onclick: async () => downloadJSON(await db.exportAll({ forFile: true }), `statforge-backup-${new Date().toISOString().slice(0, 10)}.json`) }, t('settings.downloadBackup')),
+        h('button', { onclick: () => downloadBackup() }, t('settings.downloadBackup')),
         h('button', { onclick: async () => {
           const [f] = await pickFiles({ multiple: false });
           if (!f) return;

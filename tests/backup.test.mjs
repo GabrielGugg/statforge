@@ -64,3 +64,16 @@ test('safeLink keeps https only', () => {
   assert.equal(safeLink('https://example.com/a.json'), 'https://example.com/a.json');
   for (const u of ['http://example.com', 'javascript:alert(1)', 'data:text/html,x', '', null, 5]) assert.equal(safeLink(u), null, String(u));
 });
+
+test('backup reminder: only with sync off, after 14 days without a backup, unless snoozed', async () => {
+  const { backupReminder } = await import('../site/js/engine/backup.js');
+  const now = Date.parse('2026-11-30T12:00:00Z');
+  const sheets = [{ created: '2026-11-01T00:00:00Z' }, { created: '2026-11-20T00:00:00Z' }];
+  assert.deepEqual(backupReminder({ syncEnabled: false, sheets, lastBackup: null, now }), { days: 29, never: true });
+  assert.equal(backupReminder({ syncEnabled: true, sheets, lastBackup: null, now }), null, 'sync on: no reminder');
+  assert.equal(backupReminder({ syncEnabled: false, sheets: [], now }), null, 'no sheets: nothing to lose');
+  assert.equal(backupReminder({ syncEnabled: false, sheets, lastBackup: '2026-11-25T00:00:00Z', now }), null, 'recent backup');
+  assert.deepEqual(backupReminder({ syncEnabled: false, sheets, lastBackup: '2026-11-10T00:00:00Z', now }), { days: 20, never: false });
+  assert.equal(backupReminder({ syncEnabled: false, sheets, lastBackup: null, snoozedUntil: '2026-12-02T00:00:00Z', now }), null, 'snoozed');
+  assert.equal(backupReminder({ syncEnabled: false, sheets: [{ created: '2026-11-25T00:00:00Z' }], lastBackup: null, now }), null, 'new sheets get 14 days first');
+});

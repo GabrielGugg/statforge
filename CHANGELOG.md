@@ -2,6 +2,10 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.21.0 — 2026-11-09
+
+- **Backup reminder.** With cloud sync off, the home screen reminds you when your last backup is more than 14 days old, or when you have had sheets for 14 days without one. **Download backup** does it right there, **Turn on sync** opens Settings, and **Remind me later** waits 7 days. With sync on, there is no reminder.
+
 ## 1.20.0 — 2026-11-09
 
 - GM mode, table Settings: new **Ties in initiative** option. **Manual** keeps ties in the order you drag them (as before); **Player characters before NPCs** puts the players' characters (shared and local sheets not marked NPC) ahead of NPCs and creatures; **Custom** uses a formula worked out on each participant's sheet, higher first (for example `AGI`, or `mod(AGI) * 10 + mod(PER)` for Agility and then Perception). Whatever is still tied keeps the order you choose.

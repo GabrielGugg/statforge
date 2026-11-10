@@ -6,7 +6,7 @@ Character sheets for **any tabletop RPG**. The app ships with no game: each syst
 
 - Runs in the browser, on phones and offline. Can be installed as an app (PWA).
 - Interface in English and Brazilian Portuguese. Each package declares its own language.
-- Your data stays in your browser. To use it on several devices, turn on Google Drive sync in Settings (it saves to a hidden app folder in your own Drive), or move a backup by hand.
+- Your data stays in your browser. To use it on several devices, turn on Google Drive sync in Settings (it saves to a hidden app folder in your own Drive), or move a backup by hand. With sync off, the app reminds you to download a backup when the last one is more than 14 days old.
 
 ## Useful links
 
