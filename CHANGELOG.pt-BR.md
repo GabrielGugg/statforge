@@ -2,6 +2,10 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.25.0 — 11/11/2026
+
+- Pacotes: uma extensão agora pode alterar a **`progression`** (com `modify`, `replace` ou `remove`, como já dava com `layout` e `creation`), por exemplo para mudar os passos da subida de nível. Os passos novos e a fórmula de XP são conferidos como os do sistema. Até agora, uma regra da casa que mudasse quando se ganha talentos ou pontos de perícia acertava os números da ficha, mas o assistente de subida de nível continuava perguntando pelas regras do sistema.
+
 ## 1.24.0 — 10/11/2026
 
 - **Conversor de fichas do Fallout 2.2** (temporário). Os antigos pacotes "Fallout TTRPG 2.2" saíram do hub: agora são o **Fallout TTRPG 2.1 (EN/BR)** com a extensão **Gugg's Revision / Revisão por Gugg**. A página `#/convert-2.2` (sem botão; o Mestre manda o link) baixa um backup, instala pelo Hub o sistema 2.1 e a revisão, e passa para eles as fichas e mesas do Mestre da 2.2 deste aparelho. Só mudam o sistema e as extensões; uma ficha cujos números mudariam fica como está. Os temas Pip-Boy e Vault-Tec, agora `theme-pipboy` e `theme-vault-tec`, também são trocados. A página sai quando os jogadores tiverem migrado.

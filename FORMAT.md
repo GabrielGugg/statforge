@@ -324,7 +324,7 @@ An extension can change the assistant with `{ "op": "modify", "target": "creatio
 }
 ```
 
-- **`target`** is `collection/id`. It also works for `attributes/STR`, `derived/ac`, `skills/…`, `resources/…`, `counters/…`, `collections/weapons`, `layout` and `creation`.
+- **`target`** is `collection/id`. It also works for `attributes/STR`, `derived/ac`, `skills/…`, `resources/…`, `counters/…`, `collections/weapons`, `layout`, `creation` and `progression` (for example, to change the level-up steps: `{ "op": "modify", "target": "progression", "fields": { "level_up": {…} } }`). On these three, `modify` swaps whole top-level keys.
 - **`modify`** changes only the given fields. If it touches `effects`, send the whole list.
 - **`rename`** keeps the id, so older sheets still find the item.
 - **Order**: extensions apply in the order of the Packages screen. When two touch the same target, the lower one wins, and the app warns.

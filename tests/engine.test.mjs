@@ -210,6 +210,22 @@ test('creation: validated, carried into the rules and patchable', () => {
   assert.equal(buildRules(system, [off]).rules.creation, null);
 });
 
+test('progression: an extension can patch it, and it is validated', () => {
+  const sys = { ...system, progression: { max_level: 10, xp_per_level: 'level * 1000', level_up: { steps: [{ type: 'info', title: 'A' }] } } };
+  const steps = [{ type: 'pick', collection: 'classes', if: 'level != 19' }];
+  const ext = { format: 1, id: 'x', name: 'X', version: '1', language: 'en', type: 'extension', system: sys.id,
+    patches: [{ op: 'modify', target: 'progression', fields: { level_up: { steps } } }] };
+  assert.deepEqual(validatePackage(ext).errors, []);
+  const { rules } = buildRules(sys, [ext]);
+  assert.deepEqual(rules.progression.level_up.steps, steps);
+  assert.equal(rules.progression.max_level, 10, 'modify keeps the other keys');
+  assert.equal(sys.progression.level_up.steps[0].type, 'info', 'the system is not changed');
+  const bad = { ...ext, patches: [{ op: 'modify', target: 'progression', fields: { xp_per_level: 'level *', level_up: { steps: [{ type: 'dance' }] } } }] };
+  assert.equal(validatePackage(bad).errors.length, 2);
+  const off = { ...ext, patches: [{ op: 'remove', target: 'progression' }] };
+  assert.deepEqual(buildRules(sys, [off]).rules.progression, {});
+});
+
 test('creation: items step needs "from"', () => {
   const bad = { ...system, creation: { steps: [{ type: 'items' }] } };
   assert.equal(validatePackage(bad).errors.length, 1);

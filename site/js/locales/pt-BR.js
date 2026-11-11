@@ -60,7 +60,7 @@ export default {
   'val.op': '{where}: "op" precisa ser um de: {ops}.',
   'val.needs': '{where}: "{op}" precisa de "{field}".',
   'val.addEntity': '{where}: "add" precisa de "entity" com "id".',
-  'val.target': '{where}: "target" precisa ser "colecao/id" (ou "layout", "creation").',
+  'val.target': '{where}: "target" precisa ser "colecao/id" (ou "layout", "creation", "progression").',
   'val.themeColors': 'Tema sem "colors".',
   'val.combatRef': 'combat.{field}: "{id}" não existe no sistema.',
   'val.tableSystem': 'Pacote de mesa precisa de "system" com "url" (ou "id").',

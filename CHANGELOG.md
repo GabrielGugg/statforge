@@ -2,6 +2,10 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.25.0 — 2026-11-11
+
+- Packages: an extension can now patch **`progression`** (`modify`, `replace` or `remove`, like `layout` and `creation`), for example to change the level-up steps. The new steps and the XP formula are checked like the system's. Until now, a house rule that changed when you gain perks or skill points could fix the numbers on the sheet, but the level-up wizard kept asking with the system's rules.
+
 ## 1.24.0 — 2026-11-10
 
 - **Fallout 2.2 sheets converter** (temporary). The old "Fallout TTRPG 2.2" packages left the hub: they are now **Fallout TTRPG 2.1 (EN/BR)** plus the **Gugg's Revision / Revisão por Gugg** extension. The page `#/convert-2.2` (no button; the GM sends the link) downloads a backup, installs the 2.1 system and the revision from the Hub, and moves this device's 2.2 sheets and GM tables to them. Only the system and extensions change; a sheet whose numbers would change is left as it is. The Pip-Boy and Vault-Tec themes, now `theme-pipboy` and `theme-vault-tec`, are switched too. The page will be removed once the players have moved.

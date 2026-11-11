@@ -60,7 +60,7 @@ export default {
   'val.op': '{where}: "op" must be one of: {ops}.',
   'val.needs': '{where}: "{op}" needs "{field}".',
   'val.addEntity': '{where}: "add" needs an "entity" with an "id".',
-  'val.target': '{where}: "target" must be "collection/id" (or "layout", "creation").',
+  'val.target': '{where}: "target" must be "collection/id" (or "layout", "creation", "progression").',
   'val.themeColors': 'Theme has no "colors".',
   'val.combatRef': 'combat.{field}: "{id}" was not found in the system.',
   'val.tableSystem': 'Table package needs a "system" with a "url" (or "id").',

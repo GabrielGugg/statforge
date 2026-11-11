@@ -324,7 +324,7 @@ Uma extensão pode mudar o assistente com `{ "op": "modify", "target": "creation
 }
 ```
 
-- **`target`** é `colecao/id`. Também vale para `attributes/FOR`, `derived/ca`, `skills/…`, `resources/…`, `counters/…`, `collections/armas`, `layout` e `creation`.
+- **`target`** é `colecao/id`. Também vale para `attributes/FOR`, `derived/ca`, `skills/…`, `resources/…`, `counters/…`, `collections/armas`, `layout`, `creation` e `progression` (por exemplo, para mudar os passos da subida de nível: `{ "op": "modify", "target": "progression", "fields": { "level_up": {…} } }`). Nesses três, o `modify` troca as chaves de primeiro nível inteiras.
 - **`modify`** (ajustar) troca só os campos informados. Se mexer em `effects`, mande a lista inteira.
 - **`rename`** (renomear) mantém o id, e as fichas antigas continuam achando o item.
 - **`replace`** (substituir), **`remove`** (remover) e **`add`** (adicionar) fazem o que o nome diz.
