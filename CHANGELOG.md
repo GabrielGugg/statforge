@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.26.0 — 2026-11-20
+
+- Packages: **multiclassing** in the level-up assistant. A `pick` step with `"levels": true` (on a collection with `quantity`) uses the quantity as the level: the classes the character has come first, with their level ("level 3 → 4"), and picking one again raises it by one; the other classes are listed apart, to start a new one. Effects already see the class level as `qty`, and formulas as `qty('classes/fighter')`.
+- Packages: a `pick` step can split its list into sections with `groups` (each with a title, a `tag` and an `if`), for example the powers of the class that went up and the general powers in one choice, shown apart.
+- Formulas: `picked('collection/id')` says whether the creation or level-up assistant picked that entity in the current run (in a `levels` step, the class that went up). It is not saved on the sheet.
+
 ## 1.25.0 — 2026-11-11
 
 - Packages: an extension can now patch **`progression`** (`modify`, `replace` or `remove`, like `layout` and `creation`), for example to change the level-up steps. The new steps and the XP formula are checked like the system's. Until now, a house rule that changed when you gain perks or skill points could fix the numbers on the sheet, but the level-up wizard kept asking with the system's rules.

@@ -78,7 +78,7 @@ Formulas are code, so their functions and keywords (`floor`, `sum`, `and`...) ar
 - **Resource**: has a current value (the player changes it) and a maximum (formula).
 - **Counter**: goes from 0 to `max`. Its effects apply while it is above 0, with `n` = current level.
 - **`progression.xp_per_level`**: total XP for the next level. When the sheet has it, the Level up button is highlighted. `max_level` hides the button at the top.
-- **`progression.level_up`**: `{ "steps": [...], "summary": [...] }`, an assistant for leveling up with the same step types as character creation (see below). The steps run on the sheet one level higher, so formulas see the new `level`; they add to what the sheet has (a `pick` step hides what the character already has, unless `"repeat": true`; an `attributes` step counts points from the current values and cannot go below them). The summary shows what changes as "old → new". Without it, Level up just adds one level.
+- **`progression.level_up`**: `{ "steps": [...], "summary": [...] }`, an assistant for leveling up with the same step types as character creation (see below). The steps run on the sheet one level higher, so formulas see the new `level`; they add to what the sheet has (a `pick` step hides what the character already has, unless `"repeat": true` or `"levels": true`; an `attributes` step counts points from the current values and cannot go below them). The summary shows what changes as "old → new". Without it, Level up just adds one level.
 
 Use ids without hyphens for attributes, skills and values, because they appear in formulas (`load_max`, not `load-max`).
 
@@ -182,6 +182,7 @@ Operators: `+ - * / %`, comparisons `< <= > >= == !=`, `and`, `or`, `not`, paren
 | `has('id')` or `has('collection/id')` | The sheet has this entity active (granted ones included). |
 | `owns('id')` | The sheet has the item, active or not. |
 | `qty('id')` | Total quantity of that item. |
+| `picked('collection/id')` | The creation or level-up assistant picked this entity in the current run (in a `levels` step, the class that went up). Always false on the sheet. |
 | `count('collection')` | How many items the sheet has in the collection. |
 | `sum('collection', 'field')` | Sum of field × quantity for every item in the collection. With a third argument `true`, only equipped ones. |
 | `tag('name')` | Some active entity has this tag. |
@@ -291,7 +292,7 @@ Each tab is a 12-column grid. `"w"` is the block's width in columns (3, 4, 6, 8 
 
 | Step | What it does |
 | --- | --- |
-| `pick` | Choose entities from `collection`, between `min` and `max` (numbers or formulas). With `max: 1` it is a single choice. `match_field` hides entities whose field names something the character does not have (by name or id; e.g. a variant with `"race": "Elf"` only shows for elves); the player can still show them all. `tag` lists only entities with that tag (e.g. only the spells of one school). |
+| `pick` | Choose entities from `collection`, between `min` and `max` (numbers or formulas). With `max: 1` it is a single choice. `match_field` hides entities whose field names something the character does not have (by name or id; e.g. a variant with `"race": "Elf"` only shows for elves); the player can still show them all. `tag` lists only entities with that tag (e.g. only the spells of one school). `"levels": true` (on a collection with `quantity`) treats the quantity as a level, for multiclassing: when leveling up, what the character has is listed first, with its level ("level 3 → 4"), and picking it again raises the quantity by one; the rest is listed apart. `owned_title` and `new_title` rename the two sections. `groups` splits the list into sections: `[{ "title": "Fighter powers", "tag": "fighter", "if": "picked('classes/fighter')" }, { "title": "General powers", "tag": "general" }]`; an entity goes to the first section whose `tag` it has (a section without `tag` takes the rest), a section whose `if` is false is left out, and `min`/`max` count across all sections. |
 | `attributes` | Point-buy from each attribute's `default`, inside `min` and `max`. `points` is the budget; lowering an attribute gives points back unless `"decrease": false`. |
 | `skills` | With `choose` and `bonus`: pick that many skills, each gets `bonus` points. `from` limits the list to the skills named in a field of the chosen entity (comma-separated names or ids). With `points`: spend that many points freely, up to `max_per_skill` each. |
 | `items` | Starting equipment. Reads `starting_items` (or the field named in `field`) from what was picked in collection `from` and adds it to the sheet. `alternative: { label, text }` offers another option instead (e.g. gold to buy gear), whose text goes to the notes block `note`; `items: [{ "ref": "coins/gp", "qty": 100 }]` gives items instead. |

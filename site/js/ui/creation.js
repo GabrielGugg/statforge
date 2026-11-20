@@ -51,10 +51,14 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     return !!compute(rules, sheet).formula(step.if, choiceVars());
   }
 
+  /** The sheet to save: without the list of this run's picks, which only the steps' formulas use. */
+  function finished(s) { delete s.picked; return s; }
+
   /** A fresh sheet to rebuild on: empty when creating, the current sheet when leveling up. */
   function fresh() {
     const s = structuredClone(base);
     if (!levelUp) { s.items = []; s.skills = {}; s.notes = {}; }
+    delete s.picked;
     s.items ||= []; s.skills ||= {}; s.notes ||= {};
     return s;
   }
@@ -74,8 +78,12 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       const col = rules.collections[step.collection] || {};
       for (const ref of choice.picks || []) {
         if (!rules.entities[step.collection]?.[ref]) continue;
-        s.items.push({ uid: uid(), collection: step.collection, ref,
+        // "levels": an entity the sheet already has goes up by one (a class level) instead of being added again.
+        const owned = step.levels && col.quantity && s.items.find(i => i.collection === step.collection && i.ref === ref && !i.name);
+        if (owned) owned.qty = (Number(owned.qty) || 1) + 1;
+        else s.items.push({ uid: uid(), collection: step.collection, ref,
           ...(col.quantity ? { qty: 1 } : {}), ...(col.equippable ? { equipped: true } : {}) });
+        s.picked = [...(s.picked || []), `${step.collection}/${ref}`];
       }
     } else if (step.type === 'attributes') {
       Object.assign(s.attributes, choice.values || {});
@@ -306,8 +314,17 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     const single = max === 1;
     // When leveling up, what the character already has is not offered again, unless the entity can be taken more times ("repeat").
     const ownedCount = id => (levelUp?.items || []).filter(i => i.collection === step.collection && i.ref === id).length;
+    // "levels": what the character already has stays on the list (picking it again raises its level).
+    const levels = !!step.levels && !!rules.collections[step.collection]?.quantity;
+    const ownedQty = id => (levelUp?.items || []).filter(i => i.collection === step.collection && i.ref === id).reduce((n, i) => n + (Number(i.qty) || 1), 0);
+    // "groups": the list is split into sections, each with its own tag and "if"; an entity goes to the first section it fits.
+    const groups = Array.isArray(step.groups)
+      ? step.groups.filter(g => !g.if || !!calc.formula(g.if, choiceVars()))
+      : null;
+    const groupOf = e => groups ? groups.findIndex(g => !g.tag || (e.tags || []).includes(g.tag)) : 0;
     const all = Object.values(rules.entities[step.collection] || {})
-      .filter(e => (!step.tag || (e.tags || []).includes(step.tag)) && (!levelUp || step.repeat || ownedCount(e.id) < (Number(e.repeat) || 1)))
+      .filter(e => (!step.tag || (e.tags || []).includes(step.tag)) && groupOf(e) >= 0
+        && (!levelUp || levels || step.repeat || ownedCount(e.id) < (Number(e.repeat) || 1)))
       .sort((a, b) => byName(a.name, b.name));
     // Everything is listed: what the character can take first, then the rest, disabled with the reason,
     // unless the player ticks "ignore unmet requirements".
@@ -337,16 +354,27 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       const facts = Object.entries(fields).filter(([k]) => e[k] !== undefined && e[k] !== '' && typeof e[k] !== 'object' && !desc.slice(0, 200).includes(String(e[k])))
         .slice(0, 3).map(([k, f]) => h('span.badge', `${f.label || k}: ${e[k]}${f.unit ? ` ${f.unit}` : ''}`));
       const fx = effectBadges(rules, e.effects);
+      const lv = levels ? ownedQty(e.id) : 0;
       return h('div.choice', { class: `${on ? 'selected' : ''}${ok || showAll ? '' : ' unmet'}` },
         h('label.choice-main',
           h('input', { type: single ? 'radio' : 'checkbox', name: `step${index}`, checked: on, disabled: !on && ((!single && c.picks.length >= max) || (!ok && !showAll)), onchange: () => toggle(e.id) }),
           h('span.choice-text',
-            h('strong', e.name), ok ? null : h('span.small.unmet-why', t('creation.unmetWhy', { why })),
+            h('strong', e.name, lv ? h('span.badge', { style: { marginLeft: '.4rem' } }, t('creation.levelNow', { n: lv, next: lv + (on ? 1 : 0) })) : null),
+            ok ? null : h('span.small.unmet-why', t('creation.unmetWhy', { why })),
             desc ? h('span.choice-desc', desc.length > 180 ? `${desc.slice(0, 180)}…` : desc) : null,
             facts.length || fx.length ? h('span.choice-facts', facts, fx) : null)),
         h('button.mini', { type: 'button', onclick: () => entityDetails(st, step.collection, e.id) }, t('creation.details')));
     };
 
+    // Sections: "levels" puts what the character has first; "groups" uses the step's titles. Empty sections are left out.
+    function sections(items) {
+      if (levels && levelUp) {
+        const mine = items.filter(e => ownedQty(e.id) > 0), rest = items.filter(e => !ownedQty(e.id));
+        return [[step.owned_title || t('creation.levelsOwned'), mine], [step.new_title || t('creation.levelsNew'), rest]].filter(([, p]) => p.length);
+      }
+      if (groups) return groups.map((g, i) => [g.title || '', items.filter(e => groupOf(e) === i)]).filter(([, p]) => p.length);
+      return [['', items]];
+    }
     const search = all.length > 8 ? h('input', { type: 'search', value: query, placeholder: t('creation.search'), 'aria-label': t('sheet.search'),
       oninput: e => { query = e.target.value; const pos = e.target.selectionStart; redraw(); const el = app.querySelector('.wizard-step input[type=search]'); el?.focus(); el?.setSelectionRange(pos, pos); } }) : null;
     return [
@@ -357,7 +385,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       single && min === 0 ? h('div.choice', { class: c.picks.length ? '' : 'selected' },
         h('label.choice-main', h('input', { type: 'radio', name: `step${index}`, checked: !c.picks.length, onchange: () => { c.picks = []; redraw(); } }),
           h('span.choice-text', h('strong', t('creation.none'))))) : null,
-      h('div.choices', list.map(card)),
+      ...sections(list).map(([title, part]) => [title ? h('h4.choice-group', title) : null, h('div.choices', part.map(card))]),
       extra ? h('div.row', { style: { justifyContent: 'center', marginTop: '.6rem' } },
         h('button', { type: 'button', onclick: () => { shown += SHOWN; redraw(); } }, t('creation.loadMore', { n: Math.min(extra, SHOWN) })),
         h('span.muted.small', t('creation.more', { n: extra }))) : null,
@@ -493,7 +521,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
           skillBonus.length ? h('tr', h('td.muted', t('sheet.skills')), h('td', skillBonus.join(', '))) : null))),
       h('div.wizard-footer', h('div.row.spread',
         h('button', { type: 'button', onclick: () => { index = firstFrom(steps.length - 1, -1); draw(); } }, `← ${t('common.back')}`),
-        h('button.primary', { type: 'button', onclick: () => onDone({ ...build(), name: base.name.trim() }) }, t('new.create'))))));
+        h('button.primary', { type: 'button', onclick: () => onDone(finished({ ...build(), name: base.name.trim() })) }, t('new.create'))))));
     window.scrollTo(0, 0);
   }
 
@@ -518,7 +546,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
         rows.length ? h('table.table', { style: { marginTop: '.75rem' } }, h('tbody', rows.map(([k, v]) => h('tr', h('td.muted', k), h('td', v.join(', ')))))) : null),
       h('div.wizard-footer', h('div.row.spread',
         vis.length ? h('button', { type: 'button', onclick: () => { index = firstFrom(steps.length - 1, -1); draw(); } }, `← ${t('common.back')}`) : h('button', { type: 'button', onclick: onSkip }, t('common.cancel')),
-        h('button.primary', { type: 'button', onclick: () => onDone(build()) }, t('level.confirm', { n: sheet.level }))))));
+        h('button.primary', { type: 'button', onclick: () => onDone(finished(build())) }, t('level.confirm', { n: sheet.level }))))));
     window.scrollTo(0, 0);
   }
 

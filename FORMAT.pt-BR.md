@@ -78,7 +78,7 @@ Fórmulas são código, então as funções e palavras-chave delas (`floor`, `su
 - **Recurso** (`resources`): tem valor atual (o jogador mexe) e máximo (fórmula).
 - **Contador** (`counters`): vai de 0 a `max`. Os efeitos dele valem enquanto for maior que 0, com `n` = nível atual.
 - **`progression.xp_per_level`**: XP total para o próximo nível. Quando a ficha tem esse XP, o botão Subir de nível fica destacado. `max_level` esconde o botão no topo.
-- **`progression.level_up`**: `{ "steps": [...], "summary": [...] }`, um assistente para subir de nível com os mesmos tipos de passo da criação de personagem (veja abaixo). Os passos rodam na ficha já um nível acima, então as fórmulas veem o `level` novo; eles somam ao que a ficha tem (um passo `pick` esconde o que o personagem já tem, a não ser com `"repeat": true`; um passo `attributes` conta os pontos a partir dos valores atuais e não deixa baixar deles). O resumo mostra o que muda como "antigo → novo". Sem isso, Subir de nível só soma um nível.
+- **`progression.level_up`**: `{ "steps": [...], "summary": [...] }`, um assistente para subir de nível com os mesmos tipos de passo da criação de personagem (veja abaixo). Os passos rodam na ficha já um nível acima, então as fórmulas veem o `level` novo; eles somam ao que a ficha tem (um passo `pick` esconde o que o personagem já tem, a não ser com `"repeat": true` ou `"levels": true`; um passo `attributes` conta os pontos a partir dos valores atuais e não deixa baixar deles). O resumo mostra o que muda como "antigo → novo". Sem isso, Subir de nível só soma um nível.
 
 Use ids sem hífen nos atributos, perícias e valores, porque eles aparecem nas fórmulas (`carga_max`, e não `carga-max`).
 
@@ -182,6 +182,7 @@ Operações: `+ - * / %`, comparações `< <= > >= == !=`, `and` (e), `or` (ou),
 | `has('id')` ou `has('colecao/id')` | A ficha tem essa entidade ativa (inclui as concedidas). |
 | `owns('id')` | A ficha tem o item, ativo ou não. |
 | `qty('id')` | Quantidade total desse item. |
+| `picked('colecao/id')` | O assistente de criação ou de subida de nível escolheu essa entidade agora (num passo `levels`, a classe que subiu). Na ficha, é sempre falso. |
 | `count('colecao')` | Quantos itens a ficha tem na coleção. |
 | `sum('colecao', 'campo')` | Soma do campo × quantidade de todos os itens da coleção. Com um terceiro argumento `true`, só os equipados. |
 | `tag('nome')` | Alguma entidade ativa tem essa tag. |
@@ -291,7 +292,7 @@ Cada aba é uma grade de 12 colunas. `"w"` é a largura do bloco em colunas (3, 
 
 | Passo | O que faz |
 | --- | --- |
-| `pick` | Escolher entidades de `collection`, entre `min` e `max` (números ou fórmulas). Com `max: 1` é escolha única. `match_field` esconde entidades cujo campo cita algo que o personagem não tem (por nome ou id; por exemplo, uma variante com `"raca": "Humano"` só aparece para humanos); o jogador ainda pode mostrar todas. `tag` lista só as entidades com essa tag (ex.: só as magias de uma escola). |
+| `pick` | Escolher entidades de `collection`, entre `min` e `max` (números ou fórmulas). Com `max: 1` é escolha única. `match_field` esconde entidades cujo campo cita algo que o personagem não tem (por nome ou id; por exemplo, uma variante com `"raca": "Humano"` só aparece para humanos); o jogador ainda pode mostrar todas. `tag` lista só as entidades com essa tag (ex.: só as magias de uma escola). `"levels": true` (numa coleção com `quantity`) trata a quantidade como nível, para multiclasse: na subida de nível, o que o personagem já tem aparece primeiro, com o nível ("nível 3 → 4"), e escolher de novo sobe a quantidade em um; o resto aparece separado. `owned_title` e `new_title` trocam o nome das duas seções. `groups` divide a lista em seções: `[{ "title": "Poderes de guerreiro", "tag": "guerreiro", "if": "picked('classes/guerreiro')" }, { "title": "Poderes gerais", "tag": "geral" }]`; cada entidade vai para a primeira seção cuja `tag` ela tem (uma seção sem `tag` fica com o resto), uma seção com `if` falso não aparece, e `min`/`max` contam todas as seções juntas. |
 | `attributes` | Compra de pontos a partir do `default` de cada atributo, dentro de `min` e `max`. `points` é o orçamento; diminuir um atributo devolve pontos, a menos que `"decrease": false`. |
 | `skills` | Com `choose` e `bonus`: escolher essa quantidade de perícias, cada uma ganha `bonus` pontos. `from` limita a lista às perícias citadas num campo da entidade escolhida (nomes ou ids separados por vírgula). Com `points`: gastar essa quantidade de pontos livremente, até `max_per_skill` em cada. |
 | `items` | Equipamento inicial. Lê `starting_items` (ou o campo indicado em `field`) do que foi escolhido na coleção `from` e põe na ficha. `alternative: { label, text }` oferece outra opção no lugar (por exemplo, dinheiro para comprar), cujo texto vai para o bloco de notas `note`; `items: [{ "ref": "moedas/po", "qty": 100 }]` dá itens no lugar. |

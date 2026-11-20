@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.26.0 — 20/11/2026
+
+- Pacotes: **multiclasse** no assistente de subida de nível. Um passo `pick` com `"levels": true` (numa coleção com `quantity`) usa a quantidade como nível: as classes que o personagem já tem aparecem primeiro, com o nível ("nível 3 → 4"), e escolher uma delas sobe um nível; as outras classes aparecem separadas, para começar uma nova. Os efeitos já veem o nível da classe como `qty`, e as fórmulas como `qty('classes/guerreiro')`.
+- Pacotes: um passo `pick` pode dividir a lista em seções com `groups` (cada uma com título, `tag` e `if`), por exemplo os poderes da classe que subiu e os poderes gerais numa escolha só, mostrados separados.
+- Fórmulas: `picked('colecao/id')` diz se o assistente de criação ou de subida de nível escolheu essa entidade agora (num passo `levels`, a classe que subiu). Não é salvo na ficha.
+
 ## 1.25.0 — 11/11/2026
 
 - Pacotes: uma extensão agora pode alterar a **`progression`** (com `modify`, `replace` ou `remove`, como já dava com `layout` e `creation`), por exemplo para mudar os passos da subida de nível. Os passos novos e a fórmula de XP são conferidos como os do sistema. Até agora, uma regra da casa que mudasse quando se ganha talentos ou pontos de perícia acertava os números da ficha, mas o assistente de subida de nível continuava perguntando pelas regras do sistema.
