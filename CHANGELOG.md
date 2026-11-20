@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.36.0 — 2026-11-20
+
+- Mods change the item they are in (`"item_effects"`): a bonus to a number (Defense, armor penalty, with a minimum), extra damage (`+1` or `+1d6`) and the critical (threat range, doubled range, multiplier). Lists, cards and formulas with `sum()` use the changed values, so a reinforced armor raises the Defense.
+- New field types: `crit` (a d20 critical like "19/x3") and `skill` (the skill used with a weapon, shown with its total plus the weapon's own bonus, e.g. "Fight +5").
+- A mod's own effects (+2 in a skill, +2 Defense) count only while it is installed in an equipped item. A mod loose in the inventory gives nothing.
+
 ## 1.35.0 — 2026-11-20
 
 - Sheet: every item with mods has a **Mods** button (in the lists, the inventory and the equipped cards), with the names of the mods installed next to the item. The dialog installs mods straight from the collection, only the ones that fit the item (`"tags"`), without adding them to the inventory first. They belong to the item: taking one out, or removing the item, removes it from the sheet.

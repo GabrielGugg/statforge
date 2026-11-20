@@ -6,7 +6,7 @@ import { termVariant, termDescription } from '../engine/terms.js';
 import { withOwner } from './privacy.js';
 import * as pk from '../packages.js';
 import { checkSet } from '../engine/package.js';
-import { compute, roll, isBroken, effectiveWear, addSpecialty, specialtyId, specialtySuggestions } from '../engine/calc.js';
+import { compute, roll, isBroken, effectiveWear, addSpecialty, specialtyId, specialtySuggestions, itemField } from '../engine/calc.js';
 import { t } from '../i18n.js';
 import { creationWizard } from './creation.js';
 import { shareDialog } from './share.js';
@@ -1468,7 +1468,17 @@ export function linkTerms(text, links, st, ctx) {
 
 /** A field of an item as it is now: "wear.fields" formulas lower it as the item wears. */
 function itemValue(st, colId, item, ent, f) {
-  let v = ent?.[f];
+  // What the item's mods change in this field (Certeira, Reforçada…).
+  let v = item ? itemField(st.rules, st.sheet, item, f) : ent?.[f];
+  const def = st.rules.collections[colId]?.fields?.[f];
+  // A "skill" field names the skill used with the item: show its total, plus the item's own bonus ("bonus": field).
+  if (def?.type === 'skill' && typeof v === 'string' && st.calc) {
+    const n = normalize(v);
+    const sk = Object.values(st.rules.skills).find(x => normalize(x.name) === n || normalize(x.id) === n);
+    if (!sk) return v;
+    const extra = def.bonus && item ? Number(itemField(st.rules, st.sheet, item, def.bonus)) || 0 : 0;
+    return `${sk.name} ${signed(st.calc.value(sk.id) + extra)}`;
+  }
   // Mods with a cost on this field (the price of a superior item).
   if (item && typeof v === 'number') {
     const extra = modCosts(st, item, st.rules.collections[colId]).filter(c => c.field === f).reduce((n, c) => n + c.cost, 0);

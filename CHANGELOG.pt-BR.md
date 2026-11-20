@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.36.0 — 20/11/2026
+
+- Modificações mudam o item em que estão (`"item_effects"`): bônus num número (Defesa, penalidade de armadura, com mínimo), dano extra (`+1` ou `+1d6`) e o crítico (margem de ameaça, margem duplicada, multiplicador). Listas, cartões e fórmulas com `sum()` usam os valores mudados, então uma armadura reforçada aumenta a Defesa.
+- Tipos de campo novos: `crit` (um crítico de d20 como "19/x3") e `skill` (a perícia usada com uma arma, mostrada com o total dela mais o bônus da própria arma, por exemplo "Luta +5").
+- Os efeitos de uma modificação (+2 numa perícia, +2 na Defesa) só valem enquanto ela estiver instalada num item equipado. Solta no inventário, ela não dá nada.
+
 ## 1.35.0 — 20/11/2026
 
 - Ficha: todo item com modificações tem um botão **Mods** (nas listas, no inventário e nos cartões de equipados), com os nomes das modificações instaladas ao lado do item. A janela instala modificações direto da coleção, só as que servem para o item (`"tags"`), sem precisar colocá-las no inventário antes. Elas pertencem ao item: tirar uma, ou remover o item, tira ela da ficha.
