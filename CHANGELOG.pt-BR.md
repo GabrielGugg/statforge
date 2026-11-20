@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.28.0 — 20/11/2026
+
+- Criação de personagem: o passo de **atributos** pode ter uma **tabela de custo** (`cost`): o app conta os pontos sozinho, mostra quanto custa o próximo +1 e só deixa escolher os valores da tabela. Antes, cada +1 custava 1 ponto e o jogador tinha que conferir a tabela do livro à mão.
+- Criação de personagem: o passo de atributos pode oferecer **rolar os atributos** (`roll`), por exemplo 4d6 descartando o menor. O app rola, converte cada resultado pela tabela do sistema e rola de novo o menor se a soma ficar baixa; quem rolou na mesa física pode digitar os resultados. Depois o jogador escolhe qual resultado vai em cada atributo.
+- Ficha: os blocos do painel não esticam mais até a altura do vizinho da mesma linha (por exemplo, Atributos ao lado de uma lista longa de Perícias).
+
 ## 1.27.0 — 20/11/2026
 
 - Fórmulas: **`points('pericia')`** dá os pontos que a ficha tem numa perícia, então um requisito pode pedir treinamento (`points('luta') >= 1` num sistema em que 1 ponto quer dizer treinado). Um sistema pode ter **`skill_points_text`** (por exemplo `"treinado em {skill}"`) para mostrar esse requisito em palavras; sem ele, aparece "Luta (pontos) ≥ 1".

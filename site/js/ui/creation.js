@@ -7,6 +7,7 @@ import { compute } from '../engine/calc.js';
 import { t } from '../i18n.js';
 import { h, uid, fmt, signed, byName, normalize } from './util.js';
 import { entityDetails, describeEffect, summarizeEffects, unmetRequirement } from './sheet.js';
+import { costOf, costValues, pointsSpent, rollSet, convertRoll, diceRange, setTotal } from '../engine/attrgen.js';
 
 // Badges for a choice card: repeated bonuses are merged, the rest is counted. Notes (reminders) are left out:
 // they repeat the description shown right above.
@@ -86,7 +87,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
         s.picked = [...(s.picked || []), `${step.collection}/${ref}`];
       }
     } else if (step.type === 'attributes') {
-      Object.assign(s.attributes, choice.values || {});
+      Object.assign(s.attributes, attributeValues(step, choice));
     } else if (step.type === 'skills') {
       const calc = compute(rules, s);
       if (step.choose !== undefined) {
@@ -202,6 +203,15 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       if (n > max) return { ok: false, msg: t('creation.maxPick', { n: max }) };
       return { ok: true };
     }
+    if (step.type === 'attributes' && c.method === 'roll') {
+      const ids = Object.keys(rules.attributes), rolls = c.rolls || [];
+      if (rolls.filter(r => Number.isFinite(r?.total)).length < ids.length) return { ok: false, msg: t('creation.rollFirst') };
+      const used = ids.map(id => c.assign?.[id]);
+      if (used.some(x => x === undefined || x === null || x === '') || new Set(used).size < ids.length) return { ok: false, msg: t('creation.assignAll') };
+      const min = Number(step.roll?.min_total);
+      if (Number.isFinite(min) && setTotal(rolls) < min) return { ok: true, warn: t('creation.rollLow', { n: min }) };
+      return { ok: true };
+    }
     if (step.type === 'attributes') {
       const left = attributePointsLeft(step, calc);
       if (left < 0) return { ok: false, msg: t('creation.pointsOver', { n: -left }) };
@@ -224,13 +234,26 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     return { ok: true };
   }
 
+  const attrStart = a => (levelUp ? base.attributes?.[a.id] ?? a.default ?? a.min ?? 0 : a.default ?? a.min ?? 0);
+  // A cost table only applies when creating (leveling up adds point by point).
+  const costTable = step => (!levelUp && step.cost && typeof step.cost === 'object' ? step.cost : null);
+
   function attributePointsLeft(step, calc) {
     const values = choices[steps.indexOf(step)].values || {};
-    const spent = Object.values(rules.attributes).reduce((sum, a) => {
-      const d = levelUp ? base.attributes?.[a.id] ?? a.default ?? a.min ?? 0 : a.default ?? a.min ?? 0;
-      return sum + ((values[a.id] ?? base.attributes[a.id] ?? d) - d);
-    }, 0);
-    return num(step.points, calc, 0) - spent;
+    const vals = {}, starts = {};
+    for (const a of Object.values(rules.attributes)) { starts[a.id] = attrStart(a); vals[a.id] = values[a.id] ?? base.attributes[a.id] ?? starts[a.id]; }
+    return num(step.points, calc, 0) - pointsSpent(vals, starts, costTable(step));
+  }
+
+  /** The attribute values a step gives: point-buy values, or the rolled results the player placed. */
+  function attributeValues(step, choice) {
+    if (choice.method !== 'roll') return choice.values || {};
+    const out = {};
+    for (const a of Object.values(rules.attributes)) {
+      const r = choice.rolls?.[choice.assign?.[a.id]];
+      if (r && Number.isFinite(r.value)) out[a.id] = r.value;
+    }
+    return out;
   }
 
   // ---------- Drawing ----------
@@ -393,29 +416,90 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     ];
   }
 
-  // Point-buy for attributes.
+  // Attributes: point-buy (with an optional cost table) or rolled values ("roll").
   function attributesStep(step, calc, _sheet, calcAfter) {
     const c = choices[index];
     c.values ||= Object.fromEntries(Object.values(rules.attributes).map(a => [a.id, base.attributes?.[a.id] ?? a.default ?? a.min ?? 0]));
+    const canRoll = !levelUp && step.roll?.dice;
+    if (!canRoll) c.method = 'points';
+    c.method ||= 'points';
+    const methods = canRoll ? h('div.method-switch', { role: 'radiogroup' },
+      ['points', 'roll'].map(m => h('label.choice-inline',
+        h('input', { type: 'radio', name: `attr-method-${index}`, checked: c.method === m, onchange: () => { c.method = m; redraw(); } }),
+        ' ', t(m === 'points' ? 'creation.methodPoints' : 'creation.methodRoll')))) : null;
+    return [methods, ...(c.method === 'roll' ? rollMethod(step, c, calcAfter) : pointsMethod(step, c, calc, calcAfter))];
+  }
+
+  function pointsMethod(step, c, calc, calcAfter) {
     const left = attributePointsLeft(step, calc);
     const allowDecrease = step.decrease !== false;
+    const table = costTable(step);
+    const allowed = table ? costValues(table) : null;
+    // With a table, each step up costs the difference between the table rows.
+    const stepCost = v => (table ? (costOf(table, v + 1) ?? Infinity) - (costOf(table, v) ?? 0) : 1);
     return [
       h('div.points-left', { class: left < 0 ? 'over' : left === 0 ? 'done' : '' }, h('strong', fmt(left)), ' ', t('creation.pointsToSpend', { n: left })),
+      table ? h('p.small.muted', t('creation.costTable', { list: allowed.map(v => `${signed(v)} = ${fmt(table[String(v)])}`).join(' · ') })) : null,
       h('div.attr-rows', Object.values(rules.attributes).map(a => {
         const v = c.values[a.id];
-        const d = levelUp ? base.attributes?.[a.id] ?? a.default ?? a.min ?? 0 : a.default ?? a.min ?? 0;
+        const d = attrStart(a);
         const set = n => { c.values[a.id] = n; redraw(); };
         const eff = calcAfter.value(a.id);
+        const downOk = table ? allowed.includes(v - 1) : true;
+        const upOk = table ? allowed.includes(v + 1) && stepCost(v) <= left : left > 0;
         return h('div.attr-row', { title: a.description || '' },
           h('div.attr-name', h('strong', a.abbr || a.id), h('span.muted.small', a.name)),
           h('div.stepper',
-            h('button', { type: 'button', 'aria-label': `${a.name} −1`, disabled: v <= (a.min ?? -Infinity) || ((!allowDecrease || levelUp) && v <= d), onclick: () => set(v - 1) }, '−'),
+            h('button', { type: 'button', 'aria-label': `${a.name} −1`, disabled: !downOk || v <= (a.min ?? -Infinity) || ((!allowDecrease || levelUp) && v <= d), onclick: () => set(v - 1) }, '−'),
             h('output', { 'aria-label': a.name }, fmt(v)),
-            h('button', { type: 'button', 'aria-label': `${a.name} +1`, disabled: v >= (a.max ?? Infinity) || left <= 0, onclick: () => set(v + 1) }, '+')),
+            h('button', { type: 'button', 'aria-label': `${a.name} +1`, disabled: !upOk || v >= (a.max ?? Infinity), onclick: () => set(v + 1) }, '+')),
           h('div.attr-result',
+            table && Number.isFinite(stepCost(v)) && allowed.includes(v + 1) ? h('span.small.muted', t('creation.nextCost', { n: stepCost(v) })) : null,
             eff !== v ? h('span.small', { style: { color: 'var(--accent)' } }, t('sheet.effective', { n: fmt(eff) })) : null,
             rules.rolls?.modifier ? h('span.mod-badge', signed(calcAfter.mod(eff))) : null));
       })),
+    ];
+  }
+
+  function rollMethod(step, c, calcAfter) {
+    const cfg = step.roll, ids = Object.keys(rules.attributes), count = ids.length;
+    const diceText = cfg.label || cfg.dice;
+    const range = diceRange(cfg.dice);
+    c.rolls ||= Array.from({ length: count }, () => ({}));
+    c.assign ||= {};
+    const setTotalAt = (i, raw) => {
+      const n = Number(raw);
+      c.rolls[i] = Number.isFinite(n) && raw !== '' ? { total: n, value: convertRoll(n, cfg.table) } : {};
+      redraw();
+    };
+    const used = new Set(Object.values(c.assign).filter(x => x !== '' && x !== undefined).map(Number));
+    const label = (r, i) => `#${i + 1}: ${r.total}${cfg.table ? ` → ${signed(r.value)}` : ''}`;
+    const ready = c.rolls.every(r => Number.isFinite(r.total));
+    const min = Number(cfg.min_total);
+    return [
+      h('p', t('creation.rollHelp', { dice: diceText, n: count })),
+      h('div.row',
+        h('button.primary', { type: 'button', onclick: () => { c.rolls = rollSet({ ...cfg, count }); c.assign = {}; redraw(); } }, t('creation.rollAll')),
+        h('span.small.muted', t('creation.rollTyped', { min: range.min, max: range.max }))),
+      h('div.attr-rolls', c.rolls.map((r, i) => h('label.attr-roll',
+        h('span.small.muted', `#${i + 1}`),
+        h('input', { type: 'number', inputmode: 'numeric', min: range.min, max: range.max, value: Number.isFinite(r.total) ? r.total : '',
+          'aria-label': t('creation.rollN', { n: i + 1 }), onchange: e => setTotalAt(i, e.target.value) }),
+        r.dice ? h('span.small.muted', `[${r.dice.join(', ')}]`) : null,
+        Number.isFinite(r.value) && cfg.table ? h('strong', signed(r.value)) : null))),
+      ready && Number.isFinite(min) ? h('p.small', { class: setTotal(c.rolls) < min ? 'warn-text' : 'muted' }, t('creation.rollSum', { n: setTotal(c.rolls), min })) : null,
+      ready ? h('div.attr-rows', Object.values(rules.attributes).map(a => {
+        const cur = c.assign[a.id];
+        const eff = calcAfter.value(a.id);
+        return h('div.attr-row', { title: a.description || '' },
+          h('div.attr-name', h('strong', a.abbr || a.id), h('span.muted.small', a.name)),
+          h('select', { 'aria-label': a.name, onchange: e => { c.assign[a.id] = e.target.value === '' ? '' : Number(e.target.value); redraw(); } },
+            h('option', { value: '', selected: cur === undefined || cur === '' }, t('creation.pickRoll')),
+            c.rolls.map((r, i) => h('option', { value: i, selected: cur === i, disabled: used.has(i) && cur !== i }, label(r, i)))),
+          h('div.attr-result',
+            cur !== undefined && cur !== '' && eff !== c.rolls[cur]?.value ? h('span.small', { style: { color: 'var(--accent)' } }, t('sheet.effective', { n: fmt(eff) })) : null,
+            cur !== undefined && cur !== '' && rules.rolls?.modifier ? h('span.mod-badge', signed(calcAfter.mod(eff))) : null));
+      })) : null,
     ];
   }
 

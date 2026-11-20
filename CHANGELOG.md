@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.28.0 — 2026-11-20
+
+- Character creation: the **attributes** step can have a **cost table** (`cost`): the app counts the points, shows what the next +1 costs and only allows the values in the table. Before, every +1 cost 1 point and players had to check the book's table by hand.
+- Character creation: the attributes step can offer **rolling the attributes** (`roll`), for example 4d6 dropping the lowest. The app rolls, converts each result with the system's table and rolls the lowest again if the total is too low; players who rolled at a physical table can type in their results. Then the player chooses which result goes on each attribute.
+- Sheet: dashboard blocks no longer stretch to the height of their neighbor on the same row (for example, Attributes next to a long Skills list).
+
 ## 1.27.0 — 2026-11-20
 
 - Formulas: **`points('skill')`** gives the points the sheet has in a skill, so a requirement can ask for training (`points('fight') >= 1` in a system where 1 point means trained). A system can set **`skill_points_text`** (for example `"trained in {skill}"`) to show that requirement in words; without it, it reads "Fight (points) ≥ 1".
