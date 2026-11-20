@@ -6,7 +6,7 @@
 import { compute } from '../engine/calc.js';
 import { t } from '../i18n.js';
 import { h, uid, fmt, signed, byName, normalize } from './util.js';
-import { entityDetails, describeEffect, summarizeEffects, unmetRequirement } from './sheet.js';
+import { entityDetails, describeEffect, summarizeEffects, unmetRequirement, linkTerms, linkCols } from './sheet.js';
 import { costOf, costValues, pointsSpent, rollSet, convertRoll, diceRange, setTotal } from '../engine/attrgen.js';
 
 // Badges for a choice card: repeated bonuses are merged, the rest is counted. Notes (reminders) are left out:
@@ -35,6 +35,15 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
   let showAll = false;
   let query = '';
   let shown = SHOWN; // grows with "Load more"
+  // List filters: only what the character can take, and which packages show. Kept for the whole wizard
+  // and remembered per system on this device.
+  const filterKey = `statforge.pickFilters.${rules.id}`;
+  const filters = (() => {
+    try { const f = JSON.parse(localStorage.getItem(filterKey) || '{}'); return { onlyMet: !!f.onlyMet, hidden: Array.isArray(f.hidden) ? f.hidden : [] }; }
+    catch { return { onlyMet: false, hidden: [] }; }
+  })();
+  const saveFilters = () => { try { localStorage.setItem(filterKey, JSON.stringify(filters)); } catch { /* private mode: kept for this wizard only */ } };
+  let filtersOpen = false;
 
   const num = (v, calc, fallback) => {
     if (v === undefined || v === null || v === '') return fallback;
@@ -353,7 +362,12 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     // unless the player ticks "ignore unmet requirements".
     const okAll = all.filter(e => available(step, e, calc));
     const hidden = all.length - okAll.length;
-    let list = [...okAll, ...all.filter(e => !okAll.includes(e))];
+    // Packages that brought entities to this list (the filter only shows when there is more than one).
+    const pkgOf = e => rules.addedBy?.[`${step.collection}/${e.id}`] || rules.id;
+    const pkgs = [...new Set(all.map(pkgOf))];
+    const visible = all.filter(e => !filters.hidden.includes(pkgOf(e)) && (!filters.onlyMet || showAll || okAll.includes(e)));
+    const filteredOut = all.length - visible.length;
+    let list = [...visible.filter(e => okAll.includes(e)), ...visible.filter(e => !okAll.includes(e))];
     const q = normalize(query);
     if (q) list = list.filter(e => normalize(`${e.name} ${e.description || ''} ${Object.values(e).filter(x => typeof x === 'string').join(' ')}`).includes(q));
     // chosen ones first, so they never get lost behind the search
@@ -374,8 +388,12 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       const why = unmet(step, e, calc);
       const ok = !why;
       const desc = String(e.description || '').replace(/\s+/g, ' ');
-      const facts = Object.entries(fields).filter(([k]) => e[k] !== undefined && e[k] !== '' && typeof e[k] !== 'object' && !desc.slice(0, 200).includes(String(e[k])))
+      const isLinked = f => linkCols(f.links, rules).length > 0;
+      const facts = Object.entries(fields).filter(([k, f]) => !isLinked(f) && e[k] !== undefined && e[k] !== '' && typeof e[k] !== 'object' && !desc.slice(0, 200).includes(String(e[k])))
         .slice(0, 3).map(([k, f]) => h('span.badge', `${f.label || k}: ${e[k]}${f.unit ? ` ${f.unit}` : ''}`));
+      // Fields that name powers, items… show as links: the text is in the hint and a click opens it.
+      const linked = Object.entries(fields).filter(([k, f]) => isLinked(f) && typeof e[k] === 'string' && e[k].trim())
+        .map(([k, f]) => h('span.choice-links', h('span.muted', `${f.label || k}: `), linkTerms(e[k], f.links, st)));
       const fx = effectBadges(rules, e.effects);
       const lv = levels ? ownedQty(e.id) : 0;
       return h('div.choice', { class: `${on ? 'selected' : ''}${ok || showAll ? '' : ' unmet'}` },
@@ -385,7 +403,8 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
             h('strong', e.name, lv ? h('span.badge', { style: { marginLeft: '.4rem' } }, t('creation.levelNow', { n: lv, next: lv + (on ? 1 : 0) })) : null),
             ok ? null : h('span.small.unmet-why', t('creation.unmetWhy', { why })),
             desc ? h('span.choice-desc', desc.length > 180 ? `${desc.slice(0, 180)}…` : desc) : null,
-            facts.length || fx.length ? h('span.choice-facts', facts, fx) : null)),
+            facts.length || fx.length ? h('span.choice-facts', facts, fx) : null,
+            linked.length ? h('span.choice-linked', linked) : null)),
         h('button.mini', { type: 'button', onclick: () => entityDetails(st, step.collection, e.id) }, t('creation.details')));
     };
 
@@ -403,7 +422,17 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     return [
       h('div.row.spread', { style: { marginBottom: '.5rem' } },
         h('span.badge', max === Infinity ? t('creation.chosenFree', { n: c.picks.length }) : t('creation.chosen', { n: c.picks.length, max })),
-        hidden ? h('label.check.small', h('input', { type: 'checkbox', checked: showAll, onchange: e => { showAll = e.target.checked; redraw(); } }), t('creation.ignoreReq')) : null),
+        h('span.row', { style: { gap: '.5rem' } },
+          hidden ? h('label.check.small', h('input', { type: 'checkbox', checked: showAll, onchange: e => { showAll = e.target.checked; redraw(); } }), t('creation.ignoreReq')) : null,
+          hidden || pkgs.length > 1 ? h('button.mini', { type: 'button', 'aria-expanded': String(filtersOpen), onclick: () => { filtersOpen = !filtersOpen; redraw(); } },
+            t('creation.filters'), filters.onlyMet || filters.hidden.some(x => pkgs.includes(x)) ? h('span.badge', { style: { marginLeft: '.3rem' } }, '•') : null) : null)),
+      filtersOpen && (hidden || pkgs.length > 1) ? h('div.pick-filters',
+        hidden ? h('label.check.small', h('input', { type: 'checkbox', checked: filters.onlyMet, onchange: e => { filters.onlyMet = e.target.checked; saveFilters(); redraw(); } }), t('creation.onlyMet')) : null,
+        pkgs.length > 1 ? h('div.pick-filter-pkgs', h('span.small.muted', t('creation.showPackages')),
+          pkgs.map(id => h('label.check.small', h('input', { type: 'checkbox', checked: !filters.hidden.includes(id),
+            onchange: ev => { filters.hidden = ev.target.checked ? filters.hidden.filter(x => x !== id) : [...filters.hidden, id]; saveFilters(); redraw(); } }),
+            inst?.[id]?.name || id))) : null) : null,
+      filteredOut ? h('p.small.muted', { style: { margin: '0 0 .5rem' } }, t('creation.filteredOut', { n: filteredOut })) : null,
       search,
       single && min === 0 ? h('div.choice', { class: c.picks.length ? '' : 'selected' },
         h('label.choice-main', h('input', { type: 'radio', name: `step${index}`, checked: !c.picks.length, onchange: () => { c.picks = []; redraw(); } }),

@@ -1208,16 +1208,20 @@ function listBlock(st, def) {
 
 /** Text whose terms (properties…) name entities of a collection: each one gets a tooltip and opens its details. */
 // ctx = { collection, ent }: the item showing the terms, so a term's variant for it is used (engine/terms.js).
-function linkTerms(text, colId, st, ctx) {
-  const ents = Object.values(st.rules.entities[colId]);
-  const names = ents.map(e => ({ e, n: normalize(e.name) })).sort((a, b) => b.n.length - a.n.length);
+/** The collections a field's "links" points at (one name or a list), keeping only those that exist. */
+export const linkCols = (links, rules) => [].concat(links || []).filter(c => typeof c === 'string' && rules?.entities?.[c]);
+
+/** Turns the names in a text into buttons with the entity's text as a hint; a click opens its details. */
+export function linkTerms(text, links, st, ctx) {
+  const names = linkCols(links, st.rules).flatMap(c => Object.values(st.rules.entities[c]).map(e => ({ e, c, n: normalize(e.name) })))
+    .filter(x => x.n.length > 1).sort((a, b) => b.n.length - a.n.length);
   const out = []; let rest = String(text);
   // Split on ". " and ", " but keep the separators, so "Arremessável: x6/x10" stays whole.
   for (const part of rest.split(/(\.\s*|,\s*)/)) {
     const hit = names.find(x => normalize(part).startsWith(x.n));
     if (!hit) { out.push(part); continue; }
     const label = part.slice(0, hit.e.name.length), tail = part.slice(hit.e.name.length);
-    out.push(h('button.term', { type: 'button', title: String(termDescription(hit.e, ctx)).slice(0, 300), onclick: ev => { ev.stopPropagation(); entityDetails(st, colId, hit.e.id, null, { context: ctx }); } }, label), tail);
+    out.push(h('button.term', { type: 'button', title: String(termDescription(hit.e, ctx)).slice(0, 300), onclick: ev => { ev.preventDefault(); ev.stopPropagation(); entityDetails(st, hit.c, hit.e.id, null, { context: ctx }); } }, label), tail);
   }
   return h('span', out);
 }
@@ -1264,7 +1268,7 @@ function wearBadge(col, item) {
 function fmtField(v, field, st, ctx) {
   if (v === undefined || v === null || v === '') return '—';
   if (field?.type === 'range') return fmtRange(v, field, st);
-  if (field?.links && st?.rules?.entities?.[field.links] && typeof v === 'string') return linkTerms(v, field.links, st, ctx);
+  if (field?.links && typeof v === 'string' && linkCols(field.links, st?.rules).length) return linkTerms(v, field.links, st, ctx);
   if (Array.isArray(v)) return v.join(', ');
   if (typeof v === 'boolean') return v ? t('common.yes') : t('common.no');
   const u = field?.unit ? ` ${field.unit}` : '';
@@ -1358,13 +1362,14 @@ function customItem(st, colIds, preferred, ent) {
       if (def.type === 'boolean') { inputs[f] = h('input', { type: 'checkbox', checked: !!v }); return h('label.check', inputs[f], def.label || f); }
       const inp = inputs[f] = h('input', { type: def.type === 'number' ? 'number' : 'text', value: v, inputmode: def.type === 'number' ? 'decimal' : null });
       const hint = def.type === 'range' && def.per ? t('custom.perHint', { name: rules.attributes?.[def.per]?.name || rules.derived?.[def.per]?.name || def.per }) : null;
-      if (def.links && rules.entities[def.links]) {
+      const linkCol = linkCols(def.links, rules)[0];
+      if (linkCol) {
         // Pick terms (properties…) from their collection instead of typing them.
         const pick = h('select', { 'aria-label': def.label || f, onchange: () => {
-          const term = rules.entities[def.links][pick.value]?.name;
+          const term = rules.entities[linkCol][pick.value]?.name;
           if (term) inp.value = `${inp.value.trim()}${inp.value.trim() && !/[.,]$/.test(inp.value.trim()) ? '.' : ''} ${term}.`.trim();
           pick.value = '';
-        } }, h('option', { value: '' }, t('custom.addTerm')), Object.values(rules.entities[def.links]).sort((a, b) => byName(a.name, b.name)).map(e => h('option', { value: e.id }, e.name)));
+        } }, h('option', { value: '' }, t('custom.addTerm')), Object.values(rules.entities[linkCol]).sort((a, b) => byName(a.name, b.name)).map(e => h('option', { value: e.id }, e.name)));
         return field(label, h('div.row.search-bar', inp, pick), hint);
       }
       return field(label, inp, hint);

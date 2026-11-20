@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.29.0 — 2026-11-20
+
+- Character creation and level-up: a **Filters** button above each pick list. It can show only the options the character can take, and hide the options of a package (for example a supplement) when more than one package added to the list. The choice is remembered in this browser for each system. "Ignore unmet requirements" works as before, and when ticked every option counts as allowed.
+- Packages: `"links"` on a field can be a **list of collections**. In the creation wizard, linked fields are always shown on the option, and each name opens the details of that power or item (for example the items and powers an origin gives).
+
 ## 1.28.0 — 2026-11-20
 
 - Character creation: the **attributes** step can have a **cost table** (`cost`): the app counts the points, shows what the next +1 costs and only allows the values in the table. Before, every +1 cost 1 point and players had to check the book's table by hand.

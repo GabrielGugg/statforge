@@ -65,6 +65,9 @@ test('assembly: extension patches', () => {
   assert.equal(rules.entities.conditions.prone.collection, 'conditions');
   assert.ok(rules.entities.conditions['off-balance']);
   assert.equal(rules.origin['armor/shield'], 'example-homebrew');
+  // addedBy keeps the package that brought the entity, even after another one patches it.
+  assert.equal(rules.addedBy['armor/shield'], system.id);
+  assert.equal(rules.addedBy['conditions/off-balance'], 'example-homebrew');
   assert.equal(rules.language, 'en');
   assert.deepEqual(log, []);
   // The original system is not changed.

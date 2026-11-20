@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.29.0 — 20/11/2026
+
+- Criação e subida de nível: botão **Filtros** acima de cada lista de escolha. Ele pode mostrar só as opções que o personagem pode pegar e esconder as opções de um pacote (por exemplo um suplemento) quando mais de um pacote colocou coisas na lista. A escolha fica lembrada neste navegador para cada sistema. "Ignorar requisitos não atendidos" funciona como antes e, quando marcado, todas as opções contam como permitidas.
+- Pacotes: `"links"` num campo pode ser uma **lista de coleções**. No assistente de criação, os campos com links sempre aparecem na opção, e cada nome abre os detalhes daquele poder ou item (por exemplo os itens e poderes que uma origem dá).
+
 ## 1.28.0 — 20/11/2026
 
 - Criação de personagem: o passo de **atributos** pode ter uma **tabela de custo** (`cost`): o app conta os pontos sozinho, mostra quanto custa o próximo +1 e só deixa escolher os valores da tabela. Antes, cada +1 custava 1 ponto e o jogador tinha que conferir a tabela do livro à mão.
