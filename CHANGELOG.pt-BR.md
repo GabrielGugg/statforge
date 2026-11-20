@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.31.0 — 20/11/2026
+
+- Criação de personagem: um passo de perícias pode **conceder** as perícias citadas num campo (`"grant": true`), por exemplo as perícias fixas de uma classe. Elas entram sozinhas; "Luta ou Pontaria" vira a escolha de uma. Quando não há nada para escolher, o passo nem aparece.
+- Criação de personagem: com `"untrained": true`, uma perícia já treinada não pode ser treinada de novo. Ela continua na lista, desativada, e o passo diz qual etapa anterior a treinou, com um botão **Trocar** que volta para aquela etapa. Quando sobra só uma perícia num "ou", ela é escolhida sozinha.
+
 ## 1.30.0 — 20/11/2026
 
 - Pacotes: instalar arquivos (ou uma mesa) agora sempre termina com uma **tela de resultado** que diz o que mudou: pacotes atualizados com a versão antiga e a nova, pacotes novos e os que já estavam naquela versão. Antes, um arquivo só mostrava um aviso rápido. Quando vários arquivos são escolhidos juntos, os pacotes de mesa são instalados por último, então a mesa encontra os pacotes dela.

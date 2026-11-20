@@ -99,9 +99,19 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       Object.assign(s.attributes, attributeValues(step, choice));
     } else if (step.type === 'skills') {
       const calc = compute(rules, s);
-      if (step.choose !== undefined) {
+      // "untrained": a skill the sheet already has points in can't be taken again here.
+      const trained = id => step.untrained && (s.skills[id] || 0) > 0;
+      if (step.grant) {
         const bonus = num(step.bonus, calc, 1);
-        const allowed = allowedSkills(step, calc, s);
+        // Picked against the sheet before this step, so two groups never give the same skill.
+        const before = { ...s, skills: { ...s.skills } };
+        grantGroups(step, before).forEach((g, gi) => {
+          const id = groupPick(step, g, choice.alt?.[gi], before);
+          if (id && !trained(id)) s.skills[id] = (s.skills[id] || 0) + bonus;
+        });
+      } else if (step.choose !== undefined) {
+        const bonus = num(step.bonus, calc, 1);
+        const allowed = allowedSkills(step, calc, s).filter(id => !trained(id));
         for (const id of choice.chosen || []) if (allowed.includes(id)) s.skills[id] = (s.skills[id] || 0) + bonus;
       } else {
         for (const [id, n] of Object.entries(choice.points || {})) s.skills[id] = (s.skills[id] || 0) + n;
@@ -151,8 +161,18 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     return { items, texts };
   }
 
+  /**
+   * A step the player sees: it applies and has something to decide. A "grant" skills step with no
+   * "X or Y" and no skill trained twice does its job without being shown.
+   */
+  function shows(step, sheet) {
+    if (!applies(step, sheet)) return false;
+    if (step.type !== 'skills' || !step.grant) return true;
+    return grantGroups(step, sheet).some(g => g.length > 1 || (step.untrained && (sheet.skills[g[0]] || 0) > 0));
+  }
+
   function firstFrom(i, dir = 1) {
-    for (let j = i; j >= 0 && j < steps.length; j += dir) if (applies(steps[j], build(j))) return j;
+    for (let j = i; j >= 0 && j < steps.length; j += dir) if (shows(steps[j], build(j))) return j;
     return dir > 0 ? steps.length : -1; // steps.length = review
   }
 
@@ -162,7 +182,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     const s = fresh();
     steps.forEach((step, i) => {
       if (!applies(step, s)) return;
-      out.push(i);
+      if (shows(step, s)) out.push(i);
       applyStep(step, choices[i], s);
     });
     return out;
@@ -201,6 +221,50 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     return all.filter(s => names.includes(normalize(s.name)) || names.includes(normalize(s.id))).map(s => s.id);
   }
 
+  /** The skill a name stands for ("Ofício (armeiro)" is Ofício), or undefined. */
+  function skillByName(name) {
+    const n = normalize(String(name).replace(/\s*\([^)]*\)\s*/g, ' ').trim());
+    return n ? Object.values(rules.skills).find(s => normalize(s.name) === n || normalize(s.id) === n)?.id : undefined;
+  }
+
+  /**
+   * "grant" steps: the skills named in a field of the chosen entities, as groups. A group of one is given
+   * automatically; "Fight or Aim" (also "|" or "/") is a group the player picks one from.
+   */
+  function grantGroups(step, sheet) {
+    const from = step.from;
+    if (!from?.collection || !from?.field) return [];
+    const words = [].concat(step.or || ['or', 'ou']).map(w => String(w).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    const or = new RegExp(`\\s*[|/]\\s*|\\s+(?:${words})\\s+`, 'i');
+    const texts = (sheet.items || []).filter(i => i.collection === from.collection)
+      .map(i => rules.entities[from.collection]?.[i.ref]?.[from.field]).filter(v => v !== undefined && v !== '');
+    const groups = texts.flatMap(v => (Array.isArray(v) ? v : String(v).split(/\s*[,;]\s*/)))
+      .map(part => [...new Set(String(part).split(or).map(skillByName).filter(Boolean))]).filter(g => g.length);
+    // The same fixed skill named twice is given once.
+    return groups.filter((g, i) => g.length > 1 || groups.findIndex(x => x.length === 1 && x[0] === g[0]) === i);
+  }
+
+  /** The skill a group gives: its only skill, the player's pick, or the only one not trained yet. */
+  function groupPick(step, g, alt, sheet) {
+    const free = step.untrained ? g.filter(id => !((sheet.skills[id] || 0) > 0)) : g;
+    if (g.length === 1) return free[0];
+    if (free.includes(alt)) return alt;
+    return free.length === 1 ? free[0] : undefined;
+  }
+
+  /** Which step first put points in each skill: { id: step index } (-1: the sheet already had it). */
+  function skillSources(upto) {
+    const s = fresh(), src = {};
+    for (const [id, n] of Object.entries(s.skills)) if (n > 0) src[id] = -1;
+    for (let j = 0; j < upto; j++) {
+      if (!applies(steps[j], s)) continue;
+      const before = { ...s.skills };
+      applyStep(steps[j], choices[j], s);
+      for (const [id, n] of Object.entries(s.skills)) if (n > (before[id] || 0) && src[id] === undefined) src[id] = j;
+    }
+    return src;
+  }
+
   /** { ok, msg (blocks), warn (does not block) } */
   function validate(i, calc, sheet) {
     const step = steps[i], c = choices[i];
@@ -228,12 +292,23 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       return { ok: true };
     }
     if (step.type === 'skills') {
+      const trained = id => step.untrained && (sheet.skills[id] || 0) > 0;
+      if (step.grant) {
+        const groups = grantGroups(step, sheet);
+        if (groups.some((g, gi) => g.some(id => !trained(id)) && !groupPick(step, g, c.alt?.[gi], sheet))) {
+          return { ok: false, msg: t('creation.chooseAlt') };
+        }
+        const lost = groups.filter(g => g.every(trained)).length;
+        return lost ? { ok: true, warn: t('creation.lostTraining', { n: lost }) } : { ok: true };
+      }
       if (step.choose !== undefined) {
         const need = num(step.choose, calc, 0);
-        const allowed = allowedSkills(step, calc, sheet);
+        const allowed = allowedSkills(step, calc, sheet).filter(id => !trained(id));
         const have = (c.chosen || []).filter(id => allowed.includes(id)).length;
         const possible = Math.min(need, allowed.length);
         if (have < possible) return { ok: false, msg: t('creation.chooseMore', { n: possible - have }) };
+        // A short list where some skills were already trained: the player gets fewer, unless they change the earlier step.
+        if (step.from && need > allowed.length) return { ok: true, warn: t('creation.lostTraining', { n: need - allowed.length }) };
         return { ok: true };
       }
       const left = num(step.points, calc, 0) - Object.values(c.points || {}).reduce((a, b) => a + b, 0);
@@ -543,23 +618,67 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
   }
 
   // Skills: choose N for a bonus, or spend points.
+  // Skills an earlier step already trained, with where and a button that goes back to that step.
+  function trainedNote(ids, lost) {
+    if (!ids.length) return null;
+    const src = skillSources(index);
+    return h('div.skill-conflicts', { class: lost ? 'lost' : '' }, h('p.small', t(lost ? 'creation.alreadyTrainedHelp' : 'creation.alreadyTrainedInfo')),
+      ids.map(id => {
+        const j = src[id];
+        const where = j >= 0 ? (steps[j].title || defaultTitle(steps[j])) : t('creation.fromSheet');
+        return h('div.skill-conflict', h('strong', rules.skills[id]?.name || id), h('span.muted.small', t('creation.trainedIn', { step: where })),
+          j >= 0 ? h('button.mini', { type: 'button', onclick: () => { index = j; query = ''; showAll = false; shown = SHOWN; draw(); } }, t('creation.change')) : null);
+      }));
+  }
+
   function skillsStep(step, calc, sheet, calcAfter) {
     const c = choices[index];
+    const trained = id => step.untrained && (sheet.skills[id] || 0) > 0;
+    const value = id => h('strong', signed(calcAfter.value(id)));
+    if (step.grant) {
+      c.alt ||= {};
+      const groups = grantGroups(step, sheet);
+      const fixed = groups.filter(g => g.length === 1).map(g => g[0]);
+      const given = fixed.filter(id => !trained(id));
+      // Lost: a fixed skill, or every skill of an "or", that was already trained.
+      const conflicts = [...new Set(groups.filter(g => g.every(trained)).flat())];
+      return [
+        given.length ? h('div', h('p.small.muted', t('creation.grantedSkills')),
+          h('div.skill-chips', given.map(id => h('span.skill-chip.granted', h('span', rules.skills[id].name), value(id))))) : null,
+        ...groups.map((g, gi) => (g.length < 2 ? null : h('div',
+          h('p', t('creation.chooseOneOf', { list: g.map(id => rules.skills[id].name).join(` ${t('creation.or')} `) })),
+          h('div.skill-chips', g.map(id => {
+            const on = groupPick(step, g, c.alt[gi], sheet) === id;
+            return h('button.skill-chip', { type: 'button', 'aria-pressed': String(on), disabled: trained(id), class: trained(id) ? 'trained' : '',
+              onclick: () => { c.alt[gi] = id; redraw(); } }, h('span', rules.skills[id].name), trained(id) ? h('span.small', t('creation.trained')) : value(id));
+          }))))),
+        groups.length ? null : h('p.muted', t('creation.noGrantedSkills')),
+        trainedNote(conflicts, true),
+      ];
+    }
     if (step.choose !== undefined) {
       c.chosen ||= [];
       const need = num(step.choose, calc, 0);
       const bonus = num(step.bonus, calc, 1);
       const allowed = allowedSkills(step, calc, sheet);
-      c.chosen = c.chosen.filter(id => allowed.includes(id));
+      c.chosen = c.chosen.filter(id => allowed.includes(id) && !trained(id));
+      const taken = allowed.filter(trained);
       return [
         h('p', t('creation.chooseSkills', { n: need, bonus: signed(bonus) })),
         h('span.badge', t('creation.chosen', { n: c.chosen.length, max: need })),
+        // Already trained skills stay in the list, disabled, so the player sees why they can't be picked.
         h('div.skill-chips', allowed.map(id => rules.skills[id]).sort((a, b) => byName(a.name, b.name)).map(s => {
           const on = c.chosen.includes(s.id);
+          if (trained(s.id)) {
+            return h('button.skill-chip.trained', { type: 'button', disabled: true, 'aria-pressed': 'false', title: t('creation.trained') },
+              h('span', s.name), h('span.small', t('creation.trained')));
+          }
           return h('button.skill-chip', { type: 'button', 'aria-pressed': String(on), disabled: !on && c.chosen.length >= need,
             onclick: () => { c.chosen = on ? c.chosen.filter(x => x !== s.id) : [...c.chosen, s.id]; redraw(); } },
-          h('span', s.name), h('strong', signed(calcAfter.value(s.id))));
+          h('span', s.name), value(s.id));
         })),
+        // With a short list (from a race, class or origin), say where the trained ones came from.
+        step.from ? trainedNote(taken, need > allowed.length - taken.length) : null,
       ];
     }
     c.points ||= {};

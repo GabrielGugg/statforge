@@ -53,6 +53,10 @@ test('validation: examples pass, common mistakes are caught', () => {
   assert.ok(validatePackage({ format: 1, id: 'e', name: 'e', type: 'extension', system: 's', patches: [{ op: 'delete' }] }).errors.length);
   assert.ok(validatePackage({ format: 1, id: 'a', name: 'a', type: 'theme', colors: {}, language: 'english!' }).errors.length);
   assert.ok(validatePackage({ format: 1, id: 'a', name: 'a', type: 'theme', colors: {} }).warnings.some(w => w.includes('language')));
+  // A "grant" skills step needs "from" (the field that names the skills).
+  const sys = s => ({ format: 1, id: 's', name: 's', type: 'system', language: 'en', creation: { steps: [s] } });
+  assert.ok(validatePackage(sys({ type: 'skills', grant: true })).errors.some(e => e.includes('from')));
+  assert.deepEqual(validatePackage(sys({ type: 'skills', grant: true, untrained: true, from: { collection: 'classes', field: 'skills' } })).errors, []);
 });
 
 test('assembly: extension patches', () => {

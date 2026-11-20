@@ -291,6 +291,14 @@ button.mini.link:hover { text-decoration: underline; }
 .skill-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: .6rem; }
 .skill-chip { gap: .5rem; border-radius: 999px; }
 .skill-chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.skill-chip.granted { display: inline-flex; align-items: center; padding: .45rem .9rem; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-text); }
+.skill-chip.trained { opacity: .55; text-decoration: line-through; text-decoration-thickness: 1px; }
+.skill-chip.trained .small { text-decoration: none; }
+.skill-conflicts { margin-top: .9rem; padding: .6rem .75rem; border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius); background: var(--surface-2); display: grid; gap: .35rem; }
+.skill-conflicts p { margin: 0 0 .2rem; }
+.skill-conflicts.lost { border-left-color: var(--warning); }
+.skill-conflict { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; }
+.skill-conflict .mini { margin-left: auto; }
 .info-box { border: 1px solid var(--border); border-radius: 8px; padding: .7rem .8rem; background: var(--surface-2); margin-top: .6rem; }
 .wizard input.name { font-size: 1.2rem; font-weight: 700; }
 .wizard-step .stat-chips { margin-top: .6rem; }

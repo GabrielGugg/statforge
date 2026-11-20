@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.31.0 — 2026-11-20
+
+- Character creation: a skills step can **grant** the skills named in a field (`"grant": true`), for example a class's fixed skills. They are given automatically; "Fight or Aim" becomes a choice of one. When there is nothing to choose, the step is not shown.
+- Character creation: with `"untrained": true`, a skill that was already trained can't be trained again. It stays in the list, disabled, and the step says which earlier step trained it, with a **Change** button that goes back to that step. When an "or" has only one skill left, it is taken automatically.
+
 ## 1.30.0 — 2026-11-20
 
 - Packages: installing files (or a table) now always ends with a **result screen** that says what changed: updated packages with the old and new version, new packages, and the ones that were already at that version. Before, a single file only showed a short message. When several files are chosen together, table packages are installed last, so the table finds its packages.
