@@ -1250,60 +1250,116 @@ function listBlock(st, def) {
   const fields = col?.fields || {};
   const usesQty = col?.quantity;
   const wearMax = def.no_wear ? null : col?.wear?.max;
+  // "source": a column with where each entry came from (the class that learned a spell, the race that grants one…).
+  const showSource = !!def.source;
+  // "views": ["table", "cards"] lets the player switch; the choice is kept per block for the system.
+  const views = Array.isArray(def.views) ? def.views.filter(v => v === 'table' || v === 'cards') : [];
+  const blockId = def.id || colId;
+  const view = views.includes(st.custom?._views?.[blockId]) ? st.custom._views[blockId] : views[0] || 'table';
+  const setView = v => { st.custom._views = { ...(st.custom._views || {}), [blockId]: v }; st.saveCustom(); st.redraw(); };
 
-  const rows = items.map(item => {
-    const ent = rules.entities[colId]?.[item.ref];
-    const name = item.name || ent?.name || item.ref;
-    const removeItem = async () => {
-      if (!col?.quick_remove && !(await confirm(t('sheet.removeTitle'), t('sheet.removeAsk', { name }), { yes: t('sheet.remove'), danger: true }))) return;
-      sheet.items = sheet.items.filter(x => x !== item);
-      for (const x of sheet.items) if (x.mods?.includes(item.uid)) x.mods = x.mods.filter(u => u !== item.uid);
-      st.change();
-    };
+  const removeItem = async (item, name) => {
+    if (!col?.quick_remove && !(await confirm(t('sheet.removeTitle'), t('sheet.removeAsk', { name }), { yes: t('sheet.remove'), danger: true }))) return;
+    sheet.items = sheet.items.filter(x => x !== item);
+    for (const x of sheet.items) if (x.mods?.includes(item.uid)) x.mods = x.mods.filter(u => u !== item.uid);
+    st.change();
+  };
+
+  // Every entry, owned or granted by something else (a background's trait…), with its entity and source.
+  const owned = new Set(items.map(i => i.ref));
+  const entries = [
+    ...items.map(item => {
+      const ent = rules.entities[colId]?.[item.ref];
+      return { item, ent, name: item.name || ent?.name || item.ref, source: item.source || '' };
+    }),
+    ...st.calc.active.filter(f => f.col === colId && !f.item && f.from && !owned.has(f.ent.id))
+      .map(f => ({ ent: f.ent, name: f.ent.name, source: f.from, granted: true })),
+  ];
+  // "hide_empty": an empty list is left out of the sheet (it shows while arranging the blocks).
+  if (!entries.length && def.hide_empty) return null;
+
+  const sourceCell = e => (e.granted ? h('span.badge', { title: t('sheet.grantedBy', { name: e.source }) }, e.source)
+    : e.source ? h('span.muted.small', e.source) : null);
+
+  const rowOf = e => {
+    const { item, ent, name } = e;
+    if (e.granted) {
+      return h('tr.granted',
+        col?.equippable ? h('td') : null,
+        h('td', h('button.mini.link', { onclick: () => entityDetails(st, colId, ent.id) }, name)),
+        showSource ? h('td.small', sourceCell(e)) : null,
+        columns.map(c => h('td.small', fmtField(ent[c], fields[c], st, { collection: colId, ent }))),
+        usesQty ? h('td') : null,
+        wearMax ? h('td') : null,
+        h('td.num', showSource ? null : sourceCell(e)));
+    }
     return h('tr', { class: ent ? '' : 'muted' },
-      col?.equippable ? h('td', h('input', { type: 'checkbox', checked: !!item.equipped, 'aria-label': t('sheet.equipName', { name }), onchange: e => { item.equipped = e.target.checked; st.change(); } })) : null,
+      col?.equippable ? h('td', h('input', { type: 'checkbox', checked: !!item.equipped, 'aria-label': t('sheet.equipName', { name }), onchange: ev => { item.equipped = ev.target.checked; st.change(); } })) : null,
       h('td', h('button.mini.link', { onclick: () => entityDetails(st, colId, item.ref, item) }, name),
         def.wear_badge ? wearBadge(col, item) : null,
         ent ? null : h('span.badge.error', t('sheet.notFoundBadge')),
         itemEffects(st, item),
         usesControl(st, item, ent, col)),
+      showSource ? h('td.small', sourceCell(e)) : null,
       columns.map(c => h('td.small', fmtField(itemValue(st, colId, item, ent, c), fields[c], st, { collection: colId, ent }))),
       usesQty ? h('td.num', h('input', { type: 'number', value: item.qty ?? 1, min: 0, inputmode: 'numeric', 'aria-label': t('sheet.qtyOf', { name }),
-        onchange: e => { item.qty = Math.max(0, Number(e.target.value) || 0); st.change(); } })) : null,
+        onchange: ev => { item.qty = Math.max(0, Number(ev.target.value) || 0); st.change(); } })) : null,
       wearMax ? h('td.num', h('div.row', { style: { flexWrap: 'nowrap', gap: '2px', justifyContent: 'flex-end' } },
         h('button.mini', { 'aria-label': t('sheet.lessWear'), onclick: () => { item.wear = Math.max(0, (item.wear || 0) - 1); st.change(); } }, '−'),
         h('span.wear-value', { title: t('sheet.wear') }, `${item.wear || 0}/${wearMax}`),
         h('button.mini', { 'aria-label': t('sheet.moreWear'), onclick: () => { item.wear = Math.min(wearMax, (item.wear || 0) + 1); st.change(); } }, '+'))) : null,
-      h('td.num', h('button.mini.danger', { 'aria-label': t('sheet.removeName', { name }), onclick: removeItem }, '✕')));
-  });
+      h('td.num', h('button.mini.danger', { 'aria-label': t('sheet.removeName', { name }), onclick: () => removeItem(item, name) }, '✕')));
+  };
 
-  // Entities granted by something else (a background's trait...): shown, removed with their source.
-  const owned = new Set(items.map(i => i.ref));
-  const granted = st.calc.active.filter(f => f.col === colId && !f.item && f.from && !owned.has(f.ent.id)).map(f => h('tr.granted',
-    col?.equippable ? h('td') : null,
-    h('td', h('button.mini.link', { onclick: () => entityDetails(st, colId, f.ent.id) }, f.ent.name)),
-    columns.map(c => h('td.small', fmtField(f.ent[c], fields[c], st, { collection: colId, ent: f.ent }))),
-    usesQty ? h('td') : null,
-    wearMax ? h('td') : null,
-    h('td.num', h('span.badge', { title: t('sheet.grantedBy', { name: f.from }) }, f.from))));
-  rows.push(...granted);
-  // "hide_empty": an empty list is left out of the sheet (it shows while arranging the blocks).
-  if (!rows.length && def.hide_empty) return null;
+  const cardOf = e => {
+    const { item, ent, name } = e;
+    const value = c => (item ? itemValue(st, colId, item, ent, c) : ent?.[c]);
+    const stats = columns.filter(c => ent?.[c] !== undefined && ent[c] !== '' && ent[c] !== null);
+    return h('div.equip-card.list-card', { class: e.granted ? 'granted' : '' },
+      h('div.equip-head',
+        h('button.mini.link.equip-name', { onclick: () => entityDetails(st, colId, ent?.id || item.ref, item || null) }, name),
+        e.granted ? sourceCell(e) : h('button.mini.danger', { 'aria-label': t('sheet.removeName', { name }), onclick: () => removeItem(item, name) }, '✕')),
+      stats.length ? h('div.equip-stats', stats.map(c => h('span.stat', h('span.muted.small', fields[c]?.label || c),
+        h('strong', fmtField(value(c), fields[c], st, { collection: colId, ent }))))) : null,
+      !e.granted && showSource && e.source ? h('div.small.muted.list-card-source', t('sheet.sourceOf', { source: e.source })) : null,
+      item ? itemEffects(st, item) : null);
+  };
+
+  // "group_by": a field that splits the list under headings ("Arcane", "Divine"…), in "group_order" first.
+  const groupOf = e => (def.group_by ? String(e.ent?.[def.group_by] ?? '').trim() || t('sheet.otherGroup') : '');
+  const order = Array.isArray(def.group_order) ? def.group_order.map(String) : [];
+  const groupNames = [...new Set(entries.map(groupOf))].sort((a, b) => {
+    const ia = order.indexOf(a), ib = order.indexOf(b);
+    return (ia < 0 ? order.length : ia) - (ib < 0 ? order.length : ib) || byName(a, b);
+  });
+  const groups = groupNames.map(g => [g, entries.filter(e => groupOf(e) === g)]);
+  const nCols = (col?.equippable ? 1 : 0) + 1 + (showSource ? 1 : 0) + columns.length + (usesQty ? 1 : 0) + (wearMax ? 1 : 0) + 1;
 
   const full = max !== undefined && items.length >= max;
-  return [
-    h('h3', h('span', title, max !== undefined ? h('span.muted.small', ` (${items.length}/${max})`) : null),
-      h('button.mini', { disabled: full, onclick: () => search(st, colId) }, t('sheet.add'))),
-    rows.length ? h('div.scroll-table', h('table.table',
+  const switcher = views.length > 1 ? h('span.segmented', { role: 'group', 'aria-label': t('sheet.viewAs') },
+    views.map(v => h('button.mini', { type: 'button', 'aria-pressed': String(v === view), onclick: () => setView(v) }, t(v === 'cards' ? 'sheet.viewCards' : 'sheet.viewList')))) : null;
+  const heading = h('h3', h('span', title, max !== undefined ? h('span.muted.small', ` (${items.length}/${max})`) : null),
+    h('span.row.list-tools', switcher, h('button.mini', { disabled: full, onclick: () => search(st, colId) }, t('sheet.add'))));
+  if (!entries.length) return [heading, h('p.muted.small', t('sheet.nothingYet'))];
+
+  if (view === 'cards') {
+    return [heading, groups.map(([g, list]) => [
+      def.group_by ? h('h4.list-group', g, h('span.muted.small', ` (${list.length})`)) : null,
+      h('div.equip-list.list-cards', list.map(cardOf))])];
+  }
+  return [heading,
+    h('div.scroll-table', h('table.table',
       h('thead', h('tr',
         col?.equippable ? h('th', { title: t('sheet.equipped') }, t('sheet.equippedShort')) : null,
         h('th', t('sheet.name')),
+        showSource ? h('th', t('sheet.source')) : null,
         columns.map(c => h('th', fields[c]?.label || c)),
         usesQty ? h('th.num', t('sheet.qty')) : null,
         wearMax ? h('th.num', t('sheet.wear')) : null,
         h('th'))),
-      h('tbody', rows))) : h('p.muted.small', t('sheet.nothingYet')),
-  ];
+      h('tbody', groups.flatMap(([g, list]) => [
+        def.group_by ? h('tr.group-row', h('td', { colspan: nCols }, g, h('span.muted.small', ` (${list.length})`))) : null,
+        ...list.map(rowOf)].filter(Boolean)))))];
 }
 
 /** Text whose terms (properties…) name entities of a collection: each one gets a tooltip and opens its details. */

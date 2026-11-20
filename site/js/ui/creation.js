@@ -83,16 +83,33 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     return s;
   }
 
+  /**
+   * "source" on a pick step: where what is picked comes from, saved on the item ("Arcanist" for a spell).
+   * The entities of those collections picked in this run, or else the ones on the sheet; with "source_field",
+   * only those where that field is above 0 (e.g. the race or power that gives a spell to choose).
+   */
+  function sourceOf(step, s) {
+    const cols = [].concat(step.source || []).filter(c => typeof c === 'string' && rules.entities[c]);
+    if (!cols.length) return '';
+    const ok = e => e && (!step.source_field || Number(e[step.source_field]) > 0);
+    const names = cols.flatMap(c => {
+      const run = (s.picked || []).filter(r => r.startsWith(`${c}/`)).map(r => rules.entities[c][r.slice(c.length + 1)]).filter(ok);
+      return (run.length ? run : s.items.filter(i => i.collection === c).map(i => rules.entities[c][i.ref]).filter(ok)).map(e => e.name);
+    });
+    return [...new Set(names)].join(', ');
+  }
+
   function applyStep(step, choice, s) {
     if (step.type === 'pick') {
       const col = rules.collections[step.collection] || {};
+      const source = sourceOf(step, s);
       for (const ref of choice.picks || []) {
         if (!rules.entities[step.collection]?.[ref]) continue;
         // "levels": an entity the sheet already has goes up by one (a class level) instead of being added again.
         const owned = step.levels && col.quantity && s.items.find(i => i.collection === step.collection && i.ref === ref && !i.name);
         if (owned) owned.qty = (Number(owned.qty) || 1) + 1;
         else s.items.push({ uid: uid(), collection: step.collection, ref,
-          ...(col.quantity ? { qty: 1 } : {}), ...(col.equippable ? { equipped: true } : {}) });
+          ...(col.quantity ? { qty: 1 } : {}), ...(col.equippable ? { equipped: true } : {}), ...(source ? { source } : {}) });
         s.picked = [...(s.picked || []), `${step.collection}/${ref}`];
       }
     } else if (step.type === 'attributes') {

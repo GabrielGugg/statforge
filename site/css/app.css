@@ -691,3 +691,11 @@ tr.specialty-add td { padding-top: .1rem; padding-bottom: .5rem; }
 .kit-pick select { width: auto; min-width: 12rem; max-width: 100%; min-height: 36px; padding: .2rem 1.8rem .2rem .5rem; }
 .kit-roll-controls { gap: .4rem; flex-basis: 100%; }
 .kit-roll-controls input { width: 7rem; min-height: 36px; }
+/* Lists: groups, table / cards switch, source */
+.list-tools { gap: .4rem; flex-wrap: nowrap; }
+tr.group-row td { font-weight: 700; padding-top: .8rem; border-bottom: 2px solid var(--border); }
+h4.list-group { margin: .9rem 0 .4rem; }
+h4.list-group:first-of-type { margin-top: .2rem; }
+.list-card.granted { border-style: dashed; }
+.list-card-source { margin-top: .3rem; }
+.equip-list.list-cards { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }

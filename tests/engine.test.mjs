@@ -277,3 +277,14 @@ test('skills: "attribute" as a list uses the highest modifier', () => {
   assert.equal(c.value('intim'), 4);
   assert.equal(c.explain('intim').formula, 'points + max(mod(STR), mod(CHA))');
 });
+
+test('grants: an item with a source passes it on to what it grants', () => {
+  const rules = {
+    attributes: {}, skills: {}, derived: {}, resources: {}, counters: {}, collections: { extra: {}, spells: {} },
+    entities: { extra: { pick: { id: 'pick', name: 'Picked spell', effects: [{ type: 'grant', ref: 'spells/light' }] } },
+      spells: { light: { id: 'light', name: 'Light' } } },
+  };
+  const from = sheet => compute(rules, sheet).active.find(f => f.k === 'spells/light')?.from;
+  assert.equal(from({ items: [{ uid: 'a', collection: 'extra', ref: 'pick' }] }), 'Picked spell');
+  assert.equal(from({ items: [{ uid: 'a', collection: 'extra', ref: 'pick', source: 'Elf' }] }), 'Elf');
+});

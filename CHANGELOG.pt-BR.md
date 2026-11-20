@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.34.0 — 20/11/2026
+
+- Ficha: blocos de lista podem agrupar as entradas sob títulos por um campo (`"group_by"`, por exemplo magias em Arcanas, Divinas e Universais), alternar entre tabela e cartões (`"views"`, lembrado por sistema) e mostrar de onde veio cada entrada (`"source"`).
+- Criação e subida de nível: um passo de escolha com `"source"` grava de onde veio cada escolha (a classe que aprendeu a magia, a raça ou o poder que deu uma magia para escolher). O que esse item concede mostra a mesma origem.
+
 ## 1.33.0 — 20/11/2026
 
 - Criação de personagem: o equipamento inicial pode deixar o jogador escolher (`"choose"`): "uma arma simples a sua escolha" mostra a lista das armas simples, "armadura de couro, couro batido ou gibão de peles" mostra essas três. Os itens escolhidos entram na ficha, equipados quando o kit diz.

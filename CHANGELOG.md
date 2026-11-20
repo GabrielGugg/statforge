@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.34.0 — 2026-11-20
+
+- Sheet: list blocks can group their entries under headings by a field (`"group_by"`, for example spells by Arcane, Divine and Universal), switch between a table and cards (`"views"`, remembered for the system) and show where each entry came from (`"source"`).
+- Character creation and level-up: a pick step with `"source"` saves where each pick came from (the class that learned a spell, the race or power that gave a spell to choose). What such an item grants shows the same source.
+
 ## 1.33.0 — 2026-11-20
 
 - Character creation: the starting kit can let the player choose (`"choose"`): "a simple weapon of your choice" shows the list of simple weapons, "leather, studded leather or hide armor" shows those three. The chosen items go on the sheet, equipped when the kit says so.
