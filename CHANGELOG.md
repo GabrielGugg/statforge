@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.35.0 — 2026-11-20
+
+- Sheet: every item with mods has a **Mods** button (in the lists, the inventory and the equipped cards), with the names of the mods installed next to the item. The dialog installs mods straight from the collection, only the ones that fit the item (`"tags"`), without adding them to the inventory first. They belong to the item: taking one out, or removing the item, removes it from the sheet.
+- Packages: `"mods"` can be an object with `"tags"`, a `"label"` for the button and `"costs"`: the price added by how many mods of a kind are installed (and the most of them an item can have). The price shown with the item includes it.
+- Character creation: a starting kit entry can make a custom item (`"custom"`) for something the system has no entity for. It shows in the inventory and can be edited like any custom item, instead of going to the notes.
+
 ## 1.34.0 — 2026-11-20
 
 - Sheet: list blocks can group their entries under headings by a field (`"group_by"`, for example spells by Arcane, Divine and Universal), switch between a table and cards (`"views"`, remembered for the system) and show where each entry came from (`"source"`).

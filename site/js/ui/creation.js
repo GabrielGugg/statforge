@@ -156,6 +156,14 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
         const v = Number(choice.roll?.[r.key]?.value);
         if (Number.isFinite(v) && v > 0) kit.items.push({ collection: r.collection, ref: r.ref, qty: v, equipped: r.equipped });
       }
+      // Custom items live on the sheet (sheet.custom), editable there like any custom item.
+      for (const cu of kit.customs) {
+        const id = `custom_${uid()}`;
+        const col = rules.collections[cu.collection] || {};
+        ((s.custom ||= {})[cu.collection] ||= {})[id] = { id, custom: true, name: cu.name, ...(cu.description ? { description: cu.description } : {}), ...cu.fields };
+        s.items.push({ uid: uid(), collection: cu.collection, ref: id, name: cu.name,
+          ...(col.quantity ? { qty: cu.qty } : {}), ...(col.equippable ? { equipped: cu.equipped } : {}) });
+      }
       for (const it of kit.items) {
         const col = rules.collections[it.collection] || {};
         const same = col.quantity && !it.wear && !it.name && s.items.find(x => x.collection === it.collection && x.ref === it.ref && !x.wear && !x.name);
@@ -187,11 +195,14 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
   function startingKit(step, sheet) {
     const calc = compute(rules, sheet);
     const field = step.field || 'starting_items';
-    const items = [], texts = [], choices = [], rolls = [];
+    const items = [], texts = [], choices = [], rolls = [], customs = [];
     for (const it of sheet.items.filter(i => i.collection === step.from)) {
       (rules.entities[step.from]?.[it.ref]?.[field] || []).forEach((e, n) => {
         if (e.if && !calc.formula(e.if)) return;
         const key = `${it.ref}#${n}`;
+        // Something the system has no entity for: a custom item made on the sheet ("text" is for older apps).
+        const cust = customEntry(e.custom);
+        if (cust) { customs.push({ ...cust, qty: Number(e.qty) || 1, equipped: !!e.equipped }); return; }
         if (e.text) { texts.push(e.text); return; }
         if (e.choose) {
           const options = kitOptions(e.choose);
@@ -208,7 +219,21 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
         items.push({ collection, ref, qty: Number(e.qty) || 1, wear: Number(e.wear) || 0, equipped: !!e.equipped, name: e.name });
       });
     }
-    return { items, texts, choices, rolls };
+    return { items, texts, choices, rolls, customs };
+  }
+
+  /** A kit "custom" entry, checked: a collection that allows custom items, a name, and only that collection's fields. */
+  function customEntry(c) {
+    const col = rules.collections[c?.collection];
+    if (!col?.custom || typeof c.name !== 'string' || !c.name.trim()) return null;
+    const allowed = Array.isArray(col.custom) ? col.custom : Object.keys(col.fields || {});
+    const fields = {};
+    for (const f of allowed) {
+      const v = c[f], type = col.fields?.[f]?.type;
+      if (v === undefined || v === null) continue;
+      if (type === 'number' ? typeof v === 'number' && Number.isFinite(v) : typeof v === 'string') fields[f] = v;
+    }
+    return { collection: c.collection, name: c.name.trim().slice(0, 80), description: typeof c.description === 'string' ? c.description.slice(0, 2000) : undefined, fields };
   }
 
   /**
@@ -885,8 +910,10 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       return h('li', h('span', it.name || ent.name), h('span.muted.small', ` ${colName(it.collection)}`),
         h('span.kit-qty', `×${fmt(it.qty)}`), it.wear ? h('span.badge.warning', `${t('sheet.wear')} ${it.wear}`) : null);
     }), kit.choices.map(choiceRow), kit.rolls.map(rollRow),
+    kit.customs.map(cu => h('li', h('span', cu.name), h('span.muted.small', ` ${colName(cu.collection)} · ${t('creation.customItem')}`),
+      cu.qty !== 1 ? h('span.kit-qty', `×${fmt(cu.qty)}`) : null)),
     kit.texts.map(x => h('li', h('span', x), h('span.muted.small', ` ${t('creation.asNote')}`))));
-    const empty = !kit.items.length && !kit.texts.length && !kit.choices.length && !kit.rolls.length;
+    const empty = !kit.items.length && !kit.texts.length && !kit.choices.length && !kit.rolls.length && !kit.customs.length;
     const option = (on, label, body, value) => h('div.choice', { class: on ? 'selected' : '' },
       h('label.choice-main', h('input', { type: 'radio', name: `step${index}`, checked: on, onchange: () => { c.take = value; redraw(); } }),
         h('span.choice-text', h('strong', label), body)));

@@ -699,3 +699,8 @@ h4.list-group:first-of-type { margin-top: .2rem; }
 .list-card.granted { border-style: dashed; }
 .list-card-source { margin-top: .3rem; }
 .equip-list.list-cards { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+/* Mods next to an item; the catalog in the mods dialog */
+.item-mods { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .5rem; margin-top: .25rem; }
+.item-mods-names { color: var(--accent); font-weight: 600; }
+.mod-catalog { max-height: 45vh; overflow: auto; }
+.mod-cost { margin: .3rem 0 .6rem; font-weight: 600; }

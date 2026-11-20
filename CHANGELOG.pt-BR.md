@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.35.0 — 20/11/2026
+
+- Ficha: todo item com modificações tem um botão **Mods** (nas listas, no inventário e nos cartões de equipados), com os nomes das modificações instaladas ao lado do item. A janela instala modificações direto da coleção, só as que servem para o item (`"tags"`), sem precisar colocá-las no inventário antes. Elas pertencem ao item: tirar uma, ou remover o item, tira ela da ficha.
+- Pacotes: `"mods"` pode ser um objeto com `"tags"`, um `"label"` para o botão e `"costs"`: o preço somado conforme quantas modificações de um tipo estão instaladas (e o máximo delas num item). O preço mostrado com o item já inclui isso.
+- Criação de personagem: uma entrada do kit inicial pode criar um item personalizado (`"custom"`) para algo que o sistema não tem. Ele aparece no inventário e pode ser editado como qualquer item personalizado, em vez de ir para as anotações.
+
 ## 1.34.0 — 20/11/2026
 
 - Ficha: blocos de lista podem agrupar as entradas sob títulos por um campo (`"group_by"`, por exemplo magias em Arcanas, Divinas e Universais), alternar entre tabela e cartões (`"views"`, lembrado por sistema) e mostrar de onde veio cada entrada (`"source"`).
