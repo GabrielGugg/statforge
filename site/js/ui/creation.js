@@ -319,9 +319,21 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     return chips.length ? h('div.stat-chips', { 'aria-label': t('creation.summary') }, chips) : null;
   }
 
+  // What the current pick step has chosen, right above the buttons: it stays visible however long the list is.
+  function pickedLine() {
+    const step = steps[index], c = choices[index];
+    if (step?.type !== 'pick' || !c?.picks?.length) return null;
+    const names = c.picks.map(id => rules.entities[step.collection]?.[id]).filter(Boolean);
+    return h('div.wizard-picked', h('span.muted.small', t('creation.picked')),
+      names.map(e => h('span.picked-chip', e.name,
+        h('button.mini.link', { type: 'button', 'aria-label': t('creation.unpick', { name: e.name }),
+          onclick: () => { c.picks = c.picks.filter(x => x !== e.id); redraw(); } }, '✕'))));
+  }
+
   function footer(v) {
     const back = firstFrom(index - 1, -1);
     return h('div.wizard-footer',
+      pickedLine(),
       v.msg ? h('div.small', { style: { color: 'var(--danger)' } }, v.msg) : v.warn ? h('div.small', { style: { color: 'var(--warning)' } }, v.warn) : null,
       h('div.row.spread',
         back >= 0 ? h('button', { type: 'button', onclick: () => { index = back; query = ''; showAll = false; shown = SHOWN; draw(); } }, `← ${t('common.back')}`) : h('span'),
@@ -370,9 +382,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     let list = [...visible.filter(e => okAll.includes(e)), ...visible.filter(e => !okAll.includes(e))];
     const q = normalize(query);
     if (q) list = list.filter(e => normalize(`${e.name} ${e.description || ''} ${Object.values(e).filter(x => typeof x === 'string').join(' ')}`).includes(q));
-    // chosen ones first, so they never get lost behind the search
-    const chosen = c.picks.map(id => rules.entities[step.collection]?.[id]).filter(Boolean);
-    list = [...chosen, ...list.filter(e => !c.picks.includes(e.id))];
+    // Picking keeps the option where it is (moving it to the top was confusing); the footer lists what is picked.
     const extra = Math.max(0, list.length - shown);
     list = list.slice(0, shown);
 

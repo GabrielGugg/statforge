@@ -65,7 +65,7 @@ export async function install(pkg, source = null) {
   }
   return {
     pkg: record, warnings,
-    replaced: old ? { from: old.version, to: pkg.version, downgrade: compareVersions(pkg.version, old.version) < 0 } : null,
+    replaced: old ? { from: old.version, to: pkg.version, downgrade: compareVersions(pkg.version, old.version) < 0, same: compareVersions(pkg.version, old.version) === 0 } : null,
   };
 }
 
@@ -107,22 +107,29 @@ export async function installTable(table, url = null) {
   return { installed: results, failures, table: { id: table.id, system: systemId, extensions } };
 }
 
-/** Reads one or more .json files chosen by the user and installs them. */
+/**
+ * Reads one or more .json files chosen by the user and installs them.
+ * Table packages go last, so a table chosen together with its packages finds them installed.
+ */
 export async function installFiles(files) {
-  const ok = [], failures = [];
+  const ok = [], failures = [], tables = [], read = [];
   for (const file of files) {
+    try { read.push({ file, p: JSON.parse(await file.text()) }); } catch (e) {
+      failures.push(e instanceof SyntaxError ? t('pkg.fileNotJson', { file: file.name, error: e.message }) : `${file.name}: ${e.message}`);
+    }
+  }
+  read.sort((a, b) => (a.p?.type === 'table') - (b.p?.type === 'table'));
+  for (const { file, p } of read) {
     try {
-      const p = JSON.parse(await file.text());
       if (p?.type === 'table') {
         const r = await installTable(p);
         ok.push(...r.installed);
         failures.push(...r.failures);
+        tables.push(p.name || p.id);
       } else ok.push(await install(p, null));
-    } catch (e) {
-      failures.push(e instanceof SyntaxError ? t('pkg.fileNotJson', { file: file.name, error: e.message }) : `${file.name}: ${e.message}`);
-    }
+    } catch (e) { failures.push(`${file.name}: ${e.message}`); }
   }
-  return { ok, failures };
+  return { ok, failures, tables };
 }
 
 /** Updates a package by downloading it again from its source link. */

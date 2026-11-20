@@ -30,7 +30,11 @@ export async function newSheetScreen(app, gmTableId = null) {
   }
 
   const name = h('input', { type: 'text', placeholder: t('new.namePlaceholder'), required: true });
-  const selSystem = h('select', systems.map(s => h('option', { value: s.id }, `${s.name} (v${s.version || '0'}${s.language ? `, ${s.language}` : ''})`)));
+  // With more than one system, nothing is chosen at first, so a sheet never starts in the wrong system by accident.
+  const selSystem = h('select', { required: true },
+    systems.length > 1 ? h('option', { value: '', disabled: true, selected: true }, t('new.chooseSystem')) : null,
+    systems.map(s => h('option', { value: s.id }, `${s.name} (v${s.version || '0'}${s.language ? `, ${s.language}` : ''})`)));
+  if (systems.length > 1) selSystem.value = '';
   const extBox = h('div');
   const warnBox = h('div');
   const useWizard = h('input', { type: 'checkbox', checked: true });
@@ -42,6 +46,7 @@ export async function newSheetScreen(app, gmTableId = null) {
 
   function drawExtensions() {
     const sid = selSystem.value;
+    if (!sid) { extBox.replaceChildren(h('p.muted.small', t('new.systemFirst'))); warnBox.replaceChildren(); return; }
     const exts = order.filter(id => inst[id]?.system === sid);
     extBox.replaceChildren(exts.length
       ? h('div', exts.map(id => h('label.check',
@@ -70,6 +75,7 @@ export async function newSheetScreen(app, gmTableId = null) {
   async function create(e) {
     e.preventDefault();
     const sid = gmTable ? gmTable.system : selSystem.value;
+    if (!sid) { selSystem.focus(); return; }
     const active = order.filter(id => checked.has(id));
     try {
       const { rules } = await pk.rulesForSheet({ system: sid, extensions: active });

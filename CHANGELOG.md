@@ -2,6 +2,14 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.30.0 — 2026-11-20
+
+- Packages: installing files (or a table) now always ends with a **result screen** that says what changed: updated packages with the old and new version, new packages, and the ones that were already at that version. Before, a single file only showed a short message. When several files are chosen together, table packages are installed last, so the table finds its packages.
+- New sheet: with more than one system installed, the system starts as "Select…" instead of the first one in the list.
+- Character creation: picking an option keeps it where it is in the list (it used to jump to the top). What is picked shows above the Back button, and ✕ removes it.
+- Sheet: the dashboard fills the space next to a tall block. With Skills beside Attributes, the next blocks go below Attributes instead of leaving a gap.
+- Home: sheet cards show only how many extensions the sheet uses; the names are in the tooltip.
+
 ## 1.29.0 — 2026-11-20
 
 - Character creation and level-up: a **Filters** button above each pick list. It can show only the options the character can take, and hide the options of a package (for example a supplement) when more than one package added to the list. The choice is remembered in this browser for each system. "Ignore unmet requirements" works as before, and when ticked every option counts as allowed.

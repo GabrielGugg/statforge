@@ -432,11 +432,35 @@ function dashboard(st, tab) {
       h('button.mini', { type: 'button', onclick: () => { e.hidden = !e.hidden; persist(); st.redraw(); } }, e.hidden ? t('sheet.show') : t('sheet.hide')));
   }
 
+  masonry(grid);
   if (!st.editing) return grid;
   return h('div',
     h('div.alert.ok.row.spread', h('span', t('sheet.arrangeHelp')),
       h('button.mini', { type: 'button', onclick: () => { delete st.custom[tab.id]; st.saveCustom(); st.redraw(); } }, t('sheet.resetLayout'))),
     grid);
+}
+
+/**
+ * Masonry: the grid has thin rows (MASONRY_ROW px) and each block spans as many as its height needs,
+ * so a short block (Attributes) next to a tall one (Skills) leaves room for the next blocks below it
+ * instead of an empty gap. Heights are measured again whenever a block changes size.
+ */
+const MASONRY_ROW = 4, MASONRY_GAP = 12;
+function masonry(grid) {
+  if (typeof ResizeObserver === 'undefined') return;
+  grid.classList.add('masonry');
+  const fit = el => {
+    const height = el.getBoundingClientRect().height;
+    if (height) el.style.gridRowEnd = `span ${Math.ceil((height + MASONRY_GAP) / MASONRY_ROW)}`;
+  };
+  const ro = new ResizeObserver(entries => {
+    if (!grid.isConnected) { ro.disconnect(); return; }
+    for (const en of entries) fit(en.target);
+  });
+  const watch = () => { for (const el of grid.children) ro.observe(el); };
+  watch();
+  // Blocks moved or added while arranging are watched too.
+  new MutationObserver((_, mo) => { if (!grid.isConnected) { mo.disconnect(); return; } watch(); }).observe(grid, { childList: true });
 }
 
 /** Drag a block by its handle (mouse or touch); the others make room as it moves. */

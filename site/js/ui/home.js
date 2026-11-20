@@ -54,7 +54,8 @@ export async function homeScreen(app) {
     return h('a.card', { href: `#/sheet/${encodeURIComponent(s.id)}` },
       h('h3', h('span', s.name || t('common.unnamed')), h('span.badge', t('home.level', { n: s.level ?? 1 }))),
       h('div.muted.small', sys ? sys.name : t('home.systemMissing', { id: s.system })),
-      exts.length ? h('div.muted.small', `${t('home.extensions', { n: exts.length })}: ${exts.map(id => inst[id]?.name || id).sort(byName).join(', ')}`) : null);
+      // Only the count: with many supplements the names made the card huge. They are in the hint.
+      exts.length ? h('div.muted.small', { title: exts.map(id => inst[id]?.name || id).sort(byName).join('\n') }, t('home.extensions', { n: exts.length })) : null);
   })));
 }
 

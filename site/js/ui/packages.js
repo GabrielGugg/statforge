@@ -40,15 +40,30 @@ export async function installLinkWithFeedback(url) {
   }
 }
 
-function showResult(ok, failures, table) {
-  const items = ok.map(r => h('li', `${r.pkg.name} (${typeName(r.pkg.type)}, v${r.pkg.version || '0'}${r.pkg.language ? `, ${r.pkg.language}` : ''})`,
-    r.replaced ? h('span.muted', ` — ${t('pkgs.updatedFrom', { v: r.replaced.from || '?' })}${r.replaced.downgrade ? ` (${t('pkgs.downgrade')})` : ''}`) : null,
-    r.warnings.length ? h('div.muted.small', r.warnings.join(' ')) : null));
-  if (!failures.length && ok.length === 1 && !table) { toast(t('pkgs.installed', { name: ok[0].pkg.name })); return; }
-  dialog(table ? t('pkgs.tableInstalled') : t('pkgs.installResult'), [
-    ok.length ? h('div.alert.ok', h('strong', t('pkgs.installedCount', { n: ok.length })), h('ul', items)) : null,
+/**
+ * Shows what an installation did: updated (old → new version), new, already at that version, problems.
+ * A single new package with no problems only gets a toast; anything that replaced a package gets the full list.
+ */
+function showResult(ok, failures, table, tables = []) {
+  const label = r => `${r.pkg.name} (${typeName(r.pkg.type)}${r.pkg.language ? `, ${r.pkg.language}` : ''})`;
+  const warn = r => (r.warnings.length ? h('div.muted.small', r.warnings.join(' ')) : null);
+  const updated = ok.filter(r => r.replaced && !r.replaced.same);
+  const fresh = ok.filter(r => !r.replaced);
+  const same = ok.filter(r => r.replaced?.same);
+  if (!failures.length && ok.length === 1 && fresh.length === 1 && !table && !tables.length) { toast(t('pkgs.installed', { name: ok[0].pkg.name })); return; }
+  const group = (cls, title, list, line) => (list.length ? h('div.alert.install-group', { class: cls }, h('strong', title), h('ul', list.map(line))) : null);
+  const allGood = !failures.length && ok.length > 0;
+  dialog(table || tables.length ? t('pkgs.tableInstalled') : t('pkgs.installResult'), [
+    allGood ? h('p.install-summary', '✓ ', t(updated.length ? 'pkgs.allUpdated' : 'pkgs.allInstalled')) : null,
+    tables.length ? h('p', t('pkgs.tablesRead', { names: tables.join(', ') })) : null,
+    group('ok', t('pkgs.updatedCount', { n: updated.length }), updated, r => h('li', label(r), ' ',
+      h('span.version-change', { class: r.replaced.downgrade ? 'down' : '' }, `v${r.replaced.from || '?'} → v${r.pkg.version || '0'}`),
+      r.replaced.downgrade ? h('span.badge.warning', { style: { marginLeft: '.4rem' } }, t('pkgs.downgrade')) : null, warn(r))),
+    group('ok', t('pkgs.newCount', { n: fresh.length }), fresh, r => h('li', label(r), h('span.muted', ` v${r.pkg.version || '0'}`), warn(r))),
+    group('neutral', t('pkgs.sameCount', { n: same.length }), same, r => h('li', label(r), h('span.muted', ` v${r.pkg.version || '0'}`), warn(r))),
     failures.length ? h('div.alert.error', h('strong', t('pkgs.problems')), h('ul', failures.map(f => h('li', h('pre', f))))) : null,
-    table ? h('p', t('pkgs.tableHint')) : null,
+    updated.length ? h('p.muted.small', t('pkgs.updatedHint')) : null,
+    table || tables.length ? h('p', t('pkgs.tableHint')) : null,
   ]);
 }
 
@@ -74,7 +89,7 @@ export async function packagesScreen(app) {
           const files = await pickFiles();
           if (!files.length) return;
           const r = await pk.installFiles(files);
-          showResult(r.ok, r.failures);
+          showResult(r.ok, r.failures, null, r.tables);
           if (r.ok.length) { await applyTheme(); reload(); }
         } }, t('pkgs.installFile')))),
     h('p.muted', t('pkgs.intro')));

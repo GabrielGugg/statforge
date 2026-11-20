@@ -2,6 +2,14 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.30.0 — 20/11/2026
+
+- Pacotes: instalar arquivos (ou uma mesa) agora sempre termina com uma **tela de resultado** que diz o que mudou: pacotes atualizados com a versão antiga e a nova, pacotes novos e os que já estavam naquela versão. Antes, um arquivo só mostrava um aviso rápido. Quando vários arquivos são escolhidos juntos, os pacotes de mesa são instalados por último, então a mesa encontra os pacotes dela.
+- Nova ficha: com mais de um sistema instalado, o sistema começa como "Selecione…" em vez do primeiro da lista.
+- Criação de personagem: escolher uma opção a mantém no mesmo lugar da lista (antes ela pulava para o topo). O que foi escolhido aparece acima do botão Voltar, e o ✕ tira a escolha.
+- Ficha: o painel ocupa o espaço ao lado de um bloco alto. Com Perícias ao lado de Atributos, os próximos blocos vão para baixo de Atributos em vez de deixar um buraco.
+- Início: os cartões das fichas mostram só quantas extensões a ficha usa; os nomes ficam na dica.
+
 ## 1.29.0 — 20/11/2026
 
 - Criação e subida de nível: botão **Filtros** acima de cada lista de escolha. Ele pode mostrar só as opções que o personagem pode pegar e esconder as opções de um pacote (por exemplo um suplemento) quando mais de um pacote colocou coisas na lista. A escolha fica lembrada neste navegador para cada sistema. "Ignorar requisitos não atendidos" funciona como antes e, quando marcado, todas as opções contam como permitidas.

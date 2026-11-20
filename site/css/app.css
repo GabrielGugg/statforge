@@ -257,6 +257,9 @@ button.mini.link:hover { text-decoration: underline; }
 .wizard-progress .bar { margin-top: .4rem; }
 .wizard-step h2 { margin-bottom: .4rem; }
 .wizard-footer { position: sticky; bottom: 0; background: var(--bg); border-top: 1px solid var(--border); padding: 10px 0 calc(10px + env(safe-area-inset-bottom)); display: grid; gap: .4rem; z-index: 5; }
+.wizard-picked { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .4rem; }
+.picked-chip { display: inline-flex; align-items: center; gap: .15rem; padding: .1rem .2rem .1rem .6rem; border: 1px solid var(--accent); border-radius: 999px; font-size: .9rem; font-weight: 600; }
+.picked-chip .mini.link { min-height: 28px; min-width: 28px; padding: 0 .3rem; text-decoration: none; }
 .stat-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .stat-chip { display: inline-flex; gap: .4rem; align-items: baseline; padding: .25rem .6rem; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: .85rem; }
 .stat-chip span { color: var(--text-muted); }
@@ -301,6 +304,8 @@ button.mini.link:hover { text-decoration: underline; }
 .dash > .block { grid-column: span var(--sm, 2); min-width: 0; }
 @media (min-width: 600px) { .dash { grid-template-columns: repeat(6, minmax(0, 1fr)); } .dash > .block { grid-column: span var(--md, 3); } }
 @media (min-width: 900px) { .dash { grid-template-columns: repeat(12, minmax(0, 1fr)); } .dash > .block { grid-column: span var(--lg, 6); } }
+.dash.masonry { row-gap: 0; grid-auto-rows: 4px; }
+.dash.masonry > .block { margin-bottom: 12px; align-self: start; }
 .dash.editing > .block { outline: 1px dashed var(--accent); outline-offset: -1px; }
 .dash > .block.is-hidden { opacity: .45; }
 .dash > .block.dragging { opacity: .6; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
@@ -655,3 +660,9 @@ select.mini { padding: .15rem .35rem; font-size: .8rem; width: auto; }
 .pick-filters .check { margin: 0; }
 .choice-linked { display: grid; gap: .15rem; margin-top: .3rem; font-size: .85rem; }
 .choice-links .term { font-size: inherit; }
+/* Installation result */
+.install-summary { font-weight: 700; color: var(--ok); margin-top: 0; }
+.alert.neutral { border-color: var(--border); }
+.install-group ul { margin: .3rem 0 0; }
+.version-change { font-weight: 700; white-space: nowrap; }
+.version-change.down { color: var(--warning); }
