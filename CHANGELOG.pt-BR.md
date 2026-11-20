@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.33.0 — 20/11/2026
+
+- Criação de personagem: o equipamento inicial pode deixar o jogador escolher (`"choose"`): "uma arma simples a sua escolha" mostra a lista das armas simples, "armadura de couro, couro batido ou gibão de peles" mostra essas três. Os itens escolhidos entram na ficha, equipados quando o kit diz.
+- Criação de personagem: uma quantidade do kit em dados (`"qty": "4d6"`, por exemplo o dinheiro inicial) tem um botão Rolar, e quem rolou na mesa pode digitar o resultado.
+- Ficha: `"hide_empty": true` agora vale em todo bloco de lista, não só no de equipados: uma lista vazia sai da ficha.
+
 ## 1.32.0 — 20/11/2026
 
 - Perícias com **especializações** (`"specialties"`), como Ofício: cada especialização é uma perícia própria, com pontos próprios ("Ofício (Armeiro)", "Ofício (Cozinheiro)"). Na ficha, elas entram em Editar › + Especialização, com as sugestões do sistema ou qualquer outro nome. O assistente de criação pergunta qual quando uma etapa dá a perícia sem dizer ("Ofício: qual?") e já usa a que o texto cita ("Ofício (armeiro)"). Uma especialização não pode ser treinada duas vezes, mas outra da mesma perícia pode.

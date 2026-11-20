@@ -7,7 +7,7 @@ import { compute, addSpecialty, specialtyId, specialtiesOf, specialtySuggestions
 import { t } from '../i18n.js';
 import { h, uid, fmt, signed, byName, normalize } from './util.js';
 import { entityDetails, describeEffect, summarizeEffects, unmetRequirement, linkTerms, linkCols } from './sheet.js';
-import { costOf, costValues, pointsSpent, rollSet, convertRoll, diceRange, setTotal } from '../engine/attrgen.js';
+import { costOf, costValues, pointsSpent, rollSet, convertRoll, diceRange, setTotal, parseDice, rollDice } from '../engine/attrgen.js';
 
 // Badges for a choice card: repeated bonuses are merged, the rest is counted. Notes (reminders) are left out:
 // they repeat the description shown right above.
@@ -130,6 +130,15 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
         return;
       }
       const kit = startingKit(step, s);
+      // What the player chose ("a simple weapon of your choice") and rolled or typed ("T$ 4d6") goes with the fixed items.
+      for (const ch of kit.choices) {
+        const pick = ch.options.find(o => `${o.collection}/${o.ref}` === choice.kit?.[ch.key]);
+        if (pick) kit.items.push({ collection: pick.collection, ref: pick.ref, qty: ch.qty, equipped: ch.equipped });
+      }
+      for (const r of kit.rolls) {
+        const v = Number(choice.roll?.[r.key]?.value);
+        if (Number.isFinite(v) && v > 0) kit.items.push({ collection: r.collection, ref: r.ref, qty: v, equipped: r.equipped });
+      }
       for (const it of kit.items) {
         const col = rules.collections[it.collection] || {};
         const same = col.quantity && !it.wear && !it.name && s.items.find(x => x.collection === it.collection && x.ref === it.ref && !x.wear && !x.name);
@@ -143,21 +152,46 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     }
   }
 
-  /** Starting items of the entities picked in step.from, filtered by their "if". */
+  /** The entities a kit "choose" offers: a list of refs, or a collection (optionally only one tag). */
+  function kitOptions(ch) {
+    if (Array.isArray(ch?.refs)) {
+      return ch.refs.map(r => String(r).split('/')).filter(([c, i]) => rules.entities[c]?.[i])
+        .map(([collection, ref]) => ({ collection, ref, name: rules.entities[collection][ref].name }));
+    }
+    const col = ch?.collection;
+    return Object.values(rules.entities[col] || {}).filter(e => !ch.tag || (e.tags || []).includes(ch.tag))
+      .map(e => ({ collection: col, ref: e.id, name: e.name })).sort((a, b) => byName(a.name, b.name));
+  }
+
+  /**
+   * Starting items of the entities picked in step.from, filtered by their "if":
+   * fixed items, texts (notes), choices ("choose") and quantities to roll ("qty": "4d6").
+   */
   function startingKit(step, sheet) {
     const calc = compute(rules, sheet);
     const field = step.field || 'starting_items';
-    const items = [], texts = [];
+    const items = [], texts = [], choices = [], rolls = [];
     for (const it of sheet.items.filter(i => i.collection === step.from)) {
-      for (const e of rules.entities[step.from]?.[it.ref]?.[field] || []) {
-        if (e.if && !calc.formula(e.if)) continue;
-        if (e.text) { texts.push(e.text); continue; }
+      (rules.entities[step.from]?.[it.ref]?.[field] || []).forEach((e, n) => {
+        if (e.if && !calc.formula(e.if)) return;
+        const key = `${it.ref}#${n}`;
+        if (e.text) { texts.push(e.text); return; }
+        if (e.choose) {
+          const options = kitOptions(e.choose);
+          if (options.length) choices.push({ key, label: e.label || '', options, qty: Number(e.qty) || 1, equipped: !!e.equipped, optional: !!e.optional });
+          else if (e.label) texts.push(e.label);
+          return;
+        }
         const [collection, ref] = String(e.ref || '').split('/');
-        if (!rules.entities[collection]?.[ref]) { texts.push(`${e.qty || 1}× ${e.name || e.ref}`); continue; }
+        if (!rules.entities[collection]?.[ref]) { texts.push(`${e.qty || 1}× ${e.name || e.ref}`); return; }
+        if (typeof e.qty === 'string' && parseDice(e.qty)) {
+          rolls.push({ key, collection, ref, dice: e.qty.trim(), label: e.label || rules.entities[collection][ref].name, equipped: !!e.equipped });
+          return;
+        }
         items.push({ collection, ref, qty: Number(e.qty) || 1, wear: Number(e.wear) || 0, equipped: !!e.equipped, name: e.name });
-      }
+      });
     }
-    return { items, texts };
+    return { items, texts, choices, rolls };
   }
 
   /**
@@ -309,6 +343,14 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       const min = num(step.min, calc, 0), max = num(step.max, calc, Infinity);
       if (n < min) return { ok: false, msg: t('creation.minPick', { n: min }) };
       if (n > max) return { ok: false, msg: t('creation.maxPick', { n: max }) };
+      return { ok: true };
+    }
+    if (step.type === 'items' && (c.take !== false || !step.alternative)) {
+      const kit = startingKit(step, sheet);
+      const missing = kit.choices.find(ch => !ch.optional && !ch.options.some(o => `${o.collection}/${o.ref}` === c.kit?.[ch.key]));
+      if (missing) return { ok: false, msg: t('creation.kitChoose', { what: missing.label || t('creation.kitItem') }) };
+      const unrolled = kit.rolls.find(r => !Number.isFinite(Number(c.roll?.[r.key]?.value)) || c.roll?.[r.key]?.value === '');
+      if (unrolled) return { ok: false, msg: t('creation.kitRoll', { what: unrolled.label, dice: unrolled.dice }) };
       return { ok: true };
     }
     if (step.type === 'attributes' && c.method === 'roll') {
@@ -790,14 +832,44 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
   // Starting equipment from what was picked (e.g. the background), or an alternative.
   function itemsStep(step, _calc, sheet) {
     const c = choices[index];
+    c.kit ||= {};
+    c.roll ||= {};
     const kit = startingKit(step, sheet);
     const take = c.take !== false || !step.alternative;
+    const colName = id => rules.collections[id]?.name || id;
+    // "A simple weapon of your choice": a list of what fits, with Details for the one picked.
+    const choiceRow = ch => {
+      const value = c.kit[ch.key] || '';
+      const [pc, pr] = value.split('/');
+      return h('li.kit-choice',
+        h('label.kit-pick', h('span', ch.label || t('creation.kitItem')),
+          h('select', { onchange: e => { if (e.target.value) c.kit[ch.key] = e.target.value; else delete c.kit[ch.key]; redraw(); } },
+            h('option', { value: '', selected: !value }, ch.optional ? t('creation.kitNone') : t('creation.kitPick')),
+            ch.options.map(o => h('option', { value: `${o.collection}/${o.ref}`, selected: value === `${o.collection}/${o.ref}` }, o.name)))),
+        ch.qty !== 1 ? h('span.kit-qty', `×${fmt(ch.qty)}`) : null,
+        value && rules.entities[pc]?.[pr] ? h('button.mini', { type: 'button', onclick: ev => { ev.preventDefault(); entityDetails(st, pc, pr); } }, t('creation.details')) : null);
+    };
+    // "T$ 4d6": roll here, or type what was rolled at the table.
+    const rollRow = r => {
+      const cur = c.roll[r.key] || {};
+      const range = diceRange(r.dice);
+      const set = (value, dice) => { c.roll[r.key] = { value, ...(dice ? { dice } : {}) }; redraw(); };
+      return h('li.kit-roll',
+        h('span', r.label), h('span.muted.small', ` (${r.dice})`),
+        h('div.row.kit-roll-controls',
+          h('button.mini', { type: 'button', onclick: ev => { ev.preventDefault(); const x = rollDice(r.dice); set(x.total, x.dice); } }, t('creation.kitRollButton', { dice: r.dice })),
+          h('input', { type: 'number', inputmode: 'numeric', min: range.min, max: range.max, value: cur.value ?? '', placeholder: t('creation.kitTyped'),
+            'aria-label': t('creation.kitTypedOf', { what: r.label }), onclick: ev => ev.stopPropagation(),
+            onchange: e => set(e.target.value === '' ? '' : Math.max(0, Math.round(Number(e.target.value) || 0))) }),
+          cur.dice ? h('span.muted.small', `[${cur.dice.join(', ')}]`) : null));
+    };
     const list = h('ul.kit', kit.items.map(it => {
       const ent = rules.entities[it.collection][it.ref];
-      return h('li', h('span', it.name || ent.name), h('span.muted.small', ` ${rules.collections[it.collection]?.name || it.collection}`),
+      return h('li', h('span', it.name || ent.name), h('span.muted.small', ` ${colName(it.collection)}`),
         h('span.kit-qty', `×${fmt(it.qty)}`), it.wear ? h('span.badge.warning', `${t('sheet.wear')} ${it.wear}`) : null);
-    }), kit.texts.map(x => h('li', h('span', x), h('span.muted.small', ` ${t('creation.asNote')}`))));
-    const empty = !kit.items.length && !kit.texts.length;
+    }), kit.choices.map(choiceRow), kit.rolls.map(rollRow),
+    kit.texts.map(x => h('li', h('span', x), h('span.muted.small', ` ${t('creation.asNote')}`))));
+    const empty = !kit.items.length && !kit.texts.length && !kit.choices.length && !kit.rolls.length;
     const option = (on, label, body, value) => h('div.choice', { class: on ? 'selected' : '' },
       h('label.choice-main', h('input', { type: 'radio', name: `step${index}`, checked: on, onchange: () => { c.take = value; redraw(); } }),
         h('span.choice-text', h('strong', label), body)));

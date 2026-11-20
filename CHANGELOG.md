@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.33.0 — 2026-11-20
+
+- Character creation: the starting kit can let the player choose (`"choose"`): "a simple weapon of your choice" shows the list of simple weapons, "leather, studded leather or hide armor" shows those three. The chosen items go on the sheet, equipped when the kit says so.
+- Character creation: a kit quantity in dice (`"qty": "4d6"`, for example starting money) has a Roll button, and players who rolled at the table can type the result.
+- Sheet: `"hide_empty": true` now works on every list block, not only on equipped views: an empty list is left out.
+
 ## 1.32.0 — 2026-11-20
 
 - Skills with **specialties** (`"specialties"`), like Craft: each specialty is a skill of its own, with its own points ("Craft (Armorer)", "Craft (Cook)"). The sheet adds them in Edit › + Specialty, with the system's suggestions or any other name. The creation assistant asks which one when a step gives the skill without saying ("Craft: which one?"), and takes the one the text names ("Craft (armorer)"). A specialty can't be trained twice, but another one of the same skill can.

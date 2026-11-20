@@ -1287,6 +1287,8 @@ function listBlock(st, def) {
     wearMax ? h('td') : null,
     h('td.num', h('span.badge', { title: t('sheet.grantedBy', { name: f.from }) }, f.from))));
   rows.push(...granted);
+  // "hide_empty": an empty list is left out of the sheet (it shows while arranging the blocks).
+  if (!rows.length && def.hide_empty) return null;
 
   const full = max !== undefined && items.length >= max;
   return [

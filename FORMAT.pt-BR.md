@@ -264,7 +264,7 @@ Cada aba é uma grade de 12 colunas. `"w"` é a largura do bloco em colunas (3, 
 
 - Um bloco `resources` com um item só vira um cartão compacto (atual/máximo grande, barra, −1 +1 e restaurar). Coloque alguns no topo com `"w": 3`.
 - `"only_active": true` num bloco `counters` mostra só os contadores acima de 0, com um menu para adicionar os outros.
-- `"view": "equipped"` num bloco `list` mostra só os itens equipados, em cartões com suas `columns`, desgaste, pente e mods; itens são adicionados e contados no inventário. `"hide_empty": true` esconde o bloco quando nada está equipado.
+- `"view": "equipped"` num bloco `list` mostra só os itens equipados, em cartões com suas `columns`, desgaste, pente e mods; itens são adicionados e contados no inventário. `"hide_empty": true` em qualquer bloco `list` tira o bloco da ficha enquanto a lista estiver vazia (ele continua aparecendo ao organizar os blocos). Com `"view": "equipped"`, `"hide_empty": true` esconde o bloco quando nada está equipado.
 - Um bloco `notebook` é um caderno de notas que o jogador cria ("Nova nota"), cada uma com título e texto, minimizada ou aberta, com uma busca que acha palavras dentro de títulos e textos (sem ligar para acentos) e as destaca. `"import_notes": ["id"]` passa uma vez o texto de blocos `notes` antigos para ele (`import_titles` dá os nomes).
 - Um bloco `inventory` (`"collections": [...]`) reúne todos os itens: o jogador alterna entre cartões por categoria e uma lista única com busca, e **Adicionar item** pesquisa em todas as categorias de uma vez. `"card_fields"` e `"list_fields"` escolhem os campos do item que cada visão mostra (uma lista, ou `{ "colecao": [...], "*": [...] }`); o desgaste aparece como selo quando é maior que 0.
 - **Pente** (`magazine`): uma entidade com `"magazine": { "capacity": 12, "ammo": ["municao/9mm"], "charge": false, "per_shot": 1 }` mostra balas no pente / capacidade e um botão Recarregar que tira as balas desses itens do inventário (com `charge`, uma unidade, como uma célula de energia, enche o pente). Serve igual para arco, besta e arma de fogo. O cartão mostra a munição em uso; com mais de uma entrada em `ammo`, uma lista escolhe qual, e Recarregar usa essa.
@@ -304,7 +304,9 @@ Cada aba é uma grade de 12 colunas. `"w"` é a largura do bloco em colunas (3, 
 
 Todo passo aceita `title`, `description` e `if` (uma fórmula: o passo só aparece quando ela é verdadeira, por exemplo `"has('robo')"`). `summary` lista os valores mostrados no topo de cada passo (padrão: todos os recursos). Recursos, atributos e valores derivados podem ter `abbr`, usado ali.
 
-`starting_items` numa entidade é uma lista de `{ "ref": "colecao/id", "qty": 1, "wear": 0, "equipped": true, "name": "…", "if": "fórmula" }`, ou `{ "text": "…", "if": "…" }` para algo que não é entidade (vai para as notas). O `if` permite, por exemplo, que um antecedente dê kits diferentes por raça.
+`starting_items` numa entidade é uma lista de `{ "ref": "colecao/id", "qty": 1, "wear": 0, "equipped": true, "name": "…", "if": "fórmula" }`, ou `{ "text": "…", "if": "…" }` para algo que não é entidade (vai para as notas). O `if` permite, por exemplo, que um antecedente dê kits diferentes por raça. Duas entradas deixam o jogador decidir:
+- `{ "choose": { "collection": "armas", "tag": "simples" }, "label": "Arma simples", "equipped": true }` (ou `"choose": { "refs": ["armaduras/couro", "armaduras/gibao"] }`) mostra uma lista para escolher um item; `"optional": true` permite não escolher nenhum.
+- `{ "ref": "moedas/ts", "qty": "4d6", "label": "Dinheiro" }`: uma quantidade em dados é rolada no assistente, ou o jogador digita o que rolou na mesa.
 
 Uma extensão pode mudar o assistente com `{ "op": "modify", "target": "creation", "fields": { … } }`, substituí-lo ou desligá-lo com `"op": "remove"`.
 

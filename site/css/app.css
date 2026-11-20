@@ -685,3 +685,9 @@ tr.specialty-add td { padding-top: .1rem; padding-bottom: .5rem; }
 .specialty-choice.pending { padding: .4rem .6rem; border-left: 4px solid var(--warning); background: var(--surface-2); border-radius: 6px; }
 .specialty-names { display: grid; gap: .5rem; margin-top: .8rem; }
 .specialty-name { margin: 0; max-width: 24rem; }
+/* Starting kit: choices and rolled quantities */
+.kit li.kit-choice, .kit li.kit-roll { flex-wrap: wrap; gap: .3rem .6rem; align-items: center; }
+.kit-pick { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; flex: 1; min-width: 0; }
+.kit-pick select { width: auto; min-width: 12rem; max-width: 100%; min-height: 36px; padding: .2rem 1.8rem .2rem .5rem; }
+.kit-roll-controls { gap: .4rem; flex-basis: 100%; }
+.kit-roll-controls input { width: 7rem; min-height: 36px; }

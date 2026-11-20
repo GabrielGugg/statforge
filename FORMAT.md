@@ -264,7 +264,7 @@ Each tab is a 12-column grid. `"w"` is the block's width in columns (3, 4, 6, 8 
 
 - A `resources` block with a single item becomes a compact tile (big current/max, bar, −1 +1 and restore). Put a few of them at the top with `"w": 3`.
 - `"only_active": true` on a `counters` block shows only the counters above 0, with a menu to add the others.
-- `"view": "equipped"` on a `list` block shows only the equipped items, as cards with their `columns`, wear, magazine and mods; items are added and counted in the inventory. `"hide_empty": true` hides the block when nothing is equipped.
+- `"view": "equipped"` on a `list` block shows only the equipped items, as cards with their `columns`, wear, magazine and mods; items are added and counted in the inventory. `"hide_empty": true` hides the block when nothing is equipped. On any `list` block, `"hide_empty": true` leaves the block out while the list is empty (it still shows while arranging the blocks).
 - A `notebook` block is a set of notes the player creates ("New note"), each with a title and text, folded or open, with a search that finds words inside titles and texts (ignoring accents) and highlights them. `"import_notes": ["id"]` moves the text of older `notes` blocks into it once (`import_titles` names them).
 - An `inventory` block (`"collections": [...]`) holds every item: the player switches between cards by category and one searchable list, and **Add item** searches every category at once. `"card_fields"` and `"list_fields"` choose the item fields each view shows (a list, or `{ "collection": [...], "*": [...] }`); wear shows as a badge when it is above 0.
 - **Magazine**: an entity with `"magazine": { "capacity": 12, "ammo": ["ammo/9mm"], "charge": false, "per_shot": 1 }` shows rounds loaded / capacity with a Reload button that takes rounds from those inventory items (with `charge`, one unit, like an energy cell, fills it). Works for bows, crossbows and guns alike. The card names the ammo in use; with more than one entry in `ammo`, a list picks it, and Reload uses that one.
@@ -304,7 +304,9 @@ Each tab is a 12-column grid. `"w"` is the block's width in columns (3, 4, 6, 8 
 
 Every step accepts `title`, `description` and `if` (a formula: the step only appears when it is true, for example `"has('robot')"`). `summary` lists the values shown at the top of every step (default: all resources). Resources, attributes and derived values may have an `abbr`, used there.
 
-`starting_items` on an entity is a list of `{ "ref": "collection/id", "qty": 1, "wear": 0, "equipped": true, "name": "…", "if": "formula" }`, or `{ "text": "…", "if": "…" }` for something with no entity (it goes to the notes). `if` lets one background give different kits per race, for example.
+`starting_items` on an entity is a list of `{ "ref": "collection/id", "qty": 1, "wear": 0, "equipped": true, "name": "…", "if": "formula" }`, or `{ "text": "…", "if": "…" }` for something with no entity (it goes to the notes). `if` lets one background give different kits per race, for example. Two entries let the player decide:
+- `{ "choose": { "collection": "weapons", "tag": "simple" }, "label": "Simple weapon", "equipped": true }` (or `"choose": { "refs": ["armor/leather", "armor/hide"] }`) shows a list to pick one item from; `"optional": true` allows none.
+- `{ "ref": "coins/gp", "qty": "4d6", "label": "Gold" }`: a quantity in dice is rolled in the assistant, or the player types what was rolled at the table.
 
 An extension can change the assistant with `{ "op": "modify", "target": "creation", "fields": { … } }`, replace it, or turn it off with `"op": "remove"`.
 
