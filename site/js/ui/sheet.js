@@ -6,7 +6,7 @@ import { termVariant, termDescription } from '../engine/terms.js';
 import { withOwner } from './privacy.js';
 import * as pk from '../packages.js';
 import { checkSet } from '../engine/package.js';
-import { compute, roll, isBroken, effectiveWear } from '../engine/calc.js';
+import { compute, roll, isBroken, effectiveWear, addSpecialty, specialtyId, specialtySuggestions } from '../engine/calc.js';
 import { t } from '../i18n.js';
 import { creationWizard } from './creation.js';
 import { shareDialog } from './share.js';
@@ -519,13 +519,20 @@ function attributesBlock(st, def) {
 
 function skillsBlock(st, def) {
   const { rules, sheet, calc } = st;
-  const list = pick(rules.skills, def.items).sort((a, b) => byName(a.name, b.name));
+  // Specialties ("Craft (Armorer)") are skills of their own and come right after their skill.
+  const allowed = def.items?.length ? new Set(def.items) : null;
+  const list = calc.skills().filter(s => !allowed || allowed.has(s.of || s.id)).sort((a, b) => byName(a.name, b.name));
   if (!list.length) return null;
   const saved = id => Number(sheet.skills?.[id] || 0);
   const budget = def.budget !== undefined ? Number(calc.formula(def.budget)) || 0 : null;
   const spentOf = pts => list.reduce((n, p) => n + Number(pts[p.id] || 0), 0);
   const attr = p => (p.attribute ? h('span.muted.small', ` (${[].concat(p.attribute).map(a => rules.attributes[a]?.abbr || a).join('/')})`) : null);
-  const name = p => h('td', h('span', { title: p.description || '' }, p.name), attr(p));
+  // A specialty row shows "Armorer" under its skill (the attribute is the skill's).
+  const name = p => (p.of ? h('td', { class: st.skillDraft ? 'skill-specialty' : '' }, h('span', { title: p.description || '' }, p.name))
+    : h('td', h('span', { title: p.description || '' }, p.name), attr(p)));
+  // Reading: a skill with specialties and no points of its own is only the heading of its specialties.
+  const hasSpecs = p => list.some(x => x.of === p.id);
+  const shownRead = list.filter(p => !(p.specialties && !p.of && !saved(p.id) && hasSpecs(p)));
   const head = h('thead', h('tr', h('th', t('sheet.skill')), h('th.num', def.points_label || t('sheet.points')), h('th.num', t('sheet.total'))));
 
   // Reading mode: points and totals; "Edit" opens the editor.
@@ -534,9 +541,10 @@ function skillsBlock(st, def) {
     return [h('h3', h('span', def.title || t('sheet.skills')),
       h('button.mini', { onclick: () => { st.skillDraft = Object.fromEntries(list.map(p => [p.id, saved(p.id)])); st.redraw(); } }, t('sheet.editSkills'))),
       budget !== null && spent !== budget ? h('div.small.skill-budget.warn', t(spent > budget ? 'sheet.skillsOver' : 'sheet.skillsLeft', { n: Math.abs(budget - spent), spent, budget })) : null,
-      h('div.scroll-table', h('table.table', head, h('tbody', list.map(p => h('tr', name(p),
+      h('div.scroll-table', h('table.table', head, h('tbody', shownRead.map(p => h('tr', name(p),
         h('td.num', fmt(saved(p.id))),
-        h('td.num', { title: tip(st, p.id) }, debugButton(st, p.id), h('strong', signed(calc.value(p.id)))))))))];
+        h('td.num', { title: tip(st, p.id) }, debugButton(st, p.id), h('strong', signed(calc.value(p.id))))))))),
+      specialtyChoices(st)];
   }
 
   // Editing: − / + change a draft; Apply saves it, Cancel drops it.
@@ -557,18 +565,72 @@ function skillsBlock(st, def) {
     budget !== null ? h('div.points-left.skill-budget', { class: spent > budget ? 'over' : spent === budget ? 'done' : '' },
       h('strong', `${fmt(spent)} / ${fmt(budget)}`), ' ', t('sheet.skillsSpent'),
       off ? h('div.small', t(spent > budget ? 'sheet.skillsOver' : 'sheet.skillsLeft', { n: Math.abs(budget - spent), spent, budget })) : null) : null,
-    h('div.scroll-table', h('table.table', head, h('tbody', list.map(p => {
+    h('div.scroll-table', h('table.table', head, h('tbody', list.flatMap(p => {
       const v = Number(draft[p.id] || 0);
-      return h('tr', { class: v !== saved(p.id) ? 'changed' : '' }, name(p),
+      const row = h('tr', { class: v !== saved(p.id) ? 'changed' : '' }, name(p),
         h('td.num', h('div.stepper.small-stepper',
           h('button', { type: 'button', 'aria-label': `${p.name} −1`, onclick: () => set(p.id, v - 1) }, '−'),
           h('output', fmt(v)),
-          h('button', { type: 'button', 'aria-label': `${p.name} +1`, onclick: () => set(p.id, v + 1) }, '+'))),
+          h('button', { type: 'button', 'aria-label': `${p.name} +1`, onclick: () => set(p.id, v + 1) }, '+'),
+          p.of ? h('button', { type: 'button', title: t('sheet.removeSpecialty'), 'aria-label': t('sheet.removeSpecialtyOf', { name: p.name }),
+            onclick: () => removeSpecialty(st, p.id) }, '✕') : null)),
         h('td.num', h('strong', signed(calc.value(p.id) + v - saved(p.id)))));
+      // A skill with specialties gets a line to add one (suggested names, or any name), after its last specialty.
+      const baseId = p.of || (p.specialties ? p.id : null);
+      if (!baseId) return [row];
+      const group = list.filter(x => x.id === baseId || x.of === baseId);
+      if (group[group.length - 1] !== p) return [row];
+      return [row, h('tr.specialty-add', h('td', { colspan: 3 }, specialtyAdder(st, rules.skills[baseId])))];
     })))),
     h('div.row.skill-actions',
       h('button', { onclick: () => { st.skillDraft = null; st.redraw(); } }, t('common.cancel')),
       h('button.primary', { onclick: apply }, t('sheet.apply')))];
+}
+
+/** "+ Specialty": a name (suggestions from the system, or any other) for a skill with specialties. */
+function specialtyAdder(st, skill) {
+  const { rules, sheet } = st;
+  const listId = `spec-${skill.id}`;
+  const have = new Set(Object.values(sheet.specialties || {}).filter(s => s.skill === skill.id).map(s => normalize(s.name)));
+  const input = h('input', { type: 'text', maxlength: 40, list: listId, placeholder: t('sheet.specialtyName'), 'aria-label': t('sheet.addSpecialtyTo', { name: skill.name }) });
+  const add = () => {
+    const id = addSpecialty(rules, sheet, skill.id, input.value);
+    if (!id) { input.focus(); return; }
+    st.skillDraft[id] ??= 0;
+    st.change();
+  };
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+  return h('div.row.specialty-adder',
+    input,
+    h('datalist', { id: listId }, specialtySuggestions(skill).filter(n => !have.has(normalize(n))).map(n => h('option', { value: n }))),
+    h('button.mini', { type: 'button', onclick: add }, t('sheet.addSpecialty')));
+}
+
+function removeSpecialty(st, id) {
+  const { sheet } = st;
+  delete sheet.specialties?.[id];
+  delete sheet.skills?.[id];
+  if (st.skillDraft) delete st.skillDraft[id];
+  for (const [k, v] of Object.entries(sheet.specialtyChoice || {})) if (v === id) delete sheet.specialtyChoice[k];
+  st.change();
+}
+
+/** Bonuses that go to one specialty of the player's choice ("+2 on one Craft"): pick which one here. */
+function specialtyChoices(st) {
+  const { sheet, calc } = st;
+  const pending = calc.specialtyChoices();
+  if (!pending.length) return null;
+  return h('div.specialty-choices', pending.map(c => {
+    const options = Object.values(calc.specialties).filter(s => s.of === c.skill);
+    const skillName = st.rules.skills[c.skill]?.name || c.skill;
+    return h('label.specialty-choice', { class: c.chosen ? '' : 'pending' },
+      h('span', h('strong', c.source), ` ${t('sheet.specialtyBonus', { v: c.text, skill: skillName })}`),
+      options.length
+        ? h('select', { onchange: e => { sheet.specialtyChoice ||= {}; if (e.target.value) sheet.specialtyChoice[c.key] = e.target.value; else delete sheet.specialtyChoice[c.key]; st.change(); } },
+          h('option', { value: '', selected: !c.chosen }, t('sheet.specialtyPick')),
+          options.map(o => h('option', { value: o.id, selected: c.chosen === o.id }, o.specialty)))
+        : h('span.muted.small', t('sheet.specialtyNone', { skill: skillName })));
+  }));
 }
 
 function derivedBlock(st, def) {
@@ -793,12 +855,20 @@ function andParts(formula) {
   });
 }
 
+/** "craft_armorer" → "Craft (Armorer)": a specialty id named in a formula, using the system's suggested names. */
+function specialtyLabel(rules, id) {
+  const base = Object.values(rules.skills || {}).find(sk => sk.specialties && String(id).startsWith(`${sk.id}_`));
+  if (!base) return null;
+  const named = specialtySuggestions(base).find(n => specialtyId(base.id, n) === id);
+  return `${base.name} (${named || String(id).slice(base.id.length + 1).replace(/_/g, ' ')})`;
+}
+
 /** A requirement formula in words: has('x') becomes its name, FOR the attribute's name, >= becomes ≥… */
 function formulaWords(rules, f) {
   let s = String(f).replace(/has\(\s*'([^']+)'\s*\)/g, (_, r) => `⟦${refLabel(rules, r)}⟧`);
   s = s.replace(/qty\(\s*'([^']+)'\s*\)/g, (_, r) => `⟦${refLabel(rules, r)}⟧`);
   // points('x') >= 1 (or > 0) reads as the pack's skill_points_text ("trained in Fight"); other uses as "Fight (points)".
-  const skillName = id => rules.skills?.[id]?.name || id;
+  const skillName = id => rules.skills?.[id]?.name || specialtyLabel(rules, id) || id;
   if (rules.skill_points_text) {
     s = s.replace(/points\(\s*'([^']+)'\s*\)\s*(?:>=\s*1|>\s*0)(?![\d.])/g, (_, id) => `⟦${rules.skill_points_text.replaceAll('{skill}', skillName(id))}⟧`);
   }
@@ -850,11 +920,15 @@ function valueWords(ef) {
   return ef.type === 'add' ? t('effects.calculatedBonus') : t('effects.calculatedValue');
 }
 
+// "+2 on Craft (Armorer)", "+2 on Craft (one of your choice)".
+const specialtyWords = (target, ef) => (!ef.specialty ? target
+  : ef.specialty === 'choose' ? `${target} (${t('effects.specialtyChoose')})` : `${target} (${ef.specialty})`);
+
 export function describeEffect(rules, ef) {
   const target = targetName(rules, ef.target);
   const cond = ef.if ? ` (${describeCond(rules, ef)})` : '';
   switch (ef.type) {
-    case 'add': return `${valueWords(ef)} ${t('effects.on', { target })}${cond}`;
+    case 'add': return `${valueWords(ef)} ${t('effects.on', { target: specialtyWords(target, ef) })}${cond}`;
     case 'set': return `${target} = ${valueWords(ef)}${cond}`;
     case 'limit': return `${t('effects.limit', { target, v: valueWords(ef) })}${cond}`;
     case 'grant': { const [c, i] = String(ef.ref).split('/'); return t('effects.grants', { name: rules.entities[c]?.[i]?.name || ef.ref }); }

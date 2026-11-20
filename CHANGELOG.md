@@ -2,6 +2,12 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.32.0 — 2026-11-20
+
+- Skills with **specialties** (`"specialties"`), like Craft: each specialty is a skill of its own, with its own points ("Craft (Armorer)", "Craft (Cook)"). The sheet adds them in Edit › + Specialty, with the system's suggestions or any other name. The creation assistant asks which one when a step gives the skill without saying ("Craft: which one?"), and takes the one the text names ("Craft (armorer)"). A specialty can't be trained twice, but another one of the same skill can.
+- Effects: an effect on a skill with specialties reaches all of them (a −2 condition), unless it names one (`"specialty": "Armorer"`) or lets the player choose (`"specialty": "choose"`, picked on the sheet under the skills). A bonus no longer counts for every specialty at once.
+- Formulas: `points('craft')` is the best specialty, and `points('craft_armorer')` asks for that one. Requirements show it as "Craft (Armorer)".
+
 ## 1.31.0 — 2026-11-20
 
 - Character creation: a skills step can **grant** the skills named in a field (`"grant": true`), for example a class's fixed skills. They are given automatically; "Fight or Aim" becomes a choice of one. When there is nothing to choose, the step is not shown.

@@ -3,7 +3,7 @@
 // Each step only records the player's choices; the sheet is rebuilt from
 // all choices every time, so going back and changing something is safe.
 // ============================================================
-import { compute } from '../engine/calc.js';
+import { compute, addSpecialty, specialtyId, specialtiesOf, specialtySuggestions } from '../engine/calc.js';
 import { t } from '../i18n.js';
 import { h, uid, fmt, signed, byName, normalize } from './util.js';
 import { entityDetails, describeEffect, summarizeEffects, unmetRequirement, linkTerms, linkCols } from './sheet.js';
@@ -100,19 +100,18 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     } else if (step.type === 'skills') {
       const calc = compute(rules, s);
       // "untrained": a skill the sheet already has points in can't be taken again here.
-      const trained = id => step.untrained && (s.skills[id] || 0) > 0;
       if (step.grant) {
         const bonus = num(step.bonus, calc, 1);
         // Picked against the sheet before this step, so two groups never give the same skill.
         const before = { ...s, skills: { ...s.skills } };
         grantGroups(step, before).forEach((g, gi) => {
-          const id = groupPick(step, g, choice.alt?.[gi], before);
-          if (id && !trained(id)) s.skills[id] = (s.skills[id] || 0) + bonus;
+          const tok = groupPick(step, g, choice.alt?.[gi], before, choice);
+          if (tok && !tokTrained(step, tok, choice, s)) giveSkill(s, tok, choice, bonus);
         });
       } else if (step.choose !== undefined) {
         const bonus = num(step.bonus, calc, 1);
-        const allowed = allowedSkills(step, calc, s).filter(id => !trained(id));
-        for (const id of choice.chosen || []) if (allowed.includes(id)) s.skills[id] = (s.skills[id] || 0) + bonus;
+        const allowed = allowedSkills(step, calc, s).filter(tok => !tokTrained(step, tok, choice, s));
+        for (const tok of choice.chosen || []) if (allowed.includes(tok)) giveSkill(s, tok, choice, bonus);
       } else {
         for (const [id, n] of Object.entries(choice.points || {})) s.skills[id] = (s.skills[id] || 0) + n;
       }
@@ -168,7 +167,8 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
   function shows(step, sheet) {
     if (!applies(step, sheet)) return false;
     if (step.type !== 'skills' || !step.grant) return true;
-    return grantGroups(step, sheet).some(g => g.length > 1 || (step.untrained && (sheet.skills[g[0]] || 0) > 0));
+    // Shown when something is up to the player: an "or", a specialty to name, or a skill already trained.
+    return grantGroups(step, sheet).some(g => g.length > 1 || needsName(g[0]) || tokTrained(step, g[0], null, sheet));
   }
 
   function firstFrom(i, dir = 1) {
@@ -209,22 +209,57 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
   }
   const available = (step, ent, calc) => !unmet(step, ent, calc);
 
+  // ---------- Skills in steps ----------
+  // A skill in a step is a "token": its id, or "id|Specialty" when the text names one ("Craft (armorer)").
+  // A skill with specialties named without one ("Craft") asks the player for the specialty (choice.spec[id]).
+  const tokBase = tok => String(tok).split('|')[0];
+  const tokSpec = tok => String(tok).split('|')[1] || '';
+  const specialized = id => !!rules.skills[id]?.specialties;
+  function skillToken(text) {
+    const m = String(text).match(/^\s*(.*?)\s*(?:\(([^)]*)\))?\s*$/);
+    const n = normalize(m?.[1] || '');
+    const id = n ? Object.values(rules.skills).find(s => normalize(s.name) === n || normalize(s.id) === n)?.id : undefined;
+    if (!id) return undefined;
+    const spec = specialized(id) ? (m[2] || '').trim() : '';
+    return spec ? `${id}|${spec.charAt(0).toUpperCase()}${spec.slice(1)}` : id;
+  }
+  /** Where a token's points go: the skill, its specialty, or null while the specialty has no name. */
+  function tokTarget(tok, choice) {
+    const id = tokBase(tok);
+    if (!specialized(id)) return id;
+    const name = tokSpec(tok) || String(choice?.spec?.[id] || '').trim();
+    return name ? specialtyId(id, name) : null;
+  }
+  const tokName = (tok, choice) => {
+    const id = tokBase(tok), sp = tokSpec(tok) || String(choice?.spec?.[id] || '').trim();
+    return sp ? `${rules.skills[id]?.name || id} (${sp})` : rules.skills[id]?.name || id;
+  };
+  // A skill with specialties and no specialty in the text: the player names it.
+  const needsName = tok => specialized(tokBase(tok)) && !tokSpec(tok);
+  const tokTrained = (step, tok, choice, sheet) => {
+    if (!step.untrained) return false;
+    const target = tokTarget(tok, choice);
+    return !!target && (sheet.skills[target] || 0) > 0;
+  };
+  function giveSkill(s, tok, choice, bonus) {
+    const target = tokTarget(tok, choice);
+    if (!target) return;
+    const id = tokBase(tok);
+    if (specialized(id) && !addSpecialty(rules, s, id, tokSpec(tok) || choice.spec[id])) return;
+    s.skills[target] = (s.skills[target] || 0) + bonus;
+  }
+  /** A skill's or specialty's name, for ids already on the sheet. */
+  const skillName = (id, sheet) => rules.skills[id]?.name || specialtiesOf(rules, sheet)[id]?.name || id;
+
   function allowedSkills(step, calc, sheet) {
-    const all = Object.values(rules.skills);
+    const all = Object.values(rules.skills).map(s => s.id);
     const from = step.from;
-    if (!from?.collection || !from?.field) return all.map(s => s.id);
+    if (!from?.collection || !from?.field) return all;
     const texts = (sheet.items || []).filter(i => i.collection === from.collection)
       .map(i => rules.entities[from.collection]?.[i.ref]?.[from.field]).filter(v => v !== undefined && v !== '');
-    if (!texts.length) return all.map(s => s.id);
-    const names = texts.flatMap(v => (Array.isArray(v) ? v : String(v).split(/\s*[,;]\s*/))).map(normalize).filter(Boolean);
-    if (!names.length) return all.map(s => s.id);
-    return all.filter(s => names.includes(normalize(s.name)) || names.includes(normalize(s.id))).map(s => s.id);
-  }
-
-  /** The skill a name stands for ("Ofício (armeiro)" is Ofício), or undefined. */
-  function skillByName(name) {
-    const n = normalize(String(name).replace(/\s*\([^)]*\)\s*/g, ' ').trim());
-    return n ? Object.values(rules.skills).find(s => normalize(s.name) === n || normalize(s.id) === n)?.id : undefined;
+    if (!texts.length) return all;
+    const toks = [...new Set(texts.flatMap(v => (Array.isArray(v) ? v : String(v).split(/\s*[,;]\s*/))).map(skillToken).filter(Boolean))];
+    return toks.length ? toks : all;
   }
 
   /**
@@ -239,14 +274,14 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     const texts = (sheet.items || []).filter(i => i.collection === from.collection)
       .map(i => rules.entities[from.collection]?.[i.ref]?.[from.field]).filter(v => v !== undefined && v !== '');
     const groups = texts.flatMap(v => (Array.isArray(v) ? v : String(v).split(/\s*[,;]\s*/)))
-      .map(part => [...new Set(String(part).split(or).map(skillByName).filter(Boolean))]).filter(g => g.length);
+      .map(part => [...new Set(String(part).split(or).map(skillToken).filter(Boolean))]).filter(g => g.length);
     // The same fixed skill named twice is given once.
     return groups.filter((g, i) => g.length > 1 || groups.findIndex(x => x.length === 1 && x[0] === g[0]) === i);
   }
 
   /** The skill a group gives: its only skill, the player's pick, or the only one not trained yet. */
-  function groupPick(step, g, alt, sheet) {
-    const free = step.untrained ? g.filter(id => !((sheet.skills[id] || 0) > 0)) : g;
+  function groupPick(step, g, alt, sheet, choice) {
+    const free = g.filter(tok => !tokTrained(step, tok, choice, sheet));
     if (g.length === 1) return free[0];
     if (free.includes(alt)) return alt;
     return free.length === 1 ? free[0] : undefined;
@@ -292,19 +327,32 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       return { ok: true };
     }
     if (step.type === 'skills') {
-      const trained = id => step.untrained && (sheet.skills[id] || 0) > 0;
+      const trained = tok => tokTrained(step, tok, c, sheet);
+      // A specialty to name ("Craft: which one?"), and a named one the sheet already has.
+      const specProblem = toks => {
+        const unnamed = toks.find(tok => !tokTarget(tok, c));
+        if (unnamed) return { ok: false, msg: t('creation.nameSpecialty', { skill: rules.skills[tokBase(unnamed)]?.name }) };
+        const dup = toks.find(tok => specialized(tokBase(tok)) && trained(tok));
+        if (dup) return { ok: false, msg: t('creation.specialtyTrained', { name: tokName(dup, c) }) };
+        return null;
+      };
       if (step.grant) {
         const groups = grantGroups(step, sheet);
-        if (groups.some((g, gi) => g.some(id => !trained(id)) && !groupPick(step, g, c.alt?.[gi], sheet))) {
+        const plainTrained = tok => !needsName(tok) && trained(tok);
+        if (groups.some((g, gi) => g.some(tok => !plainTrained(tok)) && !groupPick(step, g, c.alt?.[gi], sheet, c) && g.length > 1)) {
           return { ok: false, msg: t('creation.chooseAlt') };
         }
-        const lost = groups.filter(g => g.every(trained)).length;
+        const problem = specProblem(groups.map((g, gi) => (g.length === 1 ? g[0] : groupPick(step, g, c.alt?.[gi], sheet, c))).filter(tok => tok && needsName(tok)));
+        if (problem) return problem;
+        const lost = groups.filter(g => g.every(plainTrained)).length;
         return lost ? { ok: true, warn: t('creation.lostTraining', { n: lost }) } : { ok: true };
       }
       if (step.choose !== undefined) {
         const need = num(step.choose, calc, 0);
-        const allowed = allowedSkills(step, calc, sheet).filter(id => !trained(id));
-        const have = (c.chosen || []).filter(id => allowed.includes(id)).length;
+        const problem = specProblem((c.chosen || []).filter(needsName));
+        if (problem) return problem;
+        const allowed = allowedSkills(step, calc, sheet).filter(tok => !trained(tok));
+        const have = (c.chosen || []).filter(tok => allowed.includes(tok)).length;
         const possible = Math.min(need, allowed.length);
         if (have < possible) return { ok: false, msg: t('creation.chooseMore', { n: possible - have }) };
         // A short list where some skills were already trained: the player gets fewer, unless they change the earlier step.
@@ -622,36 +670,62 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
   function trainedNote(ids, lost) {
     if (!ids.length) return null;
     const src = skillSources(index);
+    const sheet = build(index);
     return h('div.skill-conflicts', { class: lost ? 'lost' : '' }, h('p.small', t(lost ? 'creation.alreadyTrainedHelp' : 'creation.alreadyTrainedInfo')),
       ids.map(id => {
         const j = src[id];
         const where = j >= 0 ? (steps[j].title || defaultTitle(steps[j])) : t('creation.fromSheet');
-        return h('div.skill-conflict', h('strong', rules.skills[id]?.name || id), h('span.muted.small', t('creation.trainedIn', { step: where })),
+        return h('div.skill-conflict', h('strong', skillName(id, sheet)), h('span.muted.small', t('creation.trainedIn', { step: where })),
           j >= 0 ? h('button.mini', { type: 'button', onclick: () => { index = j; query = ''; showAll = false; shown = SHOWN; draw(); } }, t('creation.change')) : null);
       }));
   }
 
+  /** A name for each specialty the player picks ("Craft: Armorer"), with the system's suggestions. */
+  function specialtyNames(toks, c) {
+    const ids = [...new Set(toks.filter(needsName).map(tokBase))];
+    if (!ids.length) return null;
+    c.spec ||= {};
+    return h('div.specialty-names', ids.map(id => {
+      const listId = `wiz-spec-${index}-${id}`;
+      return h('label.field.specialty-name', h('span', t('creation.specialtyOf', { skill: rules.skills[id].name })),
+        h('input', { type: 'text', maxlength: 40, list: listId, value: c.spec[id] || '', 'data-spec': id, placeholder: t('sheet.specialtyName'),
+          oninput: e => {
+            c.spec[id] = e.target.value;
+            const pos = e.target.selectionStart;
+            redraw();
+            const el = app.querySelector(`input[data-spec="${CSS.escape(id)}"]`);
+            el?.focus(); el?.setSelectionRange(pos, pos);
+          } }),
+        h('datalist', { id: listId }, specialtySuggestions(rules.skills[id]).map(n => h('option', { value: n }))));
+    }));
+  }
+
   function skillsStep(step, calc, sheet, calcAfter) {
     const c = choices[index];
-    const trained = id => step.untrained && (sheet.skills[id] || 0) > 0;
-    const value = id => h('strong', signed(calcAfter.value(id)));
+    const trained = tok => tokTrained(step, tok, c, sheet);
+    // The total the skill (or the named specialty) will have; nothing yet for a specialty without a name.
+    const value = tok => { const target = tokTarget(tok, c); return target ? h('strong', signed(calcAfter.value(target))) : null; };
     if (step.grant) {
       c.alt ||= {};
       const groups = grantGroups(step, sheet);
+      const plainTrained = tok => !needsName(tok) && trained(tok);
       const fixed = groups.filter(g => g.length === 1).map(g => g[0]);
-      const given = fixed.filter(id => !trained(id));
+      const given = fixed.filter(tok => !plainTrained(tok));
       // Lost: a fixed skill, or every skill of an "or", that was already trained.
-      const conflicts = [...new Set(groups.filter(g => g.every(trained)).flat())];
+      const conflicts = [...new Set(groups.filter(g => g.every(plainTrained)).flat())].map(tok => tokTarget(tok, c)).filter(Boolean);
+      const picked = groups.map((g, gi) => (g.length === 1 ? g[0] : groupPick(step, g, c.alt[gi], sheet, c))).filter(Boolean);
       return [
         given.length ? h('div', h('p.small.muted', t('creation.grantedSkills')),
-          h('div.skill-chips', given.map(id => h('span.skill-chip.granted', h('span', rules.skills[id].name), value(id))))) : null,
+          h('div.skill-chips', given.map(tok => h('span.skill-chip.granted', h('span', tokName(tok, c)), value(tok))))) : null,
         ...groups.map((g, gi) => (g.length < 2 ? null : h('div',
-          h('p', t('creation.chooseOneOf', { list: g.map(id => rules.skills[id].name).join(` ${t('creation.or')} `) })),
-          h('div.skill-chips', g.map(id => {
-            const on = groupPick(step, g, c.alt[gi], sheet) === id;
-            return h('button.skill-chip', { type: 'button', 'aria-pressed': String(on), disabled: trained(id), class: trained(id) ? 'trained' : '',
-              onclick: () => { c.alt[gi] = id; redraw(); } }, h('span', rules.skills[id].name), trained(id) ? h('span.small', t('creation.trained')) : value(id));
+          h('p', t('creation.chooseOneOf', { list: g.map(tok => tokName(tok)).join(` ${t('creation.or')} `) })),
+          h('div.skill-chips', g.map(tok => {
+            const on = groupPick(step, g, c.alt[gi], sheet, c) === tok;
+            const off = plainTrained(tok);
+            return h('button.skill-chip', { type: 'button', 'aria-pressed': String(on), disabled: off, class: off ? 'trained' : '',
+              onclick: () => { c.alt[gi] = tok; redraw(); } }, h('span', tokName(tok)), off ? h('span.small', t('creation.trained')) : value(tok));
           }))))),
+        specialtyNames(picked, c),
         groups.length ? null : h('p.muted', t('creation.noGrantedSkills')),
         trainedNote(conflicts, true),
       ];
@@ -661,24 +735,27 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
       const need = num(step.choose, calc, 0);
       const bonus = num(step.bonus, calc, 1);
       const allowed = allowedSkills(step, calc, sheet);
-      c.chosen = c.chosen.filter(id => allowed.includes(id) && !trained(id));
-      const taken = allowed.filter(trained);
+      // A skill with specialties is never "already trained" as a whole: another specialty can still be taken.
+      const off = tok => !needsName(tok) && trained(tok);
+      c.chosen = c.chosen.filter(tok => allowed.includes(tok) && !off(tok));
+      const taken = allowed.filter(off);
       return [
         h('p', t('creation.chooseSkills', { n: need, bonus: signed(bonus) })),
         h('span.badge', t('creation.chosen', { n: c.chosen.length, max: need })),
         // Already trained skills stay in the list, disabled, so the player sees why they can't be picked.
-        h('div.skill-chips', allowed.map(id => rules.skills[id]).sort((a, b) => byName(a.name, b.name)).map(s => {
-          const on = c.chosen.includes(s.id);
-          if (trained(s.id)) {
+        h('div.skill-chips', [...allowed].sort((a, b) => byName(tokName(a), tokName(b))).map(tok => {
+          const on = c.chosen.includes(tok);
+          if (off(tok)) {
             return h('button.skill-chip.trained', { type: 'button', disabled: true, 'aria-pressed': 'false', title: t('creation.trained') },
-              h('span', s.name), h('span.small', t('creation.trained')));
+              h('span', tokName(tok)), h('span.small', t('creation.trained')));
           }
           return h('button.skill-chip', { type: 'button', 'aria-pressed': String(on), disabled: !on && c.chosen.length >= need,
-            onclick: () => { c.chosen = on ? c.chosen.filter(x => x !== s.id) : [...c.chosen, s.id]; redraw(); } },
-          h('span', s.name), value(s.id));
+            onclick: () => { c.chosen = on ? c.chosen.filter(x => x !== tok) : [...c.chosen, tok]; redraw(); } },
+          h('span', on ? tokName(tok, c) : tokName(tok)), value(tok) || h('strong', signed(calcAfter.value(tokBase(tok)))));
         })),
+        specialtyNames(c.chosen, c),
         // With a short list (from a race, class or origin), say where the trained ones came from.
-        step.from ? trainedNote(taken, need > allowed.length - taken.length) : null,
+        step.from ? trainedNote(taken.map(tok => tokTarget(tok, c)).filter(Boolean), need > allowed.length - taken.length) : null,
       ];
     }
     c.points ||= {};
@@ -746,7 +823,7 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     const name = h('input.name', { type: 'text', value: base.name || '', 'aria-label': t('new.name'), oninput: e => { base.name = e.target.value; } });
     const groups = {};
     for (const i of sheet.items) (groups[i.collection] ||= []).push(rules.entities[i.collection]?.[i.ref]?.name || i.ref);
-    const skillBonus = Object.entries(sheet.skills).filter(([, n]) => n).map(([id, n]) => `${rules.skills[id]?.name || id} ${signed(n)}`);
+    const skillBonus = Object.entries(sheet.skills).filter(([, n]) => n).map(([id, n]) => `${skillName(id, sheet)} ${signed(n)}`);
     app.replaceChildren(h('div.wizard',
       progress(vis.length + 1, vis.length + 1, t('creation.review')),
       h('section.card.wizard-step',
@@ -776,8 +853,9 @@ export function creationWizard(app, { rules, inst, base, onDone, onSkip, steps =
     const added = sheet.items.filter(i => !oldUids.has(i.uid)).map(i => rules.entities[i.collection]?.[i.ref]?.name || i.ref);
     const attrs = Object.values(rules.attributes).filter(a => (sheet.attributes?.[a.id] ?? 0) !== (levelUp.attributes?.[a.id] ?? 0))
       .map(a => `${a.abbr || a.id} ${fmt(levelUp.attributes?.[a.id] ?? 0)} → ${fmt(sheet.attributes[a.id])}`);
-    const skills = Object.values(rules.skills).filter(sk => (sheet.skills[sk.id] || 0) !== (levelUp.skills?.[sk.id] || 0))
-      .map(sk => `${sk.name} ${signed((sheet.skills[sk.id] || 0) - (levelUp.skills?.[sk.id] || 0))}`);
+    const skills = [...new Set([...Object.keys(sheet.skills), ...Object.keys(levelUp.skills || {})])]
+      .filter(id => (sheet.skills[id] || 0) !== (levelUp.skills?.[id] || 0))
+      .map(id => `${skillName(id, sheet)} ${signed((sheet.skills[id] || 0) - (levelUp.skills?.[id] || 0))}`);
     const rows = [[t('level.added'), added], [t('sheet.attributes'), attrs], [t('sheet.skills'), skills]].filter(([, v]) => v.length);
     app.replaceChildren(h('div.wizard',
       progress(vis.length + 1, vis.length + 1, t('creation.review')),

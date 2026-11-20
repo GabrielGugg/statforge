@@ -2,6 +2,12 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.32.0 — 20/11/2026
+
+- Perícias com **especializações** (`"specialties"`), como Ofício: cada especialização é uma perícia própria, com pontos próprios ("Ofício (Armeiro)", "Ofício (Cozinheiro)"). Na ficha, elas entram em Editar › + Especialização, com as sugestões do sistema ou qualquer outro nome. O assistente de criação pergunta qual quando uma etapa dá a perícia sem dizer ("Ofício: qual?") e já usa a que o texto cita ("Ofício (armeiro)"). Uma especialização não pode ser treinada duas vezes, mas outra da mesma perícia pode.
+- Efeitos: um efeito numa perícia com especializações vale para todas (uma condição de −2), a não ser que cite uma (`"specialty": "Armeiro"`) ou deixe o jogador escolher (`"specialty": "choose"`, escolhida na ficha, abaixo das perícias). Um bônus não vale mais para todas as especializações de uma vez.
+- Fórmulas: `points('oficio')` é a melhor especialização, e `points('oficio_armeiro')` pede aquela. Os pré-requisitos aparecem como "Ofício (Armeiro)".
+
 ## 1.31.0 — 20/11/2026
 
 - Criação de personagem: um passo de perícias pode **conceder** as perícias citadas num campo (`"grant": true`), por exemplo as perícias fixas de uma classe. Elas entram sozinhas; "Luta ou Pontaria" vira a escolha de uma. Quando não há nada para escolher, o passo nem aparece.
