@@ -2,6 +2,10 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.27.0 — 2026-11-20
+
+- Formulas: **`points('skill')`** gives the points the sheet has in a skill, so a requirement can ask for training (`points('fight') >= 1` in a system where 1 point means trained). A system can set **`skill_points_text`** (for example `"trained in {skill}"`) to show that requirement in words; without it, it reads "Fight (points) ≥ 1".
+
 ## 1.26.0 — 2026-11-20
 
 - Packages: **multiclassing** in the level-up assistant. A `pick` step with `"levels": true` (on a collection with `quantity`) uses the quantity as the level: the classes the character has come first, with their level ("level 3 → 4"), and picking one again raises it by one; the other classes are listed apart, to start a new one. Effects already see the class level as `qty`, and formulas as `qty('classes/fighter')`.

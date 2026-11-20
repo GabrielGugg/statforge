@@ -773,6 +773,12 @@ function andParts(formula) {
 function formulaWords(rules, f) {
   let s = String(f).replace(/has\(\s*'([^']+)'\s*\)/g, (_, r) => `⟦${refLabel(rules, r)}⟧`);
   s = s.replace(/qty\(\s*'([^']+)'\s*\)/g, (_, r) => `⟦${refLabel(rules, r)}⟧`);
+  // points('x') >= 1 (or > 0) reads as the pack's skill_points_text ("trained in Fight"); other uses as "Fight (points)".
+  const skillName = id => rules.skills?.[id]?.name || id;
+  if (rules.skill_points_text) {
+    s = s.replace(/points\(\s*'([^']+)'\s*\)\s*(?:>=\s*1|>\s*0)(?![\d.])/g, (_, id) => `⟦${rules.skill_points_text.replaceAll('{skill}', skillName(id))}⟧`);
+  }
+  s = s.replace(/points\(\s*'([^']+)'\s*\)/g, (_, id) => `⟦${t('req.points', { skill: skillName(id) })}⟧`);
   const names = {};
   for (const sec of ['attributes', 'skills', 'derived', 'resources']) for (const [id, d] of Object.entries(rules[sec] || {})) names[id] ||= d.name;
   s = s.replace(/'[^']*'|⟦[^⟧]*⟧|[\p{L}_][\p{L}\p{N}_]*/gu, w => {

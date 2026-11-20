@@ -58,3 +58,17 @@ test('validator: pick step groups must be a list with valid formulas', () => {
   bad2.progression.level_up.steps[1].groups[0].if = "picked('classes/fighter'";
   assert.ok(validatePackage(bad2).errors.length > 0);
 });
+
+test("points(): a skill's recorded points, and skill_points_text in the validator", () => {
+  const p = structuredClone(sys);
+  p.skills = [{ id: 'fight', name: 'Fight', attribute: 'STR' }];
+  p.skill_points_text = 'trained in {skill}';
+  assert.equal(validatePackage(p).errors.length, 0);
+  const { rules } = buildRules(p);
+  assert.equal(rules.skill_points_text, 'trained in {skill}');
+  const s = emptySheet(rules, { level: 1 });
+  assert.equal(compute(rules, s).formula("points('fight') >= 1"), false);
+  s.skills = { fight: 1 };
+  assert.equal(compute(rules, s).formula("points('fight') >= 1"), true);
+  assert.ok(validatePackage({ ...p, skill_points_text: 'no placeholder' }).errors.length > 0);
+});

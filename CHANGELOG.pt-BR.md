@@ -2,6 +2,10 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.27.0 — 20/11/2026
+
+- Fórmulas: **`points('pericia')`** dá os pontos que a ficha tem numa perícia, então um requisito pode pedir treinamento (`points('luta') >= 1` num sistema em que 1 ponto quer dizer treinado). Um sistema pode ter **`skill_points_text`** (por exemplo `"treinado em {skill}"`) para mostrar esse requisito em palavras; sem ele, aparece "Luta (pontos) ≥ 1".
+
 ## 1.26.0 — 20/11/2026
 
 - Pacotes: **multiclasse** no assistente de subida de nível. Um passo `pick` com `"levels": true` (numa coleção com `quantity`) usa a quantidade como nível: as classes que o personagem já tem aparecem primeiro, com o nível ("nível 3 → 4"), e escolher uma delas sobe um nível; as outras classes aparecem separadas, para começar uma nova. Os efeitos já veem o nível da classe como `qty`, e as fórmulas como `qty('classes/guerreiro')`.

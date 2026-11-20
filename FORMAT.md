@@ -107,7 +107,7 @@ A collection is a kind of thing (weapons, traits, conditions). Entities are the 
 }
 ```
 
-An entity with `"uses": 3` has limited uses: the sheet shows one box per use and keeps the count on the sheet item. An entity may also have `requires`, a formula that must hold to add it (for example `"STR >= 5 and level >= 3"`): search and pick steps list it disabled, with the part of the formula that fails in words ("Requirement not met: Strength ≥ 5"), until the player ticks "Ignore unmet requirements". `requires_text` replaces those words when the requirement is a single part (e.g. a long "or" list). With `requires`, a pick step's `match_field` is not used for that entity. `repeat` says how many times it can be taken.
+An entity with `"uses": 3` has limited uses: the sheet shows one box per use and keeps the count on the sheet item. An entity may also have `requires`, a formula that must hold to add it (for example `"STR >= 5 and level >= 3"`): search and pick steps list it disabled, with the part of the formula that fails in words ("Requirement not met: Strength ≥ 5"), until the player ticks "Ignore unmet requirements". `requires_text` replaces those words when the requirement is a single part (e.g. a long "or" list). A system can set a top-level `"skill_points_text": "trained in {skill}"`: then `points('athletics') >= 1` (or `> 0`) reads as "trained in Athletics". With `requires`, a pick step's `match_field` is not used for that entity. `repeat` says how many times it can be taken.
 
 **Terms whose rule depends on the item.** A field with `"links"` turns names into links to that collection (weapon properties…). When the same term means different things on different items, give its entity `"variants"`: the first one that fits the item replaces the description in the tooltip and the details. `"collection"` is the item's collection; `"match"` lists item fields and the values they must have (one value or a list). Opened on its own (from the property list), the term shows its description and every variant.
 
@@ -183,6 +183,7 @@ Operators: `+ - * / %`, comparisons `< <= > >= == !=`, `and`, `or`, `not`, paren
 | `owns('id')` | The sheet has the item, active or not. |
 | `qty('id')` | Total quantity of that item. |
 | `picked('collection/id')` | The creation or level-up assistant picked this entity in the current run (in a `levels` step, the class that went up). Always false on the sheet. |
+| `points('skill')` | The points the sheet has in that skill (as recorded, without bonuses). In a system where 1 point means trained, `points('athletics') >= 1` asks for training. |
 | `count('collection')` | How many items the sheet has in the collection. |
 | `sum('collection', 'field')` | Sum of field × quantity for every item in the collection. With a third argument `true`, only equipped ones. |
 | `tag('name')` | Some active entity has this tag. |
