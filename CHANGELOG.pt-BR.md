@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.37.0 — 20/11/2026
+
+- Modificações: uma coleção pode ter vários grupos de modificações (`"mods"` como lista), cada um com o seu botão e a sua lista, por exemplo Melhorias, Encantos e Material especial. Um grupo pode ter `"max"`, e um limite por quantidade (`by_count`) conta as modificações de todos os grupos com aquela tag, então um material especial pode contar como uma melhoria.
+- Modificações: um custo pode somar o preço das próprias modificações instaladas (`"from_field"`), e uma modificação pode servir só para alguns itens (`"fits"`), por exemplo um material só para armaduras pesadas.
+
 ## 1.36.0 — 20/11/2026
 
 - Modificações mudam o item em que estão (`"item_effects"`): bônus num número (Defesa, penalidade de armadura, com mínimo), dano extra (`+1` ou `+1d6`) e o crítico (margem de ameaça, margem duplicada, multiplicador). Listas, cartões e fórmulas com `sum()` usam os valores mudados, então uma armadura reforçada aumenta a Defesa.

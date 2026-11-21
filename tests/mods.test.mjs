@@ -64,3 +64,16 @@ test('mods: item_effects validation', () => {
   assert.ok(validatePackage(pkg([{ field: 'dmg', add: 'lots' }])).errors.length);
   assert.ok(validatePackage(pkg({ field: 'dmg' })).errors.length);
 });
+
+test('mods: several groups per collection (upgrades, enchantments, materials)', () => {
+  const r = structuredClone(rules);
+  r.collections.weapons.mods = [{ collection: 'upgrades' }, { collection: 'materials', max: 1 }];
+  r.collections.materials = {};
+  r.entities.materials = { silver: { id: 'silver', name: 'Silver', effects: [{ type: 'add', target: 'charm', value: 1 }], item_effects: [{ field: 'crit', margin: 1 }] } };
+  const w = it('w', 'weapons', 'sword', { equipped: true, mods: ['s'] });
+  const sheet = { items: [w, it('s', 'materials', 'silver')] };
+  assert.equal(itemField(r, sheet, w, 'crit'), '18');
+  assert.equal(compute(r, sheet).value('charm'), 1, 'a material of a list group is a mod too');
+  w.equipped = false;
+  assert.equal(compute(r, sheet).value('charm'), 0);
+});

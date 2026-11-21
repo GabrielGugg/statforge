@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.37.0 — 2026-11-20
+
+- Mods: a collection can have several mod groups (`"mods"` as a list), each with its own button and list, e.g. Upgrades, Enchantments and Special material. A group can have a `"max"`, and a count limit (`by_count`) counts mods of every group with that tag, so a special material can count as one upgrade.
+- Mods: a cost can add the installed mods' own price (`"from_field"`), and a mod can fit only some items (`"fits"`), e.g. a material for heavy armor only.
+
 ## 1.36.0 — 2026-11-20
 
 - Mods change the item they are in (`"item_effects"`): a bonus to a number (Defense, armor penalty, with a minimum), extra damage (`+1` or `+1d6`) and the critical (threat range, doubled range, multiplier). Lists, cards and formulas with `sum()` use the changed values, so a reinforced armor raises the Defense.

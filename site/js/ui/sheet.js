@@ -1114,31 +1114,41 @@ function magazineRow(st, item, ent) {
 
 // ---------- Mods installed inside an item (weapon mods...) ----------
 /**
- * The "mods" of a collection: a collection id, or { collection, tags, costs: [{ tag, label, by_count, field }] }.
- * "tags": which entities of the mod collection fit (any of them); "costs": the price added by how many mods
- * with that tag are installed (by_count[n-1]), which is also the most of them an item can have.
+ * The mod groups of a collection. "mods" is a collection id, one group, or a list of groups:
+ * { collection, label, tags, max, costs: [{ label, tag, by_count, from_field, field }] }.
+ * "tags": which entities of the mod collection fit (any of them). "max": the most of this group in one item.
+ * A cost adds to the item's "field": by how many installed mods (of any group) have "tag" (by_count[n-1],
+ * which is also the most of them), or the sum of the mods' own "from_field" (a material's price).
  */
-export function modsConfig(col) {
-  const m = col?.mods;
-  if (!m) return null;
-  if (typeof m === 'string') return { collection: m, tags: [], costs: [] };
-  if (typeof m !== 'object' || typeof m.collection !== 'string') return null;
-  const costs = (Array.isArray(m.costs) ? m.costs : []).filter(c => c && Array.isArray(c.by_count))
-    .map(c => ({ tag: typeof c.tag === 'string' ? c.tag : null, label: String(c.label || ''), by_count: c.by_count.map(Number).filter(Number.isFinite), field: typeof c.field === 'string' ? c.field : null }));
-  return { collection: m.collection, tags: [].concat(m.tags || []).filter(x => typeof x === 'string'), costs, label: typeof m.label === 'string' ? m.label : '' };
+export function modsGroups(col) {
+  const list = Array.isArray(col?.mods) ? col.mods : col?.mods ? [col.mods] : [];
+  return list.map(m => {
+    if (typeof m === 'string') return { collection: m, tags: [], costs: [], label: '', max: null };
+    if (!m || typeof m !== 'object' || typeof m.collection !== 'string') return null;
+    const costs = (Array.isArray(m.costs) ? m.costs : []).filter(c => c && (Array.isArray(c.by_count) || typeof c.from_field === 'string'))
+      .map(c => ({ tag: typeof c.tag === 'string' ? c.tag : null, label: String(c.label || ''),
+        by_count: Array.isArray(c.by_count) ? c.by_count.map(Number).filter(Number.isFinite) : null,
+        from_field: typeof c.from_field === 'string' ? c.from_field : null, field: typeof c.field === 'string' ? c.field : null }));
+    return { collection: m.collection, tags: [].concat(m.tags || []).filter(x => typeof x === 'string'), costs,
+      label: typeof m.label === 'string' ? m.label : '', max: Number.isFinite(m.max) ? m.max : null };
+  }).filter(Boolean);
 }
+/** The first group (kept for the equipped cards' label). */
+export const modsConfig = col => modsGroups(col)[0] || null;
 
 const modItems = (sheet, item) => (item.mods || []).map(u => sheet.items.find(x => x.uid === u)).filter(Boolean);
 
-/** Extra price of an item from its mods, per cost group: [{ label, n, cost, field }]. */
-function modCosts(st, item, col) {
-  const cfg = modsConfig(col);
-  if (!cfg?.costs.length) return [];
-  const ents = modItems(st.sheet, item).map(m => st.rules.entities[m.collection]?.[m.ref]).filter(Boolean);
-  return cfg.costs.map(c => {
-    const n = ents.filter(e => !c.tag || (e.tags || []).includes(c.tag)).length;
+/** Extra price of an item from its mods, per cost: [{ label, n, cost, field, group }]. */
+function modCosts(st, item, col, only) {
+  const ents = modItems(st.sheet, item).map(m => ({ m, e: st.rules.entities[m.collection]?.[m.ref] })).filter(x => x.e);
+  return modsGroups(col).filter(g => !only || g === only).flatMap(g => g.costs.map(c => {
+    if (c.from_field) {
+      const mine = ents.filter(x => x.m.collection === g.collection);
+      return { label: c.label, n: mine.length, cost: mine.reduce((n, x) => n + (Number(x.e[c.from_field]) || 0), 0), field: c.field };
+    }
+    const n = ents.filter(x => !c.tag || (x.e.tags || []).includes(c.tag)).length;
     return { label: c.label, n, cost: n ? Number(c.by_count[Math.min(n, c.by_count.length) - 1]) || 0 : 0, field: c.field };
-  });
+  }));
 }
 
 /** Removes an item from the sheet, with the mods made for it (installed from the list, not from the inventory). */
@@ -1148,40 +1158,59 @@ export function removeSheetItem(sheet, item) {
   for (const x of sheet.items) if (x.mods?.includes(item.uid)) x.mods = x.mods.filter(u => u !== item.uid);
 }
 
-/** "Mods (2)" button and the names of the mods installed, next to an item. */
+/** One button per mod group ("Upgrades (2)", "Enchantments"), and the names of what is installed. */
 function modsLine(st, item, col) {
-  const cfg = modsConfig(col);
-  if (!cfg) return null;
+  const groups = modsGroups(col);
+  if (!groups.length) return null;
   const mods = modItems(st.sheet, item);
   const name = m => m.name || st.rules.entities[m.collection]?.[m.ref]?.name || m.ref;
   return h('div.item-mods.small',
     mods.length ? h('span.item-mods-names', '✦ ', mods.map(name).join(', ')) : null,
-    h('button.mini', { type: 'button', onclick: ev => { ev.stopPropagation(); modsDialog(st, item, col); } },
-      `${cfg.label || t('sheet.manageMods')}${mods.length ? ` (${mods.length})` : ''}`));
+    groups.map(g => {
+      const n = mods.filter(m => m.collection === g.collection).length;
+      return h('button.mini', { type: 'button', onclick: ev => { ev.stopPropagation(); modsDialog(st, item, col, g); } },
+        `${g.label || st.rules.collections[g.collection]?.name || t('sheet.manageMods')}${n ? ` (${n})` : ''}`);
+    }));
 }
 
 // What a mod says it fits ("compatible", "compativeis" or "aplica" in the packages).
 const fitText = e => e?.compatible || e?.compativeis || e?.aplica || e?.applies_to || '';
 
-function modsDialog(st, item, col) {
-  const cfg = modsConfig(col);
-  const modCol = cfg.collection;
+/**
+ * Does a mod fit the item? Its group's "tags", and the mod's own "fits": { "field", "values" } on the item
+ * (e.g. a material for heavy armor only: { "field": "category", "values": ["Heavy armor"] }).
+ */
+function modFits(g, e, host) {
+  if (g.tags.length && !g.tags.some(tg => (e.tags || []).includes(tg))) return false;
+  const f = e.fits;
+  if (f && typeof f.field === 'string' && Array.isArray(f.values)) return f.values.map(normalize).includes(normalize(host?.[f.field] ?? ''));
+  return true;
+}
+
+function modsDialog(st, item, col, group = modsGroups(col)[0]) {
+  const g = group;
+  const modCol = g.collection;
   const { rules, sheet } = st;
+  const host = rules.entities[item.collection]?.[item.ref];
   const installedCount = u => sheet.items.reduce((n, x) => n + (x.mods || []).filter(m => m === u).length, 0);
   const body = h('div');
   let query = '';
   const name = x => x.name || rules.entities[x.collection]?.[x.ref]?.name || x.ref;
-  const fits = e => !cfg.tags.length || cfg.tags.some(tg => (e.tags || []).includes(tg));
-  // A cost group with a limit (by_count) is full when the item already has that many mods with its tag.
-  const full = e => cfg.costs.some(c => (!c.tag || (e.tags || []).includes(c.tag))
-    && modItems(sheet, item).filter(m => { const me = rules.entities[m.collection]?.[m.ref]; return me && (!c.tag || (me.tags || []).includes(c.tag)); }).length >= c.by_count.length);
+  const allCosts = modsGroups(col).flatMap(x => x.costs).filter(c => c.by_count);
+  const tagged = (tag, list) => list.filter(m => { const me = rules.entities[m.collection]?.[m.ref]; return me && (!tag || (me.tags || []).includes(tag)); }).length;
+  // Full: the group's "max", or any count limit (by_count) the mod's tags fall under, across all groups.
+  const full = e => {
+    const all = modItems(sheet, item);
+    if (g.max !== null && all.filter(m => m.collection === modCol).length >= g.max) return true;
+    return allCosts.some(c => c.tag && (e.tags || []).includes(c.tag) && tagged(c.tag, all) >= c.by_count.length);
+  };
   const draw = () => {
-    const mine = modItems(sheet, item);
+    const mine = modItems(sheet, item).filter(m => m.collection === modCol);
     const mineRefs = new Set(mine.map(m => m.ref));
     const free = sheet.items.filter(x => x.collection === modCol && !x.attached && Number(x.qty ?? 1) - installedCount(x.uid) > 0);
-    const costs = modCosts(st, item, col).filter(c => c.n);
+    const costs = modCosts(st, item, col).filter(c => c.n && c.cost);
     const q = normalize(query);
-    const catalog = Object.values(rules.entities[modCol] || {}).filter(e => fits(e) && !mineRefs.has(e.id) && (!q || normalize(e.name).includes(q)))
+    const catalog = Object.values(rules.entities[modCol] || {}).filter(e => modFits(g, e, host) && !mineRefs.has(e.id) && (!q || normalize(e.name).includes(q)))
       .sort((a, b) => byName(a.name, b.name));
     const search = h('input', { type: 'search', placeholder: t('sheet.search'), 'aria-label': t('sheet.search'), value: query,
       oninput: e => { query = e.target.value; const pos = e.target.selectionStart; draw(); const el = body.querySelector('input[type=search]'); el?.focus(); el?.setSelectionRange(pos, pos); } });
@@ -1194,6 +1223,7 @@ function modsDialog(st, item, col) {
           if (m.attached) sheet.items = sheet.items.filter(x => x !== m);
           st.change(); draw();
         } }, t('sheet.uninstall'))))) : h('p.muted.small', t('sheet.noMods')),
+      // The item's whole extra price (all groups), so the total is in view.
       costs.length ? h('p.small.mod-cost', costs.map(c => {
         const unit = c.field ? col.fields?.[c.field]?.unit : '';
         const cost = c.cost.toLocaleString(document.documentElement.lang || undefined);
@@ -1202,7 +1232,7 @@ function modsDialog(st, item, col) {
       free.length ? [h('h4', t('sheet.modsAvailable')), h('ul.mod-list', free.map(m => {
         const e = rules.entities[m.collection]?.[m.ref];
         return h('li', h('span', h('button.mini.link', { onclick: () => entityDetails(st, m.collection, m.ref) }, name(m)), fitText(e) ? h('div.small.muted', fitText(e)) : null),
-          h('button.mini.primary', { onclick: () => { (item.mods ||= []).push(m.uid); st.change(); draw(); } }, t('sheet.install')));
+          h('button.mini.primary', { disabled: !!e && full(e), onclick: () => { (item.mods ||= []).push(m.uid); st.change(); draw(); } }, t('sheet.install')));
       }))] : null,
       h('h4', t('sheet.modsCatalog', { name: rules.collections[modCol]?.name || modCol })),
       search,
@@ -1219,7 +1249,7 @@ function modsDialog(st, item, col) {
       })) : h('p.muted.small', t('sheet.nothingFound'))].flat().filter(Boolean));
   };
   draw();
-  dialog(cfg.label ? `${cfg.label}: ${name(item)}` : t('sheet.modsOf', { name: name(item) }), body, { width: '560px' });
+  dialog(g.label ? `${g.label}: ${name(item)}` : t('sheet.modsOf', { name: name(item) }), body, { width: '560px' });
 }
 
 // ---------- Equipped view: only what is equipped, as cards with its numbers ----------
@@ -1237,7 +1267,6 @@ function equippedBlock(st, def) {
   return [h('h3', title), h('div.equip-list', items.map(item => {
     const ent = rules.entities[colId]?.[item.ref];
     const name = item.name || ent?.name || item.ref;
-    const mods = (item.mods || []).map(u => sheet.items.find(x => x.uid === u)).filter(Boolean);
     return h('div.equip-card',
       h('div.equip-head',
         h('button.mini.link.equip-name', { onclick: () => entityDetails(st, colId, item.ref, item) }, name),
@@ -1257,9 +1286,7 @@ function equippedBlock(st, def) {
       usesControl(st, item, ent, col),
       isBroken(rules, item) ? h('div.small', { style: { color: 'var(--danger)' } }, t('sheet.brokenText')) : null,
       ent?.magazine ? magazineRow(st, item, ent) : null,
-      modsConfig(col) ? h('div.equip-mods.small',
-        h('span.muted', `${modsConfig(col).label || t('sheet.mods')}: `), mods.length ? mods.map(m => m.name || rules.entities[m.collection]?.[m.ref]?.name).join(', ') : t('sheet.none'),
-        h('button.mini', { onclick: () => modsDialog(st, item, col) }, t('sheet.manageMods'))) : null);
+      modsLine(st, item, col));
   }))];
 }
 
