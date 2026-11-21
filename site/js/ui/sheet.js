@@ -6,7 +6,7 @@ import { termVariant, termDescription } from '../engine/terms.js';
 import { withOwner } from './privacy.js';
 import * as pk from '../packages.js';
 import { checkSet } from '../engine/package.js';
-import { compute, roll, isBroken, effectiveWear, addSpecialty, specialtyId, specialtySuggestions, itemField } from '../engine/calc.js';
+import { compute, roll, isBroken, effectiveWear, addSpecialty, specialtyId, specialtySuggestions, itemField, modFits, modConflict } from '../engine/calc.js';
 import { t } from '../i18n.js';
 import { creationWizard } from './creation.js';
 import { shareDialog } from './share.js';
@@ -1136,6 +1136,9 @@ export function modsGroups(col) {
 /** The first group (kept for the equipped cards' label). */
 export const modsConfig = col => modsGroups(col)[0] || null;
 
+// How much a mod counts toward "by_count" limits and prices ("counts_as": 2 = counts as two).
+const modWeight = e => (Number.isFinite(e?.counts_as) && e.counts_as > 0 ? e.counts_as : 1);
+
 const modItems = (sheet, item) => (item.mods || []).map(u => sheet.items.find(x => x.uid === u)).filter(Boolean);
 
 /** Extra price of an item from its mods, per cost: [{ label, n, cost, field, group }]. */
@@ -1146,7 +1149,7 @@ function modCosts(st, item, col, only) {
       const mine = ents.filter(x => x.m.collection === g.collection);
       return { label: c.label, n: mine.length, cost: mine.reduce((n, x) => n + (Number(x.e[c.from_field]) || 0), 0), field: c.field };
     }
-    const n = ents.filter(x => !c.tag || (x.e.tags || []).includes(c.tag)).length;
+    const n = ents.filter(x => !c.tag || (x.e.tags || []).includes(c.tag)).reduce((k, x) => k + modWeight(x.e), 0);
     return { label: c.label, n, cost: n ? Number(c.by_count[Math.min(n, c.by_count.length) - 1]) || 0 : 0, field: c.field };
   }));
 }
@@ -1158,55 +1161,60 @@ export function removeSheetItem(sheet, item) {
   for (const x of sheet.items) if (x.mods?.includes(item.uid)) x.mods = x.mods.filter(u => u !== item.uid);
 }
 
-/** One button per mod group ("Upgrades (2)", "Enchantments"), and the names of what is installed. */
+/** One button for all the item's mod groups, and the names of what is installed. */
 function modsLine(st, item, col) {
   const groups = modsGroups(col);
   if (!groups.length) return null;
   const mods = modItems(st.sheet, item);
   const name = m => m.name || st.rules.entities[m.collection]?.[m.ref]?.name || m.ref;
+  const label = groups.length === 1 ? (groups[0].label || st.rules.collections[groups[0].collection]?.name || t('sheet.manageMods')) : t('sheet.manageMods');
   return h('div.item-mods.small',
     mods.length ? h('span.item-mods-names', '✦ ', mods.map(name).join(', ')) : null,
-    groups.map(g => {
-      const n = mods.filter(m => m.collection === g.collection).length;
-      return h('button.mini', { type: 'button', onclick: ev => { ev.stopPropagation(); modsDialog(st, item, col, g); } },
-        `${g.label || st.rules.collections[g.collection]?.name || t('sheet.manageMods')}${n ? ` (${n})` : ''}`);
-    }));
+    h('button.mini', { type: 'button', onclick: ev => { ev.stopPropagation(); modsDialog(st, item, col); } },
+      `${label}${mods.length ? ` (${mods.length})` : ''}`));
 }
 
 // What a mod says it fits ("compatible", "compativeis" or "aplica" in the packages).
 const fitText = e => e?.compatible || e?.compativeis || e?.aplica || e?.applies_to || '';
 
-/**
- * Does a mod fit the item? Its group's "tags", and the mod's own "fits": { "field", "values" } on the item
- * (e.g. a material for heavy armor only: { "field": "category", "values": ["Heavy armor"] }).
- */
-function modFits(g, e, host) {
-  if (g.tags.length && !g.tags.some(tg => (e.tags || []).includes(tg))) return false;
-  const f = e.fits;
-  if (f && typeof f.field === 'string' && Array.isArray(f.values)) return f.values.map(normalize).includes(normalize(host?.[f.field] ?? ''));
-  return true;
+// Why a mod can't go in (calc.js modConflict), in words.
+function conflictText(c) {
+  if (!c) return null;
+  if (c.text) return c.text;
+  if (c.type === 'excludes') return t('sheet.modExcludes', { name: c.name });
+  if (c.type === 'needs') return t('sheet.modNeeds', { names: c.names.join(' / ') });
+  return t('sheet.modNeedsOther');
 }
+const modConflictText = (rules, e, collection, others) => conflictText(modConflict(rules, e, collection, others));
 
-function modsDialog(st, item, col, group = modsGroups(col)[0]) {
-  const g = group;
-  const modCol = g.collection;
+function modsDialog(st, item, col, group) {
+  const groups = modsGroups(col);
+  let cur = Math.max(0, groups.indexOf(group));
   const { rules, sheet } = st;
   const host = rules.entities[item.collection]?.[item.ref];
   const installedCount = u => sheet.items.reduce((n, x) => n + (x.mods || []).filter(m => m === u).length, 0);
   const body = h('div');
   let query = '';
   const name = x => x.name || rules.entities[x.collection]?.[x.ref]?.name || x.ref;
-  const allCosts = modsGroups(col).flatMap(x => x.costs).filter(c => c.by_count);
-  const tagged = (tag, list) => list.filter(m => { const me = rules.entities[m.collection]?.[m.ref]; return me && (!tag || (me.tags || []).includes(tag)); }).length;
-  // Full: the group's "max", or any count limit (by_count) the mod's tags fall under, across all groups.
-  const full = e => {
+  const groupLabel = g => g.label || rules.collections[g.collection]?.name || g.collection;
+  const allCosts = groups.flatMap(x => x.costs).filter(c => c.by_count);
+  const tagged = (tag, list) => list.reduce((n, m) => { const me = rules.entities[m.collection]?.[m.ref]; return n + (me && (!tag || (me.tags || []).includes(tag)) ? modWeight(me) : 0); }, 0);
+  // Why the mod can't go in now: the group's "max", a count limit (by_count) its tags fall under across all groups,
+  // or its own rules (needs, excludes).
+  const blockedBy = (g, e) => {
     const all = modItems(sheet, item);
-    if (g.max !== null && all.filter(m => m.collection === modCol).length >= g.max) return true;
-    return allCosts.some(c => c.tag && (e.tags || []).includes(c.tag) && tagged(c.tag, all) >= c.by_count.length);
+    if (g.max !== null && all.filter(m => m.collection === g.collection).length >= g.max) return t('sheet.modsFull');
+    if (allCosts.some(c => c.tag && (e.tags || []).includes(c.tag) && tagged(c.tag, all) + modWeight(e) > c.by_count.length)) return t('sheet.modsFull');
+    return modConflictText(rules, e, g.collection, all);
   };
+  const row = (label, sub, reason, onclick) => h('li',
+    h('span', label, sub ? h('div.small.muted', sub) : null, reason ? h('div.small.mod-blocked', reason) : null),
+    h('button.mini.primary', { disabled: !!reason, title: reason || '', onclick }, t('sheet.install')));
   const draw = () => {
-    const mine = modItems(sheet, item).filter(m => m.collection === modCol);
-    const mineRefs = new Set(mine.map(m => m.ref));
+    const g = groups[cur];
+    const modCol = g.collection;
+    const all = modItems(sheet, item);
+    const mineRefs = new Set(all.filter(m => m.collection === modCol).map(m => m.ref));
     const free = sheet.items.filter(x => x.collection === modCol && !x.attached && Number(x.qty ?? 1) - installedCount(x.uid) > 0);
     const costs = modCosts(st, item, col).filter(c => c.n && c.cost);
     const q = normalize(query);
@@ -1214,42 +1222,54 @@ function modsDialog(st, item, col, group = modsGroups(col)[0]) {
       .sort((a, b) => byName(a.name, b.name));
     const search = h('input', { type: 'search', placeholder: t('sheet.search'), 'aria-label': t('sheet.search'), value: query,
       oninput: e => { query = e.target.value; const pos = e.target.selectionStart; draw(); const el = body.querySelector('input[type=search]'); el?.focus(); el?.setSelectionRange(pos, pos); } });
+    const tabs = groups.length > 1 ? h('span.segmented.mod-tabs', { role: 'group', 'aria-label': t('sheet.manageMods') },
+      groups.map((x, i) => {
+        const n = all.filter(m => m.collection === x.collection).length;
+        return h('button.mini', { type: 'button', 'aria-pressed': String(i === cur), onclick: () => { cur = i; query = ''; draw(); } },
+          `${groupLabel(x)}${n ? ` (${n})` : ''}`);
+      })) : null;
     body.replaceChildren(...[
       h('h4', t('sheet.modsInstalled')),
-      mine.length ? h('ul.mod-list', mine.map(m => h('li', h('button.mini.link', { onclick: () => entityDetails(st, m.collection, m.ref) }, name(m)),
+      all.length ? h('ul.mod-list', all.map(m => {
+        const me = rules.entities[m.collection]?.[m.ref];
+        // A mod whose requirement was taken out stays, with a warning.
+        const missing = me?.needs ? modConflictText(rules, { ...me, excludes: [] }, m.collection, all.filter(x => x !== m)) : null;
+        const g2 = groups.length > 1 ? groups.find(x => x.collection === m.collection) : null;
+        return h('li', h('span', h('button.mini.link', { onclick: () => entityDetails(st, m.collection, m.ref) }, name(m)),
+          g2 ? h('span.small.muted', ` · ${groupLabel(g2)}`) : null,
+          missing ? h('div.small.mod-blocked', `⚠ ${missing}`) : null),
         h('button.mini', { onclick: () => {
           item.mods = item.mods.filter(u => u !== m.uid);
           // A mod picked from the list belongs to this item: taking it out removes it from the sheet.
           if (m.attached) sheet.items = sheet.items.filter(x => x !== m);
           st.change(); draw();
-        } }, t('sheet.uninstall'))))) : h('p.muted.small', t('sheet.noMods')),
+        } }, t('sheet.uninstall')));
+      })) : h('p.muted.small', t('sheet.noMods')),
       // The item's whole extra price (all groups), so the total is in view.
       costs.length ? h('p.small.mod-cost', costs.map(c => {
         const unit = c.field ? col.fields?.[c.field]?.unit : '';
         const cost = c.cost.toLocaleString(document.documentElement.lang || undefined);
         return t('sheet.modCost', { label: c.label, n: c.n, cost: unit ? `${unit} ${cost}` : cost });
       }).join(' · ')) : null,
+      tabs,
       free.length ? [h('h4', t('sheet.modsAvailable')), h('ul.mod-list', free.map(m => {
         const e = rules.entities[m.collection]?.[m.ref];
-        return h('li', h('span', h('button.mini.link', { onclick: () => entityDetails(st, m.collection, m.ref) }, name(m)), fitText(e) ? h('div.small.muted', fitText(e)) : null),
-          h('button.mini.primary', { disabled: !!e && full(e), onclick: () => { (item.mods ||= []).push(m.uid); st.change(); draw(); } }, t('sheet.install')));
+        const reason = !e ? null : !modFits(g, e, host) ? t('sheet.modNoFit') : blockedBy(g, e);
+        return row(h('button.mini.link', { onclick: () => entityDetails(st, m.collection, m.ref) }, name(m)), fitText(e), reason,
+          () => { (item.mods ||= []).push(m.uid); st.change(); draw(); });
       }))] : null,
-      h('h4', t('sheet.modsCatalog', { name: rules.collections[modCol]?.name || modCol })),
+      h('h4', t('sheet.modsCatalog', { name: groupLabel(g) })),
       search,
-      catalog.length ? h('ul.mod-list.mod-catalog', catalog.slice(0, 80).map(e => {
-        const blocked = full(e);
-        return h('li', h('span', h('button.mini.link', { onclick: () => entityDetails(st, modCol, e.id) }, e.name),
-          fitText(e) ? h('div.small.muted', fitText(e)) : null),
-        h('button.mini.primary', { disabled: blocked, title: blocked ? t('sheet.modsFull') : '', onclick: () => {
+      catalog.length ? h('ul.mod-list.mod-catalog', catalog.slice(0, 80).map(e =>
+        row(h('button.mini.link', { onclick: () => entityDetails(st, modCol, e.id) }, e.name), fitText(e), blockedBy(g, e), () => {
           const mod = { uid: uid(), collection: modCol, ref: e.id, attached: true };
           sheet.items.push(mod);
           (item.mods ||= []).push(mod.uid);
           st.change(); draw();
-        } }, t('sheet.install')));
-      })) : h('p.muted.small', t('sheet.nothingFound'))].flat().filter(Boolean));
+        }))) : h('p.muted.small', t('sheet.nothingFound'))].flat().filter(Boolean));
   };
   draw();
-  dialog(g.label ? `${g.label}: ${name(item)}` : t('sheet.modsOf', { name: name(item) }), body, { width: '560px' });
+  dialog(t('sheet.modsOf', { name: name(item) }), body, { width: '560px' });
 }
 
 // ---------- Equipped view: only what is equipped, as cards with its numbers ----------

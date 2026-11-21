@@ -2,6 +2,11 @@
 
 Every change to StatForge. The current version is also shown in Settings.
 
+## 1.38.0 — 2026-11-20
+
+- Mods: one **Mods** button per item instead of one per group; the window has a tab per group (Upgrades, Enchantments, Special material) and lists everything installed, with the total price.
+- Mods: a mod can need another one first (`"needs"`), not go with another (`"excludes"`), count as two (`"counts_as"`) and fit only items that match several conditions, including "not" (`"fits"` as a list, `"not"`, on `"id"` or `"tags"`). The window says why a mod can't go in, and warns when an installed one lost its requirement.
+
 ## 1.37.0 — 2026-11-20
 
 - Mods: a collection can have several mod groups (`"mods"` as a list), each with its own button and list, e.g. Upgrades, Enchantments and Special material. A group can have a `"max"`, and a count limit (`by_count`) counts mods of every group with that tag, so a special material can count as one upgrade.

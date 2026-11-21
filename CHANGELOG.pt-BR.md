@@ -2,6 +2,11 @@
 
 Todas as mudanças do StatForge. A versão atual também aparece em Configurações.
 
+## 1.38.0 — 20/11/2026
+
+- Modificações: um só botão **Mods** por item em vez de um por grupo; a janela tem uma aba por grupo (Melhorias, Encantos, Material especial) e lista tudo o que está instalado, com o preço total.
+- Modificações: uma modificação pode exigir outra antes (`"needs"`), não combinar com outra (`"excludes"`), contar como duas (`"counts_as"`) e servir só para itens que cumprem várias condições, inclusive "não" (`"fits"` como lista, `"not"`, em `"id"` ou `"tags"`). A janela diz por que uma modificação não entra, e avisa quando uma instalada perdeu o pré-requisito.
+
 ## 1.37.0 — 20/11/2026
 
 - Modificações: uma coleção pode ter vários grupos de modificações (`"mods"` como lista), cada um com o seu botão e a sua lista, por exemplo Melhorias, Encantos e Material especial. Um grupo pode ter `"max"`, e um limite por quantidade (`by_count`) conta as modificações de todos os grupos com aquela tag, então um material especial pode contar como uma melhoria.
